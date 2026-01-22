@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { 
-  Database, FileJson, FileSpreadsheet, Search, Users, ListMusic
+  Database, FileJson, FileSpreadsheet, Search, Users, Disc, Music
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,9 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppHeader } from "@/components/AppHeader";
 import { SongDetailDialog } from "@/components/SongDetailDialog";
-import { ArtistCard, type Artist } from "@/components/ArtistCard";
 import { Pagination } from "@/components/Pagination";
 import { ArtistTreeRow } from "@/components/catalog/CatalogSongTree";
+import { ArtistWithSocialCard } from "@/components/catalog/ArtistWithSocialCard";
 import { EmptyState } from "@/components/catalog/EmptyState";
 import { LoadingSpinner } from "@/components/catalog/LoadingSpinner";
 import { exportCatalogAsCSV, exportCatalogAsJSON } from "@/lib/exportCatalog";
@@ -54,25 +54,6 @@ const Katalog = () => {
     setArtistsPage(1);
     setSongsPage(1);
   }, [searchQuery]);
-
-  // Convert for ArtistCard compatibility
-  const savedArtistsForCards: Artist[] = artistsPagination.items.map(a => ({
-    id: a.id,
-    name: a.name,
-    personality: a.personality || "",
-    voicePrompt: a.voice_prompt || "",
-    genre: a.genre,
-    style: a.style,
-    albums: a.albums.map(album => ({
-      id: album.id,
-      name: album.name,
-      songs: album.songs.map(s => s.name),
-    })),
-    profile_image_url: a.profile_image_url,
-    katalognummer: a.katalognummer,
-    language: a.language,
-    created_at: a.created_at,
-  }));
 
   const toggleArtist = useCallback((artistId: string) => {
     setExpandedArtists(prev => {
@@ -160,11 +141,11 @@ const Katalog = () => {
                     {stats.artists}
                   </Badge>
                   <Badge variant="secondary" className="gap-1.5">
-                    <Database className="h-3 w-3" />
+                    <Disc className="h-3 w-3" />
                     {stats.albums}
                   </Badge>
                   <Badge variant="secondary" className="gap-1.5">
-                    <ListMusic className="h-3 w-3" />
+                    <Music className="h-3 w-3" />
                     {stats.songs}
                   </Badge>
                 </div>
@@ -202,13 +183,13 @@ const Katalog = () => {
                   <span className="text-xs opacity-70">({filteredArtists.length})</span>
                 </TabsTrigger>
                 <TabsTrigger value="songs" className="gap-2">
-                  <ListMusic className="h-4 w-4" />
-                  <span className="hidden sm:inline">Hierarchie</span>
+                  <Disc className="h-4 w-4" />
+                  <span className="hidden sm:inline">Alben & Songs</span>
                   <span className="text-xs opacity-70">({stats.songs})</span>
                 </TabsTrigger>
               </TabsList>
 
-              {/* Artists Tab */}
+              {/* Artists Tab - Shows artist info + social content */}
               <TabsContent value="artists" className="flex-1 min-h-0 mt-4 flex flex-col data-[state=active]:flex">
                 <div className="flex-1 min-h-0 overflow-y-auto">
                   {isLoading ? (
@@ -226,13 +207,11 @@ const Katalog = () => {
                     />
                   ) : (
                     <div className="space-y-3 pr-2">
-                      {savedArtistsForCards.map((artist, index) => (
-                        <ArtistCard
+                      {artistsPagination.items.map(artist => (
+                        <ArtistWithSocialCard
                           key={artist.id}
                           artist={artist}
-                          index={(artistsPage - 1) * artistsPerPage + index}
                           onDelete={deleteArtist}
-                          showDelete
                           onRefresh={loadData}
                         />
                       ))}
@@ -258,14 +237,14 @@ const Katalog = () => {
                 )}
               </TabsContent>
 
-              {/* Songs Hierarchy Tab */}
+              {/* Albums & Songs Tab */}
               <TabsContent value="songs" className="flex-1 min-h-0 mt-4 flex flex-col data-[state=active]:flex">
                 <div className="flex-1 min-h-0 overflow-y-auto">
                   {isLoading ? (
                     <LoadingSpinner message="Lade Katalog..." />
                   ) : filteredArtists.length === 0 ? (
                     <EmptyState
-                      icon={Database}
+                      icon={Disc}
                       title={searchQuery ? "Keine Ergebnisse" : "Katalog ist leer"}
                       description={searchQuery 
                         ? "Versuche einen anderen Suchbegriff" 
