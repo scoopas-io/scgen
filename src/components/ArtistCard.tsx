@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { ChevronDown, ChevronUp, Copy, Check, User, Mic, Disc, Music, Trash2, Image, Edit, RefreshCw, Loader2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Copy, Check, User, Mic, Disc, Music, Trash2, Image, Edit, RefreshCw, Loader2, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { SongDetailDialog } from "./SongDetailDialog";
+import { ArtistManagementDialog } from "./ArtistManagementDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -72,6 +73,7 @@ export function ArtistCard({ artist, index, onDelete, showDelete = false, onRefr
   const [selectedSong, setSelectedSong] = useState<SongData | null>(null);
   const [selectedAlbumName, setSelectedAlbumName] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [managementDialogOpen, setManagementDialogOpen] = useState(false);
   const [songsData, setSongsData] = useState<Record<string, SongData[]>>({});
   const [isRegeneratingImage, setIsRegeneratingImage] = useState(false);
 
@@ -270,6 +272,26 @@ export function ArtistCard({ artist, index, onDelete, showDelete = false, onRefr
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
+              {artist.id && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-primary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setManagementDialogOpen(true);
+                      }}
+                    >
+                      <Settings2 className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Alle Details verwalten</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
               {showDelete && artist.id && onDelete && (
                 <Button
                   variant="ghost"
@@ -410,6 +432,17 @@ export function ArtistCard({ artist, index, onDelete, showDelete = false, onRefr
         onOpenChange={setDialogOpen}
         onSaved={handleSongSaved}
       />
+
+      {artist.id && (
+        <ArtistManagementDialog
+          artistId={artist.id}
+          open={managementDialogOpen}
+          onOpenChange={setManagementDialogOpen}
+          onSaved={() => {
+            if (onRefresh) onRefresh();
+          }}
+        />
+      )}
     </>
   );
 }
