@@ -53,20 +53,75 @@ const LANGUAGE_NAMES: Record<string, string> = {
   sw: "Suaheli",
 };
 
-// Reverse lookup: language name to code
+// Reverse lookup: language name to code (German names)
 const LANGUAGE_CODES: Record<string, string> = Object.fromEntries(
   Object.entries(LANGUAGE_NAMES).map(([code, name]) => [name.toLowerCase(), code])
 );
 
+// English language names for AI responses
+const ENGLISH_LANGUAGE_NAMES: Record<string, string> = {
+  "german": "de",
+  "english": "en",
+  "spanish": "es",
+  "french": "fr",
+  "italian": "it",
+  "portuguese": "pt",
+  "dutch": "nl",
+  "polish": "pl",
+  "russian": "ru",
+  "ukrainian": "uk",
+  "turkish": "tr",
+  "arabic": "ar",
+  "hebrew": "he",
+  "hindi": "hi",
+  "chinese": "zh",
+  "mandarin": "zh",
+  "japanese": "ja",
+  "korean": "ko",
+  "thai": "th",
+  "vietnamese": "vi",
+  "indonesian": "id",
+  "malay": "ms",
+  "filipino": "tl",
+  "tagalog": "tl",
+  "swedish": "sv",
+  "danish": "da",
+  "finnish": "fi",
+  "norwegian": "no",
+  "greek": "el",
+  "czech": "cs",
+  "hungarian": "hu",
+  "romanian": "ro",
+  "bulgarian": "bg",
+  "croatian": "hr",
+  "slovak": "sk",
+  "serbian": "sr",
+  "swahili": "sw",
+};
+
 const getLanguageCode = (languageName: string): string => {
   if (!languageName) return "de";
-  const lower = languageName.toLowerCase();
-  // Direct match
+  const lower = languageName.toLowerCase().trim();
+  
+  // Direct code match (e.g., "de", "en")
+  if (LANGUAGE_NAMES[lower]) return lower;
+  
+  // German name match
   if (LANGUAGE_CODES[lower]) return LANGUAGE_CODES[lower];
-  // Partial match
+  
+  // English name match
+  if (ENGLISH_LANGUAGE_NAMES[lower]) return ENGLISH_LANGUAGE_NAMES[lower];
+  
+  // Partial match in German names
   for (const [name, code] of Object.entries(LANGUAGE_CODES)) {
     if (lower.includes(name) || name.includes(lower)) return code;
   }
+  
+  // Partial match in English names
+  for (const [name, code] of Object.entries(ENGLISH_LANGUAGE_NAMES)) {
+    if (lower.includes(name) || name.includes(lower)) return code;
+  }
+  
   return "de";
 };
 
