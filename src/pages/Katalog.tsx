@@ -4,7 +4,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppHeader } from "@/components/AppHeader";
@@ -210,8 +209,8 @@ const Katalog = () => {
               </TabsList>
 
               {/* Artists Tab */}
-              <TabsContent value="artists" className="flex-1 min-h-0 mt-4 flex flex-col">
-                <ScrollArea className="flex-1">
+              <TabsContent value="artists" className="flex-1 min-h-0 mt-4 flex flex-col overflow-hidden">
+                <div className="flex-1 min-h-0 overflow-auto">
                   {isLoading ? (
                     <LoadingSpinner message="Lade Künstler..." />
                   ) : filteredArtists.length === 0 ? (
@@ -226,7 +225,7 @@ const Katalog = () => {
                       actionHref={!searchQuery ? "/" : undefined}
                     />
                   ) : (
-                    <div className="grid gap-3 pr-4 pb-4">
+                    <div className="grid gap-3 p-1">
                       {savedArtistsForCards.map((artist, index) => (
                         <ArtistCard
                           key={artist.id}
@@ -239,8 +238,8 @@ const Katalog = () => {
                       ))}
                     </div>
                   )}
-                </ScrollArea>
-                {filteredArtists.length > artistsPerPage && (
+                </div>
+                {artistsPagination.totalPages > 1 && (
                   <div className="shrink-0 border-t border-border bg-background/80 backdrop-blur-sm">
                     <Pagination
                       currentPage={artistsPage}
@@ -260,8 +259,8 @@ const Katalog = () => {
               </TabsContent>
 
               {/* Songs Hierarchy Tab */}
-              <TabsContent value="songs" className="flex-1 min-h-0 mt-4 flex flex-col">
-                <ScrollArea className="flex-1">
+              <TabsContent value="songs" className="flex-1 min-h-0 mt-4 flex flex-col overflow-hidden">
+                <div className="flex-1 min-h-0 overflow-auto">
                   {isLoading ? (
                     <LoadingSpinner message="Lade Katalog..." />
                   ) : filteredArtists.length === 0 ? (
@@ -276,7 +275,7 @@ const Katalog = () => {
                       actionHref={!searchQuery ? "/" : undefined}
                     />
                   ) : (
-                    <div className="grid gap-2 pr-4 pb-4">
+                    <div className="grid gap-2 p-1">
                       {songsPagination.items.map(artist => (
                         <ArtistTreeRow
                           key={artist.id}
@@ -292,8 +291,8 @@ const Katalog = () => {
                       ))}
                     </div>
                   )}
-                </ScrollArea>
-                {filteredArtists.length > songsPerPage && (
+                </div>
+                {songsPagination.totalPages > 1 && (
                   <div className="shrink-0 border-t border-border bg-background/80 backdrop-blur-sm">
                     <Pagination
                       currentPage={songsPage}
