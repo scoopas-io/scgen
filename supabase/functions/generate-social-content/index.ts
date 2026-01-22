@@ -6,6 +6,43 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Runway API polling helper
+async function pollRunwayTask(taskId: string, apiKey: string, maxAttempts = 60): Promise<string | null> {
+  for (let i = 0; i < maxAttempts; i++) {
+    console.log(`Polling Runway task ${taskId}, attempt ${i + 1}/${maxAttempts}`);
+    
+    const response = await fetch(`https://api.dev.runwayml.com/v1/tasks/${taskId}`, {
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "X-Runway-Version": "2024-11-06",
+      },
+    });
+
+    if (!response.ok) {
+      console.error("Runway poll error:", await response.text());
+      return null;
+    }
+
+    const data = await response.json();
+    console.log(`Runway task status: ${data.status}`);
+
+    if (data.status === "SUCCEEDED" && data.output?.length > 0) {
+      return data.output[0]; // Returns the video URL
+    }
+
+    if (data.status === "FAILED") {
+      console.error("Runway task failed:", data.failure);
+      return null;
+    }
+
+    // Wait 3 seconds before next poll
+    await new Promise(resolve => setTimeout(resolve, 3000));
+  }
+
+  console.error("Runway task polling timeout");
+  return null;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -13,6 +50,7 @@ serve(async (req) => {
 
   try {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const RUNWAY_API_KEY = Deno.env.get("RUNWAY_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
@@ -37,7 +75,7 @@ serve(async (req) => {
 
     console.log(`Starting content generation for ${artistName}, type: ${contentType}, platform: ${platform}`);
 
-    // Generate text content (caption, hashtags, title)
+    // Generate text content
     const textPrompt = `Du bist ein Social Media Manager für den Künstler "${artistName}".
     
 Künstler-Info:
@@ -121,17 +159,83 @@ Die Caption sollte:
     let imageUrl = null;
     let videoUrl = null;
 
-    // Generate reel content - create a dynamic cover image
-    // Note: Actual video generation requires external APIs (Runway, Pika, etc.)
-    if (contentType === "reel" && artistImageUrl) {
-      console.log("Generating reel cover image...");
+    // Generate video for reels using Runway ML
+    if (contentType === "reel" && artistImageUrl && RUNWAY_API_KEY) {
+      console.log("Generating video with Runway ML...");
+      
+      const videoPrompt = `A dynamic music video scene featuring this artist. ${artistGenre} aesthetic, ${artistStyle} vibe. ${customPrompt || "Cinematic lighting, subtle movement, professional music video quality."} The artist appears confident and engaging. Smooth camera movement.`;
+
+      try {
+        // Start Runway video generation task
+        const runwayResponse = await fetch("https://api.dev.runwayml.com/v1/image_to_video", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${RUNWAY_API_KEY}`,
+            "Content-Type": "application/json",
+            "X-Runway-Version": "2024-11-06",
+          },
+          body: JSON.stringify({
+            model: "gen3a_turbo",
+            promptImage: artistImageUrl,
+            promptText: videoPrompt,
+            duration: 5,
+            ratio: "9:16",
+          }),
+        });
+
+        if (runwayResponse.ok) {
+          const runwayData = await runwayResponse.json();
+          console.log("Runway task created:", runwayData.id);
+
+          // Poll for completion
+          const generatedVideoUrl = await pollRunwayTask(runwayData.id, RUNWAY_API_KEY);
+
+          if (generatedVideoUrl) {
+            console.log("Video generated successfully, downloading...");
+            
+            // Download the video from Runway
+            const videoDownloadResponse = await fetch(generatedVideoUrl);
+            if (videoDownloadResponse.ok) {
+              const videoBuffer = new Uint8Array(await videoDownloadResponse.arrayBuffer());
+              
+              const filename = `${artistId}/${Date.now()}-reel.mp4`;
+              
+              const { error: uploadError } = await supabase.storage
+                .from("social-content")
+                .upload(filename, videoBuffer, {
+                  contentType: "video/mp4",
+                  upsert: true,
+                });
+
+              if (uploadError) {
+                console.error("Video upload error:", uploadError);
+              } else {
+                const { data: { publicUrl } } = supabase.storage
+                  .from("social-content")
+                  .getPublicUrl(filename);
+                videoUrl = publicUrl;
+                console.log("Video uploaded:", videoUrl);
+              }
+            }
+          }
+        } else {
+          const errorText = await runwayResponse.text();
+          console.error("Runway API error:", runwayResponse.status, errorText);
+        }
+      } catch (runwayError) {
+        console.error("Runway video generation error:", runwayError);
+      }
+    }
+
+    // Fallback: Generate cover image for reel if video failed or no Runway key
+    if (contentType === "reel" && !videoUrl && artistImageUrl) {
+      console.log("Generating reel cover image as fallback...");
       
       const reelCoverPrompt = `Transform this artist photo into a dynamic, eye-catching ${platform} reel cover image.
 Style: Vertical 9:16 format, cinematic, modern, high-energy.
 Theme: ${artistGenre} music promotion, ${customPrompt || "engaging social media content"}
 Add dynamic elements: light trails, motion blur effects, neon accents, or atmospheric particles.
-Make it look like a freeze-frame from an exciting music video.
-The image should immediately grab attention when scrolling through ${platform}.`;
+Make it look like a freeze-frame from an exciting music video.`;
 
       try {
         const reelImageResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -294,7 +398,7 @@ Aspect ratio: ${contentType === "story" ? "9:16 portrait" : "1:1 square"}`;
         content: insertedContent,
         hasVideo: !!videoUrl,
         hasImage: !!imageUrl,
-        note: contentType === "reel" ? "Reel-Cover generiert. Für echte Videos wird eine externe Video-API benötigt." : undefined,
+        note: contentType === "reel" && !videoUrl ? "Video-Generierung nicht verfügbar, Reel-Cover wurde erstellt." : undefined,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
