@@ -6,39 +6,48 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Stability AI video polling helper
-async function pollStabilityVideo(generationId: string, apiKey: string, maxAttempts = 120): Promise<Uint8Array | null> {
+// Runway API video polling helper
+async function pollRunwayTask(taskId: string, apiKey: string, maxAttempts = 120): Promise<string | null> {
   for (let i = 0; i < maxAttempts; i++) {
-    console.log(`Polling Stability video ${generationId}, attempt ${i + 1}/${maxAttempts}`);
+    console.log(`Polling Runway task ${taskId}, attempt ${i + 1}/${maxAttempts}`);
     
-    const response = await fetch(`https://api.stability.ai/v2beta/image-to-video/result/${generationId}`, {
+    const response = await fetch(`https://api.dev.runwayml.com/v1/tasks/${taskId}`, {
       method: "GET",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
-        "Accept": "video/*",
+        "X-Runway-Version": "2024-11-06",
       },
     });
 
-    if (response.status === 202) {
-      // Still processing, wait and retry
-      console.log("Stability video still processing...");
-      await new Promise(resolve => setTimeout(resolve, 5000));
-      continue;
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Runway poll error:", response.status, errorText);
+      return null;
     }
 
-    if (response.status === 200) {
-      console.log("Stability video ready!");
-      const videoBuffer = new Uint8Array(await response.arrayBuffer());
-      return videoBuffer;
+    const data = await response.json();
+    console.log("Runway task status:", data.status);
+
+    if (data.status === "SUCCEEDED") {
+      // Return the video URL from the output
+      const videoUrl = data.output?.[0];
+      if (videoUrl) {
+        console.log("Runway video ready:", videoUrl);
+        return videoUrl;
+      }
+      return null;
     }
 
-    // Any other status is an error
-    const errorText = await response.text();
-    console.error("Stability poll error:", response.status, errorText);
-    return null;
+    if (data.status === "FAILED") {
+      console.error("Runway task failed:", data.failure, data.failureCode);
+      return null;
+    }
+
+    // Still processing (PENDING, RUNNING, THROTTLED), wait and retry
+    await new Promise(resolve => setTimeout(resolve, 5000));
   }
 
-  console.error("Stability video polling timeout");
+  console.error("Runway video polling timeout");
   return null;
 }
 
@@ -49,7 +58,7 @@ serve(async (req) => {
 
   try {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    const STABILITY_API_KEY = Deno.env.get("STABILITY_API_KEY");
+    const RUNWAY_API_KEY = Deno.env.get("RUNWAY_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
@@ -159,93 +168,91 @@ Die Caption sollte:
     let videoUrl = null;
     let videoFailureNote: string | null = null;
 
-    // Generate video for reels using Stability AI Image-to-Video
-    if (contentType === "reel" && artistImageUrl && STABILITY_API_KEY) {
-      console.log("Generating video with Stability AI...");
+    // Generate video for reels using Runway API (Gen-3 Alpha Turbo)
+    if (contentType === "reel" && artistImageUrl && RUNWAY_API_KEY) {
+      console.log("Generating video with Runway API...");
 
       try {
-        // First, download the artist image to send as form data
-        console.log("Downloading artist image for Stability...");
-        const imageResponse = await fetch(artistImageUrl);
-        if (!imageResponse.ok) {
-          throw new Error("Failed to download artist image");
-        }
-        const imageBuffer = await imageResponse.arrayBuffer();
-        const imageBlob = new Blob([imageBuffer], { type: "image/png" });
-
-        // Stability requires the image to be resized to specific dimensions
-        // The API accepts images between 64x64 and 1024x1024, and outputs 768x768
-        // For 9:16 we need to work with what they support
-
-        const formData = new FormData();
-        formData.append("image", imageBlob, "artist.png");
-        formData.append("seed", "0");
-        formData.append("cfg_scale", "1.8");
-        formData.append("motion_bucket_id", "127");
-
-        // Start Stability video generation
-        const stabilityResponse = await fetch("https://api.stability.ai/v2beta/image-to-video", {
+        // Start Runway video generation with image-to-video
+        const runwayResponse = await fetch("https://api.dev.runwayml.com/v1/image_to_video", {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${STABILITY_API_KEY}`,
+            "Authorization": `Bearer ${RUNWAY_API_KEY}`,
+            "Content-Type": "application/json",
+            "X-Runway-Version": "2024-11-06",
           },
-          body: formData,
+          body: JSON.stringify({
+            model: "gen3a_turbo",
+            promptImage: artistImageUrl,
+            promptText: `Cinematic ${artistGenre} music video scene. Subtle camera movement, dramatic lighting, atmospheric effects. Professional music video quality.`,
+            duration: 5,
+            ratio: "768:1344", // 9:16 vertical format for reels
+          }),
         });
 
-        if (stabilityResponse.ok) {
-          const stabilityData = await stabilityResponse.json();
-          const generationId = stabilityData.id;
-          console.log("Stability task created:", generationId);
+        if (runwayResponse.ok) {
+          const runwayData = await runwayResponse.json();
+          const taskId = runwayData.id;
+          console.log("Runway task created:", taskId);
 
           // Poll for completion
-          const videoBuffer = await pollStabilityVideo(generationId, STABILITY_API_KEY);
+          const runwayVideoUrl = await pollRunwayTask(taskId, RUNWAY_API_KEY);
 
-          if (videoBuffer) {
-            console.log("Video generated successfully, uploading...");
+          if (runwayVideoUrl) {
+            console.log("Downloading video from Runway...");
             
-            const filename = `${artistId}/${Date.now()}-reel.mp4`;
-            
-            const { error: uploadError } = await supabase.storage
-              .from("social-content")
-              .upload(filename, videoBuffer, {
-                contentType: "video/mp4",
-                upsert: true,
-              });
-
-            if (uploadError) {
-              console.error("Video upload error:", uploadError);
-              videoFailureNote = "Video konnte nicht hochgeladen werden; Fallback-Bild wurde erstellt.";
-            } else {
-              const { data: { publicUrl } } = supabase.storage
+            // Download the video from Runway's CDN
+            const videoResponse = await fetch(runwayVideoUrl);
+            if (videoResponse.ok) {
+              const videoBuffer = new Uint8Array(await videoResponse.arrayBuffer());
+              
+              const filename = `${artistId}/${Date.now()}-reel.mp4`;
+              
+              const { error: uploadError } = await supabase.storage
                 .from("social-content")
-                .getPublicUrl(filename);
-              videoUrl = publicUrl;
-              console.log("Video uploaded:", videoUrl);
+                .upload(filename, videoBuffer, {
+                  contentType: "video/mp4",
+                  upsert: true,
+                });
+
+              if (uploadError) {
+                console.error("Video upload error:", uploadError);
+                videoFailureNote = "Video konnte nicht hochgeladen werden; Fallback-Bild wurde erstellt.";
+              } else {
+                const { data: { publicUrl } } = supabase.storage
+                  .from("social-content")
+                  .getPublicUrl(filename);
+                videoUrl = publicUrl;
+                console.log("Video uploaded:", videoUrl);
+              }
+            } else {
+              console.error("Failed to download video from Runway:", videoResponse.status);
+              videoFailureNote = "Video-Download von Runway fehlgeschlagen – es wurde stattdessen ein Reel-Cover (PNG) erstellt.";
             }
           } else {
-            videoFailureNote = "Stability Video-Generierung fehlgeschlagen – es wurde stattdessen ein Reel-Cover (PNG) erstellt.";
+            videoFailureNote = "Runway Video-Generierung fehlgeschlagen – es wurde stattdessen ein Reel-Cover (PNG) erstellt.";
           }
-          } else {
-          const errorText = await stabilityResponse.text();
-          console.error("Stability API error:", stabilityResponse.status, errorText);
+        } else {
+          const errorText = await runwayResponse.text();
+          console.error("Runway API error:", runwayResponse.status, errorText);
 
           if (errorText.includes("insufficient") || errorText.includes("credit") || errorText.includes("balance")) {
-            videoFailureNote = "Stability AI: nicht genug Credits – es wurde stattdessen ein Reel-Cover (PNG) erstellt.";
-          } else if (stabilityResponse.status === 400) {
-            videoFailureNote = `Stability API Fehler: Bildformat nicht unterstützt – es wurde stattdessen ein Reel-Cover (PNG) erstellt.`;
-            } else if (stabilityResponse.status === 404) {
-              videoFailureNote = "Stability Video API nicht verfügbar (404) – der API-Key hat evtl. keinen Video-Zugriff oder der Endpoint ist nicht freigeschaltet. Es wurde stattdessen ein Reel-Cover (PNG) erstellt.";
+            videoFailureNote = "Runway: nicht genug Credits – es wurde stattdessen ein Reel-Cover (PNG) erstellt.";
+          } else if (runwayResponse.status === 401) {
+            videoFailureNote = "Runway API-Key ungültig – es wurde stattdessen ein Reel-Cover (PNG) erstellt.";
+          } else if (runwayResponse.status === 422) {
+            videoFailureNote = "Runway: Bildformat nicht unterstützt – es wurde stattdessen ein Reel-Cover (PNG) erstellt.";
           } else {
-            videoFailureNote = `Stability Video-Fehler (${stabilityResponse.status}) – es wurde stattdessen ein Reel-Cover (PNG) erstellt.`;
+            videoFailureNote = `Runway Video-Fehler (${runwayResponse.status}) – es wurde stattdessen ein Reel-Cover (PNG) erstellt.`;
           }
         }
-      } catch (stabilityError) {
-        console.error("Stability video generation error:", stabilityError);
-        videoFailureNote = "Stability Video-Generierung fehlgeschlagen – es wurde stattdessen ein Reel-Cover (PNG) erstellt.";
+      } catch (runwayError) {
+        console.error("Runway video generation error:", runwayError);
+        videoFailureNote = "Runway Video-Generierung fehlgeschlagen – es wurde stattdessen ein Reel-Cover (PNG) erstellt.";
       }
     }
 
-    // Fallback: Generate cover image for reel if video failed or no Stability key
+    // Fallback: Generate cover image for reel if video failed or no Runway key
     if (contentType === "reel" && !videoUrl && artistImageUrl) {
       console.log("Generating reel cover image as fallback...");
       
