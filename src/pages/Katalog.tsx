@@ -194,7 +194,7 @@ const Katalog = () => {
             </div>
 
             {/* Tabs */}
-            <Tabs defaultValue="artists" className="flex-1 flex flex-col min-h-0">
+            <Tabs defaultValue="artists" className="flex-1 flex flex-col min-h-0 overflow-hidden">
               <TabsList className="shrink-0 w-fit">
                 <TabsTrigger value="artists" className="gap-2">
                   <Users className="h-4 w-4" />
@@ -209,8 +209,8 @@ const Katalog = () => {
               </TabsList>
 
               {/* Artists Tab */}
-              <TabsContent value="artists" className="flex-1 min-h-0 mt-4 flex flex-col overflow-hidden">
-                <div className="flex-1 min-h-0 overflow-auto">
+              <TabsContent value="artists" className="flex-1 min-h-0 mt-4 flex flex-col data-[state=active]:flex">
+                <div className="flex-1 min-h-0 overflow-y-auto">
                   {isLoading ? (
                     <LoadingSpinner message="Lade Künstler..." />
                   ) : filteredArtists.length === 0 ? (
@@ -225,7 +225,7 @@ const Katalog = () => {
                       actionHref={!searchQuery ? "/" : undefined}
                     />
                   ) : (
-                    <div className="grid gap-3 p-1">
+                    <div className="space-y-3 pr-2">
                       {savedArtistsForCards.map((artist, index) => (
                         <ArtistCard
                           key={artist.id}
@@ -240,7 +240,7 @@ const Katalog = () => {
                   )}
                 </div>
                 {artistsPagination.totalPages > 1 && (
-                  <div className="shrink-0 border-t border-border bg-background/80 backdrop-blur-sm">
+                  <div className="shrink-0 pt-3 border-t border-border mt-3">
                     <Pagination
                       currentPage={artistsPage}
                       totalPages={artistsPagination.totalPages}
@@ -259,8 +259,8 @@ const Katalog = () => {
               </TabsContent>
 
               {/* Songs Hierarchy Tab */}
-              <TabsContent value="songs" className="flex-1 min-h-0 mt-4 flex flex-col overflow-hidden">
-                <div className="flex-1 min-h-0 overflow-auto">
+              <TabsContent value="songs" className="flex-1 min-h-0 mt-4 flex flex-col data-[state=active]:flex">
+                <div className="flex-1 min-h-0 overflow-y-auto">
                   {isLoading ? (
                     <LoadingSpinner message="Lade Katalog..." />
                   ) : filteredArtists.length === 0 ? (
@@ -275,7 +275,7 @@ const Katalog = () => {
                       actionHref={!searchQuery ? "/" : undefined}
                     />
                   ) : (
-                    <div className="grid gap-2 p-1">
+                    <div className="space-y-2 pr-2">
                       {songsPagination.items.map(artist => (
                         <ArtistTreeRow
                           key={artist.id}
@@ -293,7 +293,7 @@ const Katalog = () => {
                   )}
                 </div>
                 {songsPagination.totalPages > 1 && (
-                  <div className="shrink-0 border-t border-border bg-background/80 backdrop-blur-sm">
+                  <div className="shrink-0 pt-3 border-t border-border mt-3">
                     <Pagination
                       currentPage={songsPage}
                       totalPages={songsPagination.totalPages}
