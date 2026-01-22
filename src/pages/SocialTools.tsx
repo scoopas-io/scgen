@@ -302,6 +302,11 @@ const SocialTools = () => {
           : "Content erfolgreich generiert!";
       
       toast.success(message);
+
+       // Optional backend hint (e.g. video fallback reasons)
+       if (data.note) {
+         toast(String(data.note));
+       }
       await loadGeneratedContent();
       
       // Show preview of generated content

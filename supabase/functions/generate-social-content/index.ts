@@ -158,6 +158,7 @@ Die Caption sollte:
 
     let imageUrl = null;
     let videoUrl = null;
+    let videoFailureNote: string | null = null;
 
     // Generate video for reels using Runway ML
     if (contentType === "reel" && artistImageUrl && RUNWAY_API_KEY) {
@@ -209,6 +210,7 @@ Die Caption sollte:
 
               if (uploadError) {
                 console.error("Video upload error:", uploadError);
+                videoFailureNote = "Video konnte nicht hochgeladen werden; Fallback-Bild wurde erstellt.";
               } else {
                 const { data: { publicUrl } } = supabase.storage
                   .from("social-content")
@@ -221,9 +223,16 @@ Die Caption sollte:
         } else {
           const errorText = await runwayResponse.text();
           console.error("Runway API error:", runwayResponse.status, errorText);
+
+          if (errorText.includes("not enough credits")) {
+            videoFailureNote = "Runway: nicht genug Credits – es wurde stattdessen ein Reel-Cover (PNG) erstellt.";
+          } else {
+            videoFailureNote = `Runway Video-Fehler (${runwayResponse.status}) – es wurde stattdessen ein Reel-Cover (PNG) erstellt.`;
+          }
         }
       } catch (runwayError) {
         console.error("Runway video generation error:", runwayError);
+        videoFailureNote = "Runway Video-Generierung fehlgeschlagen – es wurde stattdessen ein Reel-Cover (PNG) erstellt.";
       }
     }
 
@@ -398,7 +407,9 @@ Aspect ratio: ${contentType === "story" ? "9:16 portrait" : "1:1 square"}`;
         content: insertedContent,
         hasVideo: !!videoUrl,
         hasImage: !!imageUrl,
-        note: contentType === "reel" && !videoUrl ? "Video-Generierung nicht verfügbar, Reel-Cover wurde erstellt." : undefined,
+        note: contentType === "reel" && !videoUrl
+          ? (videoFailureNote || "Video-Generierung nicht verfügbar, Reel-Cover wurde erstellt.")
+          : undefined,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
