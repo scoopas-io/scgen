@@ -18,7 +18,6 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Generator />} />
-          <Route path="/generator" element={<Generator />} />
           <Route path="/songkatalog" element={<Songkatalog />} />
           <Route path="/social-tools" element={<SocialTools />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
