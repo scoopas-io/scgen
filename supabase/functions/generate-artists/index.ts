@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { decode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,7 +11,23 @@ interface GenerateRequest {
   artistCount: number;
   albumCount: number;
   songCount: number;
+  selectedGenres: string[];
 }
+
+const TONARTEN = ["C-Dur", "D-Dur", "E-Dur", "F-Dur", "G-Dur", "A-Dur", "H-Dur", "a-Moll", "d-Moll", "e-Moll", "g-Moll"];
+const generateISRC = () => `DE-KI${Date.now().toString(36).slice(-3).toUpperCase()}-${Math.floor(Math.random() * 99).toString().padStart(2, '0')}-${Math.floor(Math.random() * 99999).toString().padStart(5, '0')}`;
+const generateISWC = () => `T-${Math.floor(Math.random() * 999999999).toString().padStart(9, '0')}-${Math.floor(Math.random() * 9)}`;
+const generateGEMANr = () => `GW-${Math.floor(Math.random() * 9999999).toString().padStart(7, '0')}`;
+const generateKatalogNr = (index: number) => `CAT-${String(index).padStart(4, '0')}`;
+const generateSongId = (artistIndex: number, albumIndex: number, songIndex: number) => 
+  `SNG-${artistIndex.toString().padStart(2, '0')}${albumIndex.toString().padStart(2, '0')}${songIndex.toString().padStart(3, '0')}`;
+const randomBPM = () => Math.floor(Math.random() * 100) + 70;
+const randomTonart = () => TONARTEN[Math.floor(Math.random() * TONARTEN.length)];
+const randomLength = () => {
+  const min = Math.floor(Math.random() * 3) + 2;
+  const sec = Math.floor(Math.random() * 60);
+  return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+};
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -18,24 +35,20 @@ serve(async (req) => {
   }
 
   try {
-    const { artistCount, albumCount, songCount }: GenerateRequest = await req.json();
+    const { artistCount, albumCount, songCount, selectedGenres }: GenerateRequest = await req.json();
     
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-      throw new Error("Supabase credentials not configured");
-    }
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) throw new Error("Supabase credentials not configured");
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Fetch existing names from database to avoid duplicates
+    // Fetch existing names
     const [artistsResult, albumsResult, songsResult] = await Promise.all([
-      supabase.from("artists").select("name"),
+      supabase.from("artists").select("name, katalognummer"),
       supabase.from("albums").select("name"),
       supabase.from("songs").select("name"),
     ]);
@@ -43,48 +56,50 @@ serve(async (req) => {
     const existingArtists = (artistsResult.data || []).map((a) => a.name);
     const existingAlbums = (albumsResult.data || []).map((a) => a.name);
     const existingSongs = (songsResult.data || []).map((s) => s.name);
+    const lastKatalogNr = Math.max(0, ...(artistsResult.data || [])
+      .map(a => parseInt(a.katalognummer?.replace('CAT-', '') || '0'))
+      .filter(n => !isNaN(n)));
 
-    const systemPrompt = `Du bist ein kreativer Musik-Industrie-Experte, der einzigartige fiktive Künstlerprofile erstellt.
+    const genreFilter = selectedGenres.length > 0 
+      ? `Generiere NUR Künstler aus diesen Genres: ${selectedGenres.join(", ")}.`
+      : "Verwende diverse Genres.";
 
-WICHTIGE REGELN:
-1. ALLE Namen (Künstler, Alben, Songs) müssen KOMPLETT NEU und EINZIGARTIG sein
-2. KEINE Ähnlichkeit zu bekannten Künstlern (Namen, Stil-Beschreibungen)
-3. Vermeide Standard-KI-Klischees wie: Neon, Lichter, Straßen, Stadt, Urban, Cyber, Echo, Shadow, Dream, Pulse
-4. Verwende diverse Genres: Rock, Jazz, Folk, Electronic, World Music, Klassik-Fusion, Indie, Experimental, Blues, Reggae, Country, Soul, Funk, Ambient, Post-Punk, etc.
-5. Jeder Künstler soll einen VÖLLIG anderen Stil haben
-6. Persönlichkeitsprompts sollen tiefgründig und charakteristisch sein
-7. SUNO Stimmfrequenz-Prompts müssen technisch präzise und einzigartig sein
+    const systemPrompt = `Du bist ein kreativer Musik-Industrie-Experte für einzigartige fiktive Künstlerprofile.
 
-BEREITS EXISTIERENDE NAMEN (NICHT VERWENDEN!):
+REGELN:
+1. ALLE Namen müssen KOMPLETT NEU und EINZIGARTIG sein
+2. KEINE Ähnlichkeit zu bekannten Künstlern
+3. Vermeide KI-Klischees: Neon, Lichter, Straßen, Stadt, Urban, Cyber, Echo, Shadow, Dream, Pulse
+4. ${genreFilter}
+5. Persönlichkeitsprompts sollen tiefgründig sein
+6. SUNO Stimmfrequenz-Prompts müssen technisch präzise sein (auf Englisch)
+
+EXISTIERENDE NAMEN (NICHT VERWENDEN!):
 - Künstler: ${existingArtists.slice(0, 100).join(", ") || "keine"}
-- Alben: ${existingAlbums.slice(0, 100).join(", ") || "keine"}
+- Alben: ${existingAlbums.slice(0, 100).join(", ") || "keine"}  
 - Songs: ${existingSongs.slice(0, 200).join(", ") || "keine"}
 
-Für den SUNO Stimmfrequenz-Prompt verwende diese Parameter-Kategorien:
-- Stimmhöhe (Bass, Bariton, Tenor, Alt, Sopran, etc.)
-- Klangfarbe (rauchig, kristallklar, warm, metallisch, samtig, etc.)
-- Artikulation (fließend, staccato, legato, gebrochen, etc.)
-- Besondere Merkmale (Vibrato, Hauch, Knurren, Falsett, etc.)
-- Emotionale Färbung (melancholisch, ekstatisch, distanziert, intim, etc.)
+Antworte NUR mit einem validen JSON-Array.`;
 
-Antworte NUR mit einem validen JSON-Array ohne zusätzlichen Text.`;
+    const userPrompt = `Generiere ${artistCount} einzigartige Künstlerprofile.
 
-    const userPrompt = `Generiere ${artistCount} komplett einzigartige Künstlerprofile.
-
-Für JEDEN Künstler erstelle:
-- name: Ein kreativer, ungewöhnlicher Künstlername (keine englischen Standardnamen)
-- personality: Ein detaillierter Persönlichkeitsprompt (3-4 Sätze) der Hintergrund, Motivation und künstlerische Vision beschreibt
-- voicePrompt: Ein ausführlicher technischer SUNO Stimmfrequenz-Prompt auf Englisch (mind. 50 Wörter) mit spezifischen Parametern
-- genre: Das Hauptgenre
-- style: Der spezifische Stil innerhalb des Genres
+Für JEDEN Künstler:
+- name: Kreativer Künstlername
+- personality: Detaillierter Persönlichkeitsprompt (3-4 Sätze)
+- voicePrompt: Ausführlicher SUNO Stimmfrequenz-Prompt auf Englisch (mind. 50 Wörter)
+- genre: Hauptgenre
+- style: Spezifischer Stil
+- imagePrompt: Kurze Beschreibung für ein Profilbild (auf Englisch, beschreibe Aussehen, Kleidung, Atmosphäre passend zum Genre, KEINE bekannten Personen)
 - albums: Array mit ${albumCount} Alben, jedes mit:
-  - name: Ein einzigartiger Albumname (kann mehrsprachig sein)
-  - songs: Array mit ${songCount} einzigartigen Songtiteln
+  - name: Einzigartiger Albumname
+  - songs: Array mit ${songCount} Objekten, jedes mit:
+    - name: Songtitel
+    - komponist: Name des Komponisten (kann Künstler sein)
+    - textdichter: Name des Textdichters
 
-WICHTIG: 
-- Keiner der Namen darf in der Liste der existierenden Namen vorkommen!
-- Antworte NUR mit dem JSON-Array, kein anderer Text!`;
+WICHTIG: Antworte NUR mit dem JSON-Array!`;
 
+    console.log("Generating artists...");
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -98,65 +113,102 @@ WICHTIG:
           { role: "user", content: userPrompt },
         ],
         temperature: 0.95,
-        max_tokens: 16000,
+        max_tokens: 32000,
       }),
     });
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Rate limit erreicht. Bitte versuche es in einer Minute erneut." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ error: "Rate limit erreicht. Bitte warte kurz." }), 
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Kontingent erschöpft. Bitte Credits aufladen." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ error: "Kontingent erschöpft." }), 
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       const errorText = await response.text();
       console.error("AI gateway error:", response.status, errorText);
-      return new Response(
-        JSON.stringify({ error: "Fehler bei der KI-Generierung" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      throw new Error("Fehler bei der KI-Generierung");
     }
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
-    
-    if (!content) {
-      throw new Error("Keine Antwort von der KI erhalten");
-    }
+    if (!content) throw new Error("Keine Antwort von der KI");
 
-    // Parse the JSON from the AI response
     let artists;
     try {
       const jsonMatch = content.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        artists = JSON.parse(jsonMatch[0]);
-      } else {
-        artists = JSON.parse(content);
-      }
-    } catch (parseError) {
-      console.error("JSON parse error:", parseError, "Content:", content);
+      artists = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(content);
+    } catch {
+      console.error("JSON parse error, content:", content);
       throw new Error("Fehler beim Parsen der KI-Antwort");
     }
 
-    // Save to database
-    for (const artist of artists) {
-      // Check if artist name already exists
-      const { data: existingArtist } = await supabase
-        .from("artists")
-        .select("id")
-        .eq("name", artist.name)
-        .maybeSingle();
+    console.log(`Generated ${artists.length} artists, now generating images...`);
 
-      if (existingArtist) {
-        console.log(`Artist ${artist.name} already exists, skipping`);
+    // Generate images and save to database
+    const savedArtists = [];
+    let katalogIndex = lastKatalogNr + 1;
+
+    for (let artistIdx = 0; artistIdx < artists.length; artistIdx++) {
+      const artist = artists[artistIdx];
+      
+      // Check duplicate
+      const { data: existing } = await supabase.from("artists").select("id").eq("name", artist.name).maybeSingle();
+      if (existing) {
+        console.log(`Artist ${artist.name} exists, skipping`);
         continue;
       }
+
+      let profileImageUrl = null;
+
+      // Generate profile image
+      try {
+        const imagePrompt = artist.imagePrompt || `Portrait of a ${artist.genre} musician, ${artist.style} aesthetic, professional photo, artistic lighting`;
+        console.log(`Generating image for ${artist.name}...`);
+        
+        const imageResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash-image-preview",
+            messages: [{ role: "user", content: `Generate a professional artist portrait photo: ${imagePrompt}. The image should be suitable for a music artist profile, high quality, artistic.` }],
+            modalities: ["image", "text"],
+          }),
+        });
+
+        if (imageResponse.ok) {
+          const imageData = await imageResponse.json();
+          const base64Image = imageData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+          
+          if (base64Image && base64Image.startsWith('data:image')) {
+            // Extract base64 data
+            const base64Data = base64Image.split(',')[1];
+            const imageBytes = decode(base64Data);
+            const fileName = `${artist.name.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.png`;
+            
+            // Upload to storage
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('artist-images')
+              .upload(fileName, imageBytes, { contentType: 'image/png', upsert: true });
+
+            if (!uploadError && uploadData) {
+              const { data: publicUrl } = supabase.storage.from('artist-images').getPublicUrl(fileName);
+              profileImageUrl = publicUrl.publicUrl;
+              console.log(`Image uploaded for ${artist.name}`);
+            } else {
+              console.error("Upload error:", uploadError);
+            }
+          }
+        }
+      } catch (imgError) {
+        console.error(`Image generation failed for ${artist.name}:`, imgError);
+      }
+
+      const katalognummer = generateKatalogNr(katalogIndex++);
 
       // Insert artist
       const { data: insertedArtist, error: artistError } = await supabase
@@ -167,6 +219,12 @@ WICHTIG:
           voice_prompt: artist.voicePrompt,
           genre: artist.genre,
           style: artist.style,
+          profile_image_url: profileImageUrl,
+          katalognummer,
+          verlag: 'KI-Musikverlag',
+          label: 'AI Records',
+          rechteinhaber_master: 'AI Records',
+          rechteinhaber_publishing: 'KI-Musikverlag',
         })
         .select("id")
         .single();
@@ -176,67 +234,83 @@ WICHTIG:
         continue;
       }
 
-      // Insert albums
-      for (const album of artist.albums || []) {
-        const { data: existingAlbum } = await supabase
-          .from("albums")
-          .select("id")
-          .eq("name", album.name)
-          .maybeSingle();
+      const savedAlbums = [];
 
-        if (existingAlbum) {
-          console.log(`Album ${album.name} already exists, skipping`);
-          continue;
-        }
+      for (let albumIdx = 0; albumIdx < (artist.albums || []).length; albumIdx++) {
+        const album = artist.albums[albumIdx];
+        
+        const { data: existingAlbum } = await supabase.from("albums").select("id").eq("name", album.name).maybeSingle();
+        if (existingAlbum) continue;
+
+        const releaseDate = new Date();
+        releaseDate.setMonth(releaseDate.getMonth() - Math.floor(Math.random() * 24));
 
         const { data: insertedAlbum, error: albumError } = await supabase
           .from("albums")
           .insert({
             artist_id: insertedArtist.id,
             name: album.name,
+            release_date: releaseDate.toISOString().split('T')[0],
           })
           .select("id")
           .single();
 
-        if (albumError) {
-          console.error("Error inserting album:", albumError);
-          continue;
-        }
+        if (albumError) continue;
 
-        // Insert songs
-        for (let i = 0; i < (album.songs || []).length; i++) {
-          const songName = album.songs[i];
-          const { data: existingSong } = await supabase
-            .from("songs")
-            .select("id")
-            .eq("name", songName)
-            .maybeSingle();
+        const savedSongs = [];
 
-          if (existingSong) {
-            console.log(`Song ${songName} already exists, skipping`);
-            continue;
-          }
+        for (let songIdx = 0; songIdx < (album.songs || []).length; songIdx++) {
+          const song = album.songs[songIdx];
+          const songName = typeof song === 'string' ? song : song.name;
+          const komponist = typeof song === 'object' ? song.komponist : artist.name;
+          const textdichter = typeof song === 'object' ? song.textdichter : artist.name;
+
+          const { data: existingSong } = await supabase.from("songs").select("id").eq("name", songName).maybeSingle();
+          if (existingSong) continue;
+
+          const songId = generateSongId(artistIdx + 1, albumIdx + 1, songIdx + 1);
 
           const { error: songError } = await supabase
             .from("songs")
             .insert({
               album_id: insertedAlbum.id,
               name: songName,
-              track_number: i + 1,
+              track_number: songIdx + 1,
+              song_id: songId,
+              komponist,
+              textdichter,
+              isrc: generateISRC(),
+              iswc: generateISWC(),
+              gema_werknummer: generateGEMANr(),
+              bpm: randomBPM(),
+              tonart: randomTonart(),
+              laenge: randomLength(),
             });
 
-          if (songError) {
-            console.error("Error inserting song:", songError);
+          if (!songError) {
+            savedSongs.push(songName);
           }
         }
+
+        savedAlbums.push({ name: album.name, songs: savedSongs });
       }
+
+      savedArtists.push({
+        ...artist,
+        id: insertedArtist.id,
+        profileImageUrl,
+        katalognummer,
+        albums: savedAlbums,
+      });
     }
 
-    return new Response(JSON.stringify({ artists }), {
+    console.log(`Saved ${savedArtists.length} artists to database`);
+
+    return new Response(JSON.stringify({ artists: savedArtists }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Error in generate-artists:", error);
+    console.error("Error:", error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Unbekannter Fehler" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, ChevronUp, Copy, Check, User, Mic, Disc, Music, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Copy, Check, User, Mic, Disc, Music, Trash2, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -18,6 +18,9 @@ export interface Artist {
   style: string;
   albums: Album[];
   created_at?: string;
+  profileImageUrl?: string;
+  profile_image_url?: string;
+  katalognummer?: string;
 }
 
 interface ArtistCardProps {
@@ -30,6 +33,9 @@ interface ArtistCardProps {
 export function ArtistCard({ artist, index, onDelete, showDelete = false }: ArtistCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
+
+  const imageUrl = artist.profileImageUrl || artist.profile_image_url;
 
   const copyToClipboard = async (text: string, field: string) => {
     await navigator.clipboard.writeText(text);
@@ -68,13 +74,32 @@ export function ArtistCard({ artist, index, onDelete, showDelete = false }: Arti
       >
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="h-14 w-14 rounded-full gradient-gold flex items-center justify-center glow-gold shrink-0">
-              <User className="h-7 w-7 text-primary-foreground" />
+            {/* Profile Image */}
+            <div className="h-16 w-16 rounded-full overflow-hidden shrink-0 border-2 border-primary/30">
+              {imageUrl && !imageError ? (
+                <img
+                  src={imageUrl}
+                  alt={artist.name}
+                  className="h-full w-full object-cover"
+                  onError={() => setImageError(true)}
+                />
+              ) : (
+                <div className="h-full w-full gradient-gold flex items-center justify-center">
+                  <User className="h-8 w-8 text-primary-foreground" />
+                </div>
+              )}
             </div>
             <div className="min-w-0">
-              <h3 className="text-xl font-display font-bold text-foreground truncate">
-                {artist.name}
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-xl font-display font-bold text-foreground truncate">
+                  {artist.name}
+                </h3>
+                {artist.katalognummer && (
+                  <span className="text-xs text-muted-foreground font-mono">
+                    {artist.katalognummer}
+                  </span>
+                )}
+              </div>
               <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <span className="px-2 py-0.5 rounded-full bg-primary/20 text-primary text-xs font-medium">
                   {artist.genre}
@@ -82,6 +107,12 @@ export function ArtistCard({ artist, index, onDelete, showDelete = false }: Arti
                 <span className="px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground text-xs">
                   {artist.style}
                 </span>
+                {imageUrl && !imageError && (
+                  <span className="px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 text-xs flex items-center gap-1">
+                    <Image className="h-3 w-3" />
+                    Bild
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -114,6 +145,19 @@ export function ArtistCard({ artist, index, onDelete, showDelete = false }: Arti
       {/* Expanded Content */}
       {expanded && (
         <div className="px-6 pb-6 space-y-6 border-t border-border pt-6">
+          {/* Large Profile Image */}
+          {imageUrl && !imageError && (
+            <div className="flex justify-center">
+              <div className="w-48 h-48 rounded-xl overflow-hidden border border-border shadow-lg">
+                <img
+                  src={imageUrl}
+                  alt={artist.name}
+                  className="h-full w-full object-cover"
+                />
+              </div>
+            </div>
+          )}
+
           {/* Personality */}
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
