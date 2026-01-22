@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -6,11 +6,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
   Music, Disc, User, Play, Pause, Download, Loader2, 
-  CheckCircle2, XCircle, Clock, Volume2, ChevronDown, ChevronRight 
+  CheckCircle2, XCircle, Clock, Volume2, ChevronDown, ChevronRight,
+  ArrowUpDown, RefreshCw
 } from "lucide-react";
 
 interface Artist {
@@ -49,6 +51,9 @@ interface SongWithDetails extends Song {
   personality: string;
 }
 
+type SortOption = "name" | "artist" | "genre" | "date";
+type SortDirection = "asc" | "desc";
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -65,12 +70,71 @@ export function SunoGeneratorDialog({ open, onOpenChange }: Props) {
   const [generating, setGenerating] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0);
   const [currentlyPlaying, setCurrentlyPlaying] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<SortOption>("date");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Load data when dialog opens
   useEffect(() => {
     if (open) {
       loadData();
     }
+  }, [open]);
+
+  // Setup realtime subscription for song updates
+  useEffect(() => {
+    if (!open) return;
+
+    const channel = supabase
+      .channel('songs-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'songs',
+        },
+        (payload) => {
+          console.log('Song updated:', payload);
+          const updatedSong = payload.new as Song;
+          
+          // Update the song in local state
+          setSongs(prev => prev.map(s => {
+            if (s.id === updatedSong.id) {
+              return {
+                ...s,
+                audio_url: updatedSong.audio_url,
+                generation_status: updatedSong.generation_status,
+                suno_task_id: updatedSong.suno_task_id,
+              };
+            }
+            return s;
+          }));
+
+          // Show toast when song is completed
+          if (updatedSong.generation_status === 'completed' && updatedSong.audio_url) {
+            toast.success(`Song "${updatedSong.name}" ist fertig!`, {
+              action: {
+                label: "Abspielen",
+                onClick: () => {
+                  if (audioRef.current) audioRef.current.pause();
+                  audioRef.current = new Audio(updatedSong.audio_url!);
+                  audioRef.current.play();
+                  setCurrentlyPlaying(updatedSong.id);
+                },
+              },
+            });
+          } else if (updatedSong.generation_status === 'error') {
+            toast.error(`Fehler bei "${updatedSong.name}"`);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [open]);
 
   const loadData = async () => {
@@ -273,7 +337,46 @@ export function SunoGeneratorDialog({ open, onOpenChange }: Props) {
   const getArtistAlbums = (artistId: string) => albums.filter(a => a.artist_id === artistId);
   const getAlbumSongs = (albumId: string) => songs.filter(s => s.album_id === albumId);
 
+  // Sorted and filtered generated songs
+  const sortedGeneratedSongs = useMemo(() => {
+    const generated = songs.filter(s => s.audio_url);
+    
+    return generated.sort((a, b) => {
+      let comparison = 0;
+      
+      switch (sortBy) {
+        case "name":
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case "artist":
+          comparison = a.artistName.localeCompare(b.artistName);
+          break;
+        case "genre":
+          comparison = a.genre.localeCompare(b.genre);
+          break;
+        case "date":
+        default:
+          // Use the song id as a proxy for creation date (UUIDs are time-based)
+          comparison = a.id.localeCompare(b.id);
+          break;
+      }
+      
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
+  }, [songs, sortBy, sortDirection]);
+
   const generatedSongs = songs.filter(s => s.audio_url);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await loadData();
+    setIsRefreshing(false);
+    toast.success("Bibliothek aktualisiert");
+  };
+
+  const toggleSortDirection = () => {
+    setSortDirection(prev => prev === "asc" ? "desc" : "asc");
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -449,38 +552,78 @@ export function SunoGeneratorDialog({ open, onOpenChange }: Props) {
                   </p>
                 </div>
               ) : (
-                generatedSongs.map(song => (
-                  <div 
-                    key={song.id} 
-                    className="flex items-center gap-4 p-4 rounded-lg border bg-card"
-                  >
-                    <Button 
-                      size="icon" 
-                      variant={currentlyPlaying === song.id ? "default" : "outline"}
-                      onClick={() => playAudio(song.id, song.audio_url!)}
-                    >
-                      {currentlyPlaying === song.id ? (
-                        <Pause className="h-4 w-4" />
-                      ) : (
-                        <Play className="h-4 w-4" />
-                      )}
-                    </Button>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{song.name}</p>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {song.artistName} • {song.albumName}
-                      </p>
+                <>
+                  {/* Sort Controls */}
+                  <div className="flex items-center justify-between gap-2 p-3 rounded-lg bg-muted/50">
+                    <div className="flex items-center gap-2">
+                      <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Sortieren:</span>
+                      <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+                        <SelectTrigger className="w-32 h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="date">Datum</SelectItem>
+                          <SelectItem value="name">Titel</SelectItem>
+                          <SelectItem value="artist">Künstler</SelectItem>
+                          <SelectItem value="genre">Genre</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={toggleSortDirection}
+                        className="h-8 px-2"
+                      >
+                        {sortDirection === "asc" ? "↑ A-Z" : "↓ Z-A"}
+                      </Button>
                     </div>
-                    <Badge variant="outline">{song.genre}</Badge>
                     <Button 
-                      size="icon" 
-                      variant="ghost"
-                      onClick={() => downloadAudio(song.audio_url!, song.name)}
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleRefresh}
+                      disabled={isRefreshing}
+                      className="h-8"
                     >
-                      <Download className="h-4 w-4" />
+                      <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                      Aktualisieren
                     </Button>
                   </div>
-                ))
+
+                  {/* Song List */}
+                  {sortedGeneratedSongs.map(song => (
+                    <div 
+                      key={song.id} 
+                      className="flex items-center gap-4 p-4 rounded-lg border bg-card"
+                    >
+                      <Button 
+                        size="icon" 
+                        variant={currentlyPlaying === song.id ? "default" : "outline"}
+                        onClick={() => playAudio(song.id, song.audio_url!)}
+                      >
+                        {currentlyPlaying === song.id ? (
+                          <Pause className="h-4 w-4" />
+                        ) : (
+                          <Play className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{song.name}</p>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {song.artistName} • {song.albumName}
+                        </p>
+                      </div>
+                      <Badge variant="outline">{song.genre}</Badge>
+                      <Button 
+                        size="icon" 
+                        variant="ghost"
+                        onClick={() => downloadAudio(song.audio_url!, song.name)}
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </>
               )}
             </TabsContent>
           </ScrollArea>
