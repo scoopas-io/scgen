@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Music, Zap, History, X, Database, Download, FileJson, FileSpreadsheet, Volume2 } from "lucide-react";
+import { Music, Zap, History, X, Database, Download, FileJson, FileSpreadsheet, Volume2, ListMusic, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GeneratorControls } from "@/components/GeneratorControls";
 import { GenreFilter } from "@/components/GenreFilter";
@@ -285,6 +285,32 @@ const Index = () => {
               </div>
             </div>
             <div className="flex items-center gap-4">
+              <nav className="hidden md:flex items-center gap-1">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="gap-2"
+                >
+                  <Zap className="h-4 w-4" />
+                  Generator
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="gap-2"
+                >
+                  <ListMusic className="h-4 w-4" />
+                  Songkatalog
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="gap-2"
+                >
+                  <Share2 className="h-4 w-4" />
+                  Social-Tools
+                </Button>
+              </nav>
               <Button 
                 variant="outline" 
                 size="sm" 
