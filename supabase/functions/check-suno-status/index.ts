@@ -30,8 +30,8 @@ serve(async (req) => {
 
     console.log(`Checking status for task: ${taskId}`);
 
-    // Check task status from Suno API
-    const statusResponse = await fetch(`https://api.sunoapi.com/api/v1/task/${taskId}`, {
+    // Check task status from Suno API (api.sunoapi.org)
+    const statusResponse = await fetch(`https://api.sunoapi.org/api/v1/task/${taskId}`, {
       method: "GET",
       headers: {
         "Authorization": `Bearer ${SUNO_API_KEY}`,
@@ -48,10 +48,13 @@ serve(async (req) => {
     const statusData = await statusResponse.json();
     console.log("Status response:", JSON.stringify(statusData));
 
+    // Handle various response formats from sunoapi.org
     const status = statusData.data?.status || statusData.status;
-    const audioUrl = statusData.data?.audio_url || statusData.audio_url;
+    const audioUrl = statusData.data?.audioUrl || statusData.audioUrl || 
+                     statusData.data?.audio_url || statusData.audio_url ||
+                     statusData.data?.songs?.[0]?.audioUrl || statusData.data?.songs?.[0]?.audio_url;
 
-    if (status === "completed" && audioUrl) {
+    if ((status === "completed" || status === "success") && audioUrl) {
       // Download and store the audio
       const audioResponse = await fetch(audioUrl);
       if (!audioResponse.ok) {
@@ -63,11 +66,24 @@ serve(async (req) => {
       // Get song info for filename
       const { data: songData } = await supabase
         .from("songs")
-        .select("name, albums(artist_id, artists(name))")
+        .select("name, album_id")
         .eq("id", songId)
         .single();
 
-      const artistName = (songData as any)?.albums?.artists?.name || "Unknown";
+      // Get artist name through album
+      const { data: albumData } = await supabase
+        .from("albums")
+        .select("artist_id")
+        .eq("id", songData?.album_id)
+        .single();
+
+      const { data: artistData } = await supabase
+        .from("artists")
+        .select("name")
+        .eq("id", albumData?.artist_id)
+        .single();
+
+      const artistName = artistData?.name || "Unknown";
       const songName = songData?.name || "Untitled";
       const fileName = `${artistName.replace(/[^a-zA-Z0-9]/g, '_')}_${songName.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.mp3`;
 
@@ -124,7 +140,8 @@ serve(async (req) => {
     // Still processing
     return new Response(JSON.stringify({
       success: true,
-      status: status || "processing"
+      status: status || "processing",
+      rawResponse: statusData
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
