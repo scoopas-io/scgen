@@ -79,7 +79,7 @@ serve(async (req) => {
         prompt: musicPrompt,
         customMode: true,
         instrumental: false,
-        model: "V4",
+        model: "V5",
         title: title,
         style: styleTags,
         callbackUrl: callbackUrl,
