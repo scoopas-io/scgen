@@ -64,6 +64,10 @@ serve(async (req) => {
     console.log("Music prompt:", musicPrompt);
     console.log("Style tags:", styleTags);
 
+    // Build callback URL for Suno to notify when complete
+    const callbackUrl = `${SUPABASE_URL}/functions/v1/suno-callback`;
+    console.log("Callback URL:", callbackUrl);
+
     // Call Suno API (api.sunoapi.org) to generate music
     const sunoResponse = await fetch("https://api.sunoapi.org/api/v1/generate", {
       method: "POST",
@@ -75,9 +79,10 @@ serve(async (req) => {
         prompt: musicPrompt,
         customMode: true,
         instrumental: false,
-        model: "V5",
+        model: "V4",
         title: title,
         style: styleTags,
+        callbackUrl: callbackUrl,
       }),
     });
 
