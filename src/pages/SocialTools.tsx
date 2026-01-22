@@ -57,6 +57,16 @@ const CONTENT_TYPES = [
   { id: "text", name: "Text/Caption", icon: FileText },
 ];
 
+type GenerationPhase = "idle" | "text" | "image" | "saving" | "complete";
+
+const PHASE_LABELS: Record<GenerationPhase, string> = {
+  idle: "",
+  text: "Erstelle Caption & Hashtags...",
+  image: "Generiere Bild...",
+  saving: "Speichere Content...",
+  complete: "Fertig!",
+};
+
 const SocialTools = () => {
   const [artists, setArtists] = useState<Artist[]>([]);
   const [selectedArtistId, setSelectedArtistId] = useState<string>("");
@@ -64,6 +74,7 @@ const SocialTools = () => {
   const [selectedContentType, setSelectedContentType] = useState<string>("post");
   const [customPrompt, setCustomPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generationPhase, setGenerationPhase] = useState<GenerationPhase>("idle");
   const [generatedContent, setGeneratedContent] = useState<SocialContent[]>([]);
   const [stats, setStats] = useState({ artists: 0, albums: 0, songs: 0 });
 
@@ -121,7 +132,16 @@ const SocialTools = () => {
     }
 
     setIsGenerating(true);
+    setGenerationPhase("text");
+    
     try {
+      // Simulate phase progression for better UX
+      const phaseTimeout = setTimeout(() => {
+        if (selectedContentType === "post" || selectedContentType === "story") {
+          setGenerationPhase("image");
+        }
+      }, 3000);
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-social-content`,
         {
@@ -144,17 +164,26 @@ const SocialTools = () => {
         }
       );
 
+      clearTimeout(phaseTimeout);
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || "Fehler bei der Generierung");
       }
 
+      setGenerationPhase("saving");
       const data = await response.json();
+      setGenerationPhase("complete");
+      
       toast.success("Content erfolgreich generiert!");
       await loadGeneratedContent();
+      
+      // Reset phase after short delay
+      setTimeout(() => setGenerationPhase("idle"), 1500);
     } catch (error) {
       console.error("Error generating content:", error);
       toast.error(error instanceof Error ? error.message : "Fehler bei der Generierung");
+      setGenerationPhase("idle");
     } finally {
       setIsGenerating(false);
     }
@@ -328,26 +357,84 @@ const SocialTools = () => {
                   />
                 </div>
 
-                {/* Generate Button */}
-                <Button
-                  variant="gold"
-                  size="lg"
-                  className="w-full"
-                  onClick={generateContent}
-                  disabled={!selectedArtist || isGenerating}
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Generiere...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-4 w-4" />
-                      Content generieren
-                    </>
+                {/* Generate Button & Status */}
+                <div className="space-y-3">
+                  <Button
+                    variant="gold"
+                    size="lg"
+                    className="w-full"
+                    onClick={generateContent}
+                    disabled={!selectedArtist || isGenerating}
+                  >
+                    {isGenerating ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Generiere...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4" />
+                        Content generieren
+                      </>
+                    )}
+                  </Button>
+                  
+                  {/* Generation Status */}
+                  {isGenerating && (
+                    <Card className="border-primary/30 bg-primary/5">
+                      <CardContent className="p-4">
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                            <span className="text-sm font-medium text-primary">
+                              {PHASE_LABELS[generationPhase]}
+                            </span>
+                          </div>
+                          
+                          {/* Phase Progress */}
+                          <div className="flex items-center gap-2">
+                            {(["text", "image", "saving", "complete"] as GenerationPhase[]).map((phase, i) => {
+                              const phases: GenerationPhase[] = ["text", "image", "saving", "complete"];
+                              const currentIndex = phases.indexOf(generationPhase);
+                              const phaseIndex = phases.indexOf(phase);
+                              const isCompleted = phaseIndex < currentIndex;
+                              const isCurrent = phase === generationPhase;
+                              
+                              // Skip image phase for text-only content
+                              if (phase === "image" && (selectedContentType === "text" || selectedContentType === "reel")) {
+                                return null;
+                              }
+                              
+                              return (
+                                <div key={phase} className="flex items-center gap-1">
+                                  <div className={cn(
+                                    "h-2 w-2 rounded-full transition-colors",
+                                    isCompleted ? "bg-green-500" : 
+                                    isCurrent ? "bg-primary animate-pulse" : 
+                                    "bg-muted-foreground/30"
+                                  )} />
+                                  {i < phases.length - 1 && phase !== "image" && (
+                                    <div className={cn(
+                                      "h-0.5 w-6 transition-colors",
+                                      isCompleted ? "bg-green-500" : "bg-muted-foreground/30"
+                                    )} />
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                          
+                          <p className="text-xs text-muted-foreground">
+                            {generationPhase === "text" && "KI erstellt Caption und Hashtags basierend auf dem Künstlerprofil..."}
+                            {generationPhase === "image" && "KI generiert ein passendes Bild für deinen Content..."}
+                            {generationPhase === "saving" && "Speichere Content in der Bibliothek..."}
+                            {generationPhase === "complete" && "Content wurde erfolgreich erstellt!"}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
                   )}
-                </Button>
+                </div>
               </div>
             </ScrollArea>
 
