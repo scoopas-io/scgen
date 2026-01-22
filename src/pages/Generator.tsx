@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Music, Zap, History, X, Database, Download, FileJson, FileSpreadsheet, Volume2, ListMusic, Share2 } from "lucide-react";
+import { Music, Zap, History, X, Database, Download, FileJson, FileSpreadsheet, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GeneratorControls } from "@/components/GeneratorControls";
 import { GenreFilter } from "@/components/GenreFilter";
@@ -12,10 +12,11 @@ import { exportCatalogAsCSV, exportCatalogAsJSON } from "@/lib/exportCatalog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { AppHeader } from "@/components/AppHeader";
 
-const BATCH_SIZE = 10; // Artists per batch for bulk generation
+const BATCH_SIZE = 10;
 
-const Index = () => {
+const Generator = () => {
   const [artistCount, setArtistCount] = useState(3);
   const [albumCount, setAlbumCount] = useState(2);
   const [songCount, setSongCount] = useState(5);
@@ -209,7 +210,6 @@ const Index = () => {
           
           remaining -= batchCount;
           
-          // Small delay between batches to avoid rate limits
           if (batch < totalBatches) {
             await new Promise(resolve => setTimeout(resolve, 2000));
           }
@@ -218,7 +218,7 @@ const Index = () => {
           if (batchError instanceof Error && batchError.message.includes("Rate Limit")) {
             toast.warning("Rate Limit - Warte 30 Sekunden...");
             await new Promise(resolve => setTimeout(resolve, 30000));
-            batch--; // Retry this batch
+            batch--;
           } else {
             throw batchError;
           }
@@ -268,82 +268,14 @@ const Index = () => {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      {/* Compact Header */}
-      <header className="shrink-0 border-b border-border bg-background/95 backdrop-blur">
-        <div className="container py-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <h1 className="text-xl md:text-2xl font-display font-bold tracking-tight">
-                <span className="text-foreground">KI Musikkatalog</span>{" "}
-                <span className="text-gradient-gold">Generator</span>
-              </h1>
-              <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20">
-                <ScoopasIcon size={16} />
-                <span className="text-xs font-medium text-primary">
-                  Powered by scoopas.AI
-                </span>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <nav className="hidden md:flex items-center gap-1">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="gap-2"
-                >
-                  <Zap className="h-4 w-4" />
-                  Generator
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="gap-2"
-                >
-                  <ListMusic className="h-4 w-4" />
-                  Songkatalog
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="gap-2"
-                >
-                  <Share2 className="h-4 w-4" />
-                  Social-Tools
-                </Button>
-              </nav>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="gap-2"
-                onClick={() => setSunoDialogOpen(true)}
-              >
-                <Volume2 className="h-4 w-4" />
-                <span className="hidden sm:inline">scoopas Audio</span>
-              </Button>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                <div className="flex items-center gap-1.5">
-                  <Database className="h-3.5 w-3.5 text-primary" />
-                  <span>{stats.artists}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Music className="h-3.5 w-3.5 text-primary" />
-                  <span>{stats.albums}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Zap className="h-3.5 w-3.5 text-primary" />
-                  <span>{stats.songs}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+      <AppHeader 
+        stats={stats} 
+        onOpenSunoDialog={() => setSunoDialogOpen(true)} 
+      />
 
-      {/* Main Content - Fixed Height */}
       <main className="flex-1 min-h-0 overflow-hidden">
         <div className="container h-full py-4">
           <div className="grid lg:grid-cols-[420px_1fr] gap-6 h-full">
-            {/* Controls Sidebar - Scrollable */}
             <ScrollArea className="h-full pr-4">
               <aside className="space-y-4 pb-4">
                 <GeneratorControls
@@ -401,7 +333,6 @@ const Index = () => {
                   {showHistory ? "Neue Ergebnisse" : `Datenbank (${stats.artists})`}
                 </Button>
 
-                {/* Export Buttons */}
                 {stats.songs > 0 && (
                   <div className="p-3 rounded-lg border border-border bg-card/50 space-y-2">
                     <div className="flex items-center gap-2 text-xs font-medium text-foreground">
@@ -433,7 +364,6 @@ const Index = () => {
               </aside>
             </ScrollArea>
 
-            {/* Results - Scrollable */}
             <ScrollArea className="h-full">
               <section className="space-y-3 pr-4 pb-4">
                 {showHistory ? (
@@ -480,32 +410,38 @@ const Index = () => {
                     generatedCount={generationState.generated}
                     totalCount={artistCount}
                     phase={generationState.phase}
-                    currentArtist={generationState.currentArtist}
                     imagesGenerated={generationState.imagesGenerated}
                     imagesTotal={generationState.imagesTotal}
                     startTime={generationState.startTime}
                   />
                 ) : artists.length > 0 ? (
-                  <>
-                    <div className="sticky top-0 bg-background/95 backdrop-blur py-2 -mt-2 z-10">
-                      <p className="text-sm text-muted-foreground">
-                        {artists.length} Künstler generiert
-                      </p>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between sticky top-0 bg-background/95 backdrop-blur py-2 -mt-2 z-10">
+                      <h2 className="text-lg font-display font-semibold text-foreground flex items-center gap-2">
+                        <Zap className="h-4 w-4 text-primary" />
+                        Generierte Künstler ({artists.length})
+                      </h2>
                     </div>
                     {artists.map((artist, index) => (
-                      <ArtistCard key={`${artist.name}-${index}`} artist={artist} index={index} onRefresh={loadSavedArtists} />
+                      <ArtistCard
+                        key={artist.id || `${artist.name}-${index}`}
+                        artist={artist}
+                        index={index}
+                        onRefresh={loadSavedArtists}
+                      />
                     ))}
-                  </>
+                  </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <div className="h-16 w-16 rounded-xl bg-secondary/50 flex items-center justify-center mb-4">
-                      <Music className="h-8 w-8 text-muted-foreground" />
+                    <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mb-6">
+                      <ScoopasIcon size={40} />
                     </div>
-                    <h3 className="text-lg font-display font-semibold text-foreground mb-1">
-                      Bereit zur Generierung
+                    <h3 className="text-xl font-display font-semibold text-foreground mb-2">
+                      KI Musikkatalog Generator
                     </h3>
-                    <p className="text-sm text-muted-foreground max-w-sm">
-                      Wähle Anzahl, Filter und klicke auf "Künstler generieren".
+                    <p className="text-sm text-muted-foreground max-w-md">
+                      Generiere vollständige Künstlerprofile mit Albums, Songs und
+                      professionellen Metadaten für deinen Musikkatalog.
                     </p>
                   </div>
                 )}
@@ -515,15 +451,18 @@ const Index = () => {
         </div>
       </main>
 
-      {/* Compact Footer */}
-      <footer className="shrink-0 border-t border-border py-2 bg-background/95">
-        <div className="container flex items-center justify-center gap-2 text-xs text-muted-foreground">
-          <ScoopasIcon size={14} />
-          <span>Alle Inhalte sind KI-generiert und exportierbar als vollständiger Musikkatalog</span>
+      <footer className="shrink-0 border-t border-border py-3">
+        <div className="container">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <ScoopasIcon size={14} />
+              <span>scoopas.AI Musikkatalog Generator</span>
+            </div>
+            <span>Powered by KI</span>
+          </div>
         </div>
       </footer>
 
-      {/* Suno Generator Dialog */}
       <SunoGeneratorDialog 
         open={sunoDialogOpen} 
         onOpenChange={setSunoDialogOpen} 
@@ -532,4 +471,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default Generator;

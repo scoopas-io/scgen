@@ -97,6 +97,65 @@ export type Database = {
         }
         Relationships: []
       }
+      social_content: {
+        Row: {
+          artist_id: string
+          caption: string | null
+          content_type: string
+          created_at: string
+          hashtags: string[] | null
+          id: string
+          image_url: string | null
+          platform: string
+          prompt: string | null
+          published_at: string | null
+          status: string | null
+          title: string | null
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          artist_id: string
+          caption?: string | null
+          content_type: string
+          created_at?: string
+          hashtags?: string[] | null
+          id?: string
+          image_url?: string | null
+          platform: string
+          prompt?: string | null
+          published_at?: string | null
+          status?: string | null
+          title?: string | null
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          artist_id?: string
+          caption?: string | null
+          content_type?: string
+          created_at?: string
+          hashtags?: string[] | null
+          id?: string
+          image_url?: string | null
+          platform?: string
+          prompt?: string | null
+          published_at?: string | null
+          status?: string | null
+          title?: string | null
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_content_artist_id_fkey"
+            columns: ["artist_id"]
+            isOneToOne: false
+            referencedRelation: "artists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       songs: {
         Row: {
           album_id: string
