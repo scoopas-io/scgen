@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Music, Zap, Database, Volume2, ListMusic, Share2 } from "lucide-react";
+import { Music, Zap, Database, Volume2, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScoopasIcon } from "@/components/ScoopasIcon";
 import { cn } from "@/lib/utils";
@@ -12,10 +12,10 @@ export const AppHeader = ({ stats }: AppHeaderProps) => {
   const location = useLocation();
   
   const navItems = [
-    { path: "/", label: "KI-Artists", icon: Zap },
-    { path: "/audio-generator", label: "Audio-Generator", icon: Volume2 },
-    { path: "/songkatalog", label: "Songkatalog", icon: ListMusic },
-    { path: "/social-tools", label: "Social-Tools", icon: Share2 },
+    { path: "/", label: "Generator", icon: Zap },
+    { path: "/katalog", label: "Katalog", icon: Database },
+    { path: "/audio-generator", label: "Audio", icon: Volume2 },
+    { path: "/social-tools", label: "Social", icon: Share2 },
   ];
 
   return (
