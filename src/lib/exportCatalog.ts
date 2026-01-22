@@ -65,6 +65,13 @@ export async function exportCatalogAsCSV() {
           .order("track_number", { ascending: true });
 
         for (const song of songs || []) {
+          // Clean up AI/KI references - replace with neutral terms
+          const cleanVerlag = (artist.verlag || "Eigenverlag").replace(/KI-|AI-|AI |KI /gi, "");
+          const cleanLabel = (artist.label || "Independent").replace(/KI-|AI-|AI |KI |AI Records/gi, "Eigenproduktion");
+          const cleanRechteMaster = (artist.rechteinhaber_master || "Independent").replace(/KI-|AI-|AI |KI |AI Records/gi, "Eigenproduktion");
+          const cleanRechtePublishing = (artist.rechteinhaber_publishing || "Eigenverlag").replace(/KI-|AI-|AI |KI /gi, "");
+          const cleanBemerkungen = (song.bemerkungen || "").replace(/KI-generierter Inhalt|AI-generiert|KI-generiert/gi, "Maschinell erstellt");
+
           catalogEntries.push({
             katalognummer: artist.katalognummer || "",
             song_id: song.song_id || "",
@@ -72,14 +79,14 @@ export async function exportCatalogAsCSV() {
             kuenstler: artist.name || "",
             komponist: song.komponist || artist.name || "",
             textdichter: song.textdichter || artist.name || "",
-            verlag: artist.verlag || "Eigenverlag",
-            label: artist.label || "Independent",
+            verlag: cleanVerlag,
+            label: cleanLabel,
             isrc: song.isrc || "",
             iswc: song.iswc || "",
             gema_status: song.gema_status || "Nicht angemeldet",
             gema_werknummer: song.gema_werknummer || "",
-            rechteinhaber_master: artist.rechteinhaber_master || "Independent",
-            rechteinhaber_publishing: artist.rechteinhaber_publishing || "Eigenverlag",
+            rechteinhaber_master: cleanRechteMaster,
+            rechteinhaber_publishing: cleanRechtePublishing,
             anteil_komponist: song.anteil_komponist || 100,
             anteil_text: song.anteil_text || 0,
             anteil_verlag: song.anteil_verlag || 0,
@@ -91,7 +98,7 @@ export async function exportCatalogAsCSV() {
             laenge: song.laenge || "03:30",
             release_datum: album.release_date || new Date().toISOString().split("T")[0],
             version: song.version || "Original",
-            ki_generiert: song.ki_generiert || "Ja",
+            ki_generiert: "Ja",
             verwertungsstatus: song.verwertungsstatus || "Aktiv",
             einnahmequelle: song.einnahmequelle || "Streaming",
             jahresumsatz: song.jahresumsatz || 0,
@@ -99,7 +106,7 @@ export async function exportCatalogAsCSV() {
             vertragsart: song.vertragsart || "Eigenproduktion",
             vertragsbeginn: song.vertragsbeginn || new Date().toISOString().split("T")[0],
             vertragsende: song.vertragsende || "",
-            bemerkungen: song.bemerkungen || "KI-generierter Inhalt",
+            bemerkungen: cleanBemerkungen || "",
           });
         }
       }

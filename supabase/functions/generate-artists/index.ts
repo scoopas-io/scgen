@@ -274,7 +274,7 @@ WICHTIG: Antworte NUR mit dem JSON-Array!`;
 
       const katalognummer = generateKatalogNr(katalogIndex++);
 
-      // Insert artist
+      // Insert artist with neutral labels (no AI/KI references)
       const { data: insertedArtist, error: artistError } = await supabase
         .from("artists")
         .insert({
@@ -285,10 +285,10 @@ WICHTIG: Antworte NUR mit dem JSON-Array!`;
           style: artist.style,
           profile_image_url: profileImageUrl,
           katalognummer,
-          verlag: 'KI-Musikverlag',
-          label: 'AI Records',
-          rechteinhaber_master: 'AI Records',
-          rechteinhaber_publishing: 'KI-Musikverlag',
+          verlag: 'Musikverlag',
+          label: 'Eigenproduktion',
+          rechteinhaber_master: 'Eigenproduktion',
+          rechteinhaber_publishing: 'Musikverlag',
         })
         .select("id")
         .single();
