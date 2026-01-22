@@ -33,20 +33,20 @@ export function GenreFilter({ selectedGenres, onGenresChange }: GenreFilterProps
   const displayedGenres = expanded ? GENRES : GENRES.slice(0, 12);
 
   return (
-    <div className="space-y-4 p-6 rounded-xl border border-border bg-card/50 backdrop-blur-sm">
+    <div className="space-y-3 p-4 rounded-lg border border-border bg-card/50 backdrop-blur-sm">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-medium text-foreground">Genre-Filter</h3>
-        <div className="flex gap-2">
-          <Button variant="ghost" size="sm" onClick={clearAll} className="text-xs">
+        <h3 className="text-sm font-medium text-foreground">Genre-Filter</h3>
+        <div className="flex gap-1">
+          <Button variant="ghost" size="sm" onClick={clearAll} className="text-xs h-7 px-2">
             Keine
           </Button>
-          <Button variant="ghost" size="sm" onClick={selectAll} className="text-xs">
+          <Button variant="ghost" size="sm" onClick={selectAll} className="text-xs h-7 px-2">
             Alle
           </Button>
         </div>
       </div>
       
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1.5">
         {displayedGenres.map((genre) => {
           const isSelected = selectedGenres.includes(genre);
           return (
@@ -54,14 +54,14 @@ export function GenreFilter({ selectedGenres, onGenresChange }: GenreFilterProps
               key={genre}
               onClick={() => toggleGenre(genre)}
               className={cn(
-                "px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+                "px-2 py-1 rounded-full text-xs font-medium transition-all",
                 "border flex items-center gap-1",
                 isSelected
                   ? "bg-primary text-primary-foreground border-primary"
                   : "bg-secondary/50 text-secondary-foreground border-border hover:border-primary/50"
               )}
             >
-              {isSelected && <Check className="h-3 w-3" />}
+              {isSelected && <Check className="h-2.5 w-2.5" />}
               {genre}
             </button>
           );
@@ -73,9 +73,9 @@ export function GenreFilter({ selectedGenres, onGenresChange }: GenreFilterProps
           variant="ghost"
           size="sm"
           onClick={() => setExpanded(!expanded)}
-          className="w-full text-xs text-muted-foreground"
+          className="w-full text-xs text-muted-foreground h-7"
         >
-          {expanded ? "Weniger anzeigen" : `+${GENRES.length - 12} weitere Genres`}
+          {expanded ? "Weniger" : `+${GENRES.length - 12} mehr`}
         </Button>
       )}
 
