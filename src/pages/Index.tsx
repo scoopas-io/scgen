@@ -271,7 +271,7 @@ const Index = () => {
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <h1 className="text-xl md:text-2xl font-display font-bold tracking-tight">
-                <span className="text-foreground">KI Artist</span>{" "}
+                <span className="text-foreground">KI Musikkatalog</span>{" "}
                 <span className="text-gradient-gold">Generator</span>
               </h1>
               <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20">
