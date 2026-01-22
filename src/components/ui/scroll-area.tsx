@@ -8,7 +8,13 @@ const ScrollArea = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root>
 >(({ className, children, ...props }, ref) => (
   <ScrollAreaPrimitive.Root ref={ref} className={cn("relative overflow-hidden", className)} {...props}>
-    <ScrollAreaPrimitive.Viewport className="h-full w-full rounded-[inherit]">{children}</ScrollAreaPrimitive.Viewport>
+    {/*
+      Radix setzt die Overflow-Styles intern, aber in manchen Browser/Embedding-Szenarien
+      kann Wheel/Trackpad-Scroll nicht greifen. Das native overflow-auto dient als Fallback.
+    */}
+    <ScrollAreaPrimitive.Viewport className="h-full w-full rounded-[inherit] overflow-auto">
+      {children}
+    </ScrollAreaPrimitive.Viewport>
     <ScrollBar />
     <ScrollAreaPrimitive.Corner />
   </ScrollAreaPrimitive.Root>
