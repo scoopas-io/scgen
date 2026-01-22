@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { 
   Database, FileJson, FileSpreadsheet, Search, 
   ChevronDown, ChevronRight, User, Disc, Play, Pause, Users, ListMusic
@@ -11,9 +11,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppHeader } from "@/components/AppHeader";
 import { SongDetailDialog } from "@/components/SongDetailDialog";
 import { ArtistCard, type Artist } from "@/components/ArtistCard";
+import { Pagination } from "@/components/Pagination";
 import { exportCatalogAsCSV, exportCatalogAsJSON } from "@/lib/exportCatalog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+
+const ITEMS_PER_PAGE_OPTIONS = [10, 25, 50, 100];
 
 interface Song {
   id: string;
@@ -88,6 +91,12 @@ const Katalog = () => {
   const [selectedSong, setSelectedSong] = useState<{ song: Song; artistName: string; albumName: string } | null>(null);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Pagination state
+  const [artistsPage, setArtistsPage] = useState(1);
+  const [songsPage, setSongsPage] = useState(1);
+  const [artistsPerPage, setArtistsPerPage] = useState(10);
+  const [songsPerPage, setSongsPerPage] = useState(25);
 
   useEffect(() => {
     loadData();
@@ -259,22 +268,42 @@ const Katalog = () => {
     }
   };
 
-  const filteredArtists = artists.filter(artist => {
+  const filteredArtists = useMemo(() => artists.filter(artist => {
     const query = searchQuery.toLowerCase();
     if (artist.name.toLowerCase().includes(query)) return true;
     if (artist.genre.toLowerCase().includes(query)) return true;
     if (artist.albums.some(album => album.name.toLowerCase().includes(query))) return true;
     if (artist.albums.some(album => album.songs.some(song => song.name.toLowerCase().includes(query)))) return true;
     return false;
-  });
+  }), [artists, searchQuery]);
 
-  const filteredSavedArtists = savedArtists.filter(artist => {
+  const filteredSavedArtists = useMemo(() => savedArtists.filter(artist => {
     const query = searchQuery.toLowerCase();
     if (artist.name.toLowerCase().includes(query)) return true;
     if (artist.genre.toLowerCase().includes(query)) return true;
     if (artist.albums.some(album => album.name.toLowerCase().includes(query))) return true;
     return false;
-  });
+  }), [savedArtists, searchQuery]);
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setArtistsPage(1);
+    setSongsPage(1);
+  }, [searchQuery]);
+
+  // Pagination calculations
+  const artistsTotalPages = Math.ceil(filteredSavedArtists.length / artistsPerPage);
+  const songsTotalPages = Math.ceil(filteredArtists.length / songsPerPage);
+
+  const paginatedSavedArtists = useMemo(() => {
+    const start = (artistsPage - 1) * artistsPerPage;
+    return filteredSavedArtists.slice(start, start + artistsPerPage);
+  }, [filteredSavedArtists, artistsPage, artistsPerPage]);
+
+  const paginatedArtists = useMemo(() => {
+    const start = (songsPage - 1) * songsPerPage;
+    return filteredArtists.slice(start, start + songsPerPage);
+  }, [filteredArtists, songsPage, songsPerPage]);
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
@@ -337,8 +366,8 @@ const Katalog = () => {
               </TabsList>
 
               {/* Artists Tab */}
-              <TabsContent value="artists" className="flex-1 min-h-0 mt-4">
-                <ScrollArea className="h-full">
+              <TabsContent value="artists" className="flex-1 min-h-0 mt-4 flex flex-col">
+                <ScrollArea className="flex-1">
                   {isLoading ? (
                     <div className="flex items-center justify-center py-12">
                       <div className="text-center space-y-3">
@@ -360,11 +389,11 @@ const Katalog = () => {
                     </div>
                   ) : (
                     <div className="space-y-3 pr-4 pb-4">
-                      {filteredSavedArtists.map((artist, index) => (
+                      {paginatedSavedArtists.map((artist, index) => (
                         <ArtistCard
                           key={artist.id}
                           artist={artist}
-                          index={index}
+                          index={(artistsPage - 1) * artistsPerPage + index}
                           onDelete={deleteArtist}
                           showDelete
                           onRefresh={() => {
@@ -376,11 +405,28 @@ const Katalog = () => {
                     </div>
                   )}
                 </ScrollArea>
+                {filteredSavedArtists.length > 0 && (
+                  <div className="shrink-0 border-t border-border">
+                    <Pagination
+                      currentPage={artistsPage}
+                      totalPages={artistsTotalPages}
+                      totalItems={filteredSavedArtists.length}
+                      itemsPerPage={artistsPerPage}
+                      itemsPerPageOptions={ITEMS_PER_PAGE_OPTIONS}
+                      onPageChange={(page) => setArtistsPage(page)}
+                      onItemsPerPageChange={(count) => {
+                        setArtistsPerPage(count);
+                        setArtistsPage(1);
+                      }}
+                      itemLabel="Künstler"
+                    />
+                  </div>
+                )}
               </TabsContent>
 
               {/* Songs Tab */}
-              <TabsContent value="songs" className="flex-1 min-h-0 mt-4">
-                <ScrollArea className="h-full">
+              <TabsContent value="songs" className="flex-1 min-h-0 mt-4 flex flex-col">
+                <ScrollArea className="flex-1">
                   {isLoading ? (
                     <div className="flex items-center justify-center py-12">
                       <div className="text-center space-y-3">
@@ -402,7 +448,7 @@ const Katalog = () => {
                     </div>
                   ) : (
                     <div className="space-y-2 pr-4 pb-4">
-                      {filteredArtists.map(artist => (
+                      {paginatedArtists.map(artist => (
                         <div key={artist.id} className="border border-border rounded-lg overflow-hidden">
                           {/* Artist Row */}
                           <button
@@ -513,6 +559,23 @@ const Katalog = () => {
                     </div>
                   )}
                 </ScrollArea>
+                {filteredArtists.length > 0 && (
+                  <div className="shrink-0 border-t border-border">
+                    <Pagination
+                      currentPage={songsPage}
+                      totalPages={songsTotalPages}
+                      totalItems={filteredArtists.length}
+                      itemsPerPage={songsPerPage}
+                      itemsPerPageOptions={ITEMS_PER_PAGE_OPTIONS}
+                      onPageChange={(page) => setSongsPage(page)}
+                      onItemsPerPageChange={(count) => {
+                        setSongsPerPage(count);
+                        setSongsPage(1);
+                      }}
+                      itemLabel="Künstler"
+                    />
+                  </div>
+                )}
               </TabsContent>
             </Tabs>
           </div>
