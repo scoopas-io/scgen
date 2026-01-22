@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
-import { ChevronDown, ChevronUp, Copy, Check, User, Mic, Disc, Music, Trash2, Image, Edit } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { ChevronDown, ChevronUp, Copy, Check, User, Mic, Disc, Music, Trash2, Image, Edit, RefreshCw, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { SongDetailDialog } from "./SongDetailDialog";
 import { supabase } from "@/integrations/supabase/client";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface SongData {
   id: string;
@@ -72,6 +73,7 @@ export function ArtistCard({ artist, index, onDelete, showDelete = false, onRefr
   const [selectedAlbumName, setSelectedAlbumName] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [songsData, setSongsData] = useState<Record<string, SongData[]>>({});
+  const [isRegeneratingImage, setIsRegeneratingImage] = useState(false);
 
   const imageUrl = artist.profileImageUrl || artist.profile_image_url;
 
@@ -103,6 +105,48 @@ export function ArtistCard({ artist, index, onDelete, showDelete = false, onRefr
     }
   };
 
+  const regenerateImage = async () => {
+    if (!artist.id) return;
+    
+    setIsRegeneratingImage(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/regenerate-image`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            artistId: artist.id,
+            artistName: artist.name,
+            genre: artist.genre,
+            style: artist.style,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Fehler bei der Bildgenerierung");
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success("Bild erfolgreich generiert!");
+        setImageError(false);
+        if (onRefresh) onRefresh();
+      } else {
+        throw new Error(data.error || "Unbekannter Fehler");
+      }
+    } catch (error) {
+      console.error("Image regeneration error:", error);
+      toast.error(error instanceof Error ? error.message : "Fehler bei der Bildgenerierung");
+    } finally {
+      setIsRegeneratingImage(false);
+    }
+  };
+
   const copyToClipboard = async (text: string, field: string) => {
     await navigator.clipboard.writeText(text);
     setCopiedField(field);
@@ -125,23 +169,27 @@ export function ArtistCard({ artist, index, onDelete, showDelete = false, onRefr
     if (onRefresh) onRefresh();
   };
 
-  const CopyButton = ({ text, field }: { text: string; field: string }) => (
-    <Button
-      variant="ghost"
-      size="icon"
-      className="h-8 w-8 shrink-0 text-muted-foreground hover:text-primary"
-      onClick={(e) => {
-        e.stopPropagation();
-        copyToClipboard(text, field);
-      }}
-    >
-      {copiedField === field ? (
-        <Check className="h-4 w-4 text-green-500" />
-      ) : (
-        <Copy className="h-4 w-4" />
-      )}
-    </Button>
+  const CopyButton = React.forwardRef<HTMLButtonElement, { text: string; field: string }>(
+    ({ text, field }, ref) => (
+      <Button
+        ref={ref}
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 shrink-0 text-muted-foreground hover:text-primary"
+        onClick={(e) => {
+          e.stopPropagation();
+          copyToClipboard(text, field);
+        }}
+      >
+        {copiedField === field ? (
+          <Check className="h-4 w-4 text-green-500" />
+        ) : (
+          <Copy className="h-4 w-4" />
+        )}
+      </Button>
+    )
   );
+  CopyButton.displayName = "CopyButton";
 
   return (
     <>
@@ -189,11 +237,34 @@ export function ArtistCard({ artist, index, onDelete, showDelete = false, onRefr
                   <span className="px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground text-xs">
                     {artist.style}
                   </span>
-                  {imageUrl && !imageError && (
+                  {imageUrl && !imageError ? (
                     <span className="px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 text-xs flex items-center gap-1">
                       <Image className="h-3 w-3" />
                       Bild
                     </span>
+                  ) : artist.id && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          className="px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 text-xs flex items-center gap-1 hover:bg-orange-500/30 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            regenerateImage();
+                          }}
+                          disabled={isRegeneratingImage}
+                        >
+                          {isRegeneratingImage ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <RefreshCw className="h-3 w-3" />
+                          )}
+                          {isRegeneratingImage ? "Generiere..." : "Bild fehlt"}
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Klicken um Bild zu generieren</p>
+                      </TooltipContent>
+                    </Tooltip>
                   )}
                 </div>
               </div>
