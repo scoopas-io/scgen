@@ -14,7 +14,97 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      albums: {
+        Row: {
+          artist_id: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          artist_id: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          artist_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "albums_artist_id_fkey"
+            columns: ["artist_id"]
+            isOneToOne: false
+            referencedRelation: "artists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      artists: {
+        Row: {
+          created_at: string
+          genre: string
+          id: string
+          name: string
+          personality: string
+          style: string
+          voice_prompt: string
+        }
+        Insert: {
+          created_at?: string
+          genre: string
+          id?: string
+          name: string
+          personality: string
+          style: string
+          voice_prompt: string
+        }
+        Update: {
+          created_at?: string
+          genre?: string
+          id?: string
+          name?: string
+          personality?: string
+          style?: string
+          voice_prompt?: string
+        }
+        Relationships: []
+      }
+      songs: {
+        Row: {
+          album_id: string
+          created_at: string
+          id: string
+          name: string
+          track_number: number
+        }
+        Insert: {
+          album_id: string
+          created_at?: string
+          id?: string
+          name: string
+          track_number: number
+        }
+        Update: {
+          album_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          track_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "songs_album_id_fkey"
+            columns: ["album_id"]
+            isOneToOne: false
+            referencedRelation: "albums"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

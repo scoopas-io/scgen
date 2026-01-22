@@ -33,11 +33,11 @@ export function GeneratorControls({
           value={[artistCount]}
           onValueChange={(v) => onArtistCountChange(v[0])}
           min={1}
-          max={10}
+          max={50}
           step={1}
           className="w-full"
         />
-        <p className="text-sm text-muted-foreground">1 - 10 Künstler generieren</p>
+        <p className="text-sm text-muted-foreground">1 - 50 Künstler generieren</p>
       </div>
 
       <div className="space-y-4">

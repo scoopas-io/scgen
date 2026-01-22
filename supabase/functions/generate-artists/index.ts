@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,9 +21,28 @@ serve(async (req) => {
     const { artistCount, albumCount, songCount }: GenerateRequest = await req.json();
     
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      throw new Error("Supabase credentials not configured");
+    }
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    // Fetch existing names from database to avoid duplicates
+    const [artistsResult, albumsResult, songsResult] = await Promise.all([
+      supabase.from("artists").select("name"),
+      supabase.from("albums").select("name"),
+      supabase.from("songs").select("name"),
+    ]);
+
+    const existingArtists = (artistsResult.data || []).map((a) => a.name);
+    const existingAlbums = (albumsResult.data || []).map((a) => a.name);
+    const existingSongs = (songsResult.data || []).map((s) => s.name);
 
     const systemPrompt = `Du bist ein kreativer Musik-Industrie-Experte, der einzigartige fiktive Künstlerprofile erstellt.
 
@@ -34,6 +54,11 @@ WICHTIGE REGELN:
 5. Jeder Künstler soll einen VÖLLIG anderen Stil haben
 6. Persönlichkeitsprompts sollen tiefgründig und charakteristisch sein
 7. SUNO Stimmfrequenz-Prompts müssen technisch präzise und einzigartig sein
+
+BEREITS EXISTIERENDE NAMEN (NICHT VERWENDEN!):
+- Künstler: ${existingArtists.slice(0, 100).join(", ") || "keine"}
+- Alben: ${existingAlbums.slice(0, 100).join(", ") || "keine"}
+- Songs: ${existingSongs.slice(0, 200).join(", ") || "keine"}
 
 Für den SUNO Stimmfrequenz-Prompt verwende diese Parameter-Kategorien:
 - Stimmhöhe (Bass, Bariton, Tenor, Alt, Sopran, etc.)
@@ -56,24 +81,9 @@ Für JEDEN Künstler erstelle:
   - name: Ein einzigartiger Albumname (kann mehrsprachig sein)
   - songs: Array mit ${songCount} einzigartigen Songtiteln
 
-Beispiel-Format:
-[
-  {
-    "name": "Velira Thornweiss",
-    "personality": "Eine mysteriöse Komponistin aus den Karpaten...",
-    "voicePrompt": "Deep contralto voice with a distinctive grainy texture, subtle Eastern European accent inflections, controlled vibrato that intensifies on sustained notes, breathy whisper-to-full-voice transitions, melancholic undertones with occasional fierce crescendos, resonant chest voice with ethereal head voice harmonics",
-    "genre": "Dark Folk",
-    "style": "Carpathian Chamber Folk",
-    "albums": [
-      {
-        "name": "Wurzelgesang",
-        "songs": ["Der Steinkreis erwacht", "Mondmilch", ...]
-      }
-    ]
-  }
-]
-
-WICHTIG: Antworte NUR mit dem JSON-Array, kein anderer Text!`;
+WICHTIG: 
+- Keiner der Namen darf in der Liste der existierenden Namen vorkommen!
+- Antworte NUR mit dem JSON-Array, kein anderer Text!`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -87,8 +97,8 @@ WICHTIG: Antworte NUR mit dem JSON-Array, kein anderer Text!`;
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        temperature: 0.9,
-        max_tokens: 8000,
+        temperature: 0.95,
+        max_tokens: 16000,
       }),
     });
 
@@ -123,7 +133,6 @@ WICHTIG: Antworte NUR mit dem JSON-Array, kein anderer Text!`;
     // Parse the JSON from the AI response
     let artists;
     try {
-      // Try to extract JSON from the response (in case there's surrounding text)
       const jsonMatch = content.match(/\[[\s\S]*\]/);
       if (jsonMatch) {
         artists = JSON.parse(jsonMatch[0]);
@@ -133,6 +142,94 @@ WICHTIG: Antworte NUR mit dem JSON-Array, kein anderer Text!`;
     } catch (parseError) {
       console.error("JSON parse error:", parseError, "Content:", content);
       throw new Error("Fehler beim Parsen der KI-Antwort");
+    }
+
+    // Save to database
+    for (const artist of artists) {
+      // Check if artist name already exists
+      const { data: existingArtist } = await supabase
+        .from("artists")
+        .select("id")
+        .eq("name", artist.name)
+        .maybeSingle();
+
+      if (existingArtist) {
+        console.log(`Artist ${artist.name} already exists, skipping`);
+        continue;
+      }
+
+      // Insert artist
+      const { data: insertedArtist, error: artistError } = await supabase
+        .from("artists")
+        .insert({
+          name: artist.name,
+          personality: artist.personality,
+          voice_prompt: artist.voicePrompt,
+          genre: artist.genre,
+          style: artist.style,
+        })
+        .select("id")
+        .single();
+
+      if (artistError) {
+        console.error("Error inserting artist:", artistError);
+        continue;
+      }
+
+      // Insert albums
+      for (const album of artist.albums || []) {
+        const { data: existingAlbum } = await supabase
+          .from("albums")
+          .select("id")
+          .eq("name", album.name)
+          .maybeSingle();
+
+        if (existingAlbum) {
+          console.log(`Album ${album.name} already exists, skipping`);
+          continue;
+        }
+
+        const { data: insertedAlbum, error: albumError } = await supabase
+          .from("albums")
+          .insert({
+            artist_id: insertedArtist.id,
+            name: album.name,
+          })
+          .select("id")
+          .single();
+
+        if (albumError) {
+          console.error("Error inserting album:", albumError);
+          continue;
+        }
+
+        // Insert songs
+        for (let i = 0; i < (album.songs || []).length; i++) {
+          const songName = album.songs[i];
+          const { data: existingSong } = await supabase
+            .from("songs")
+            .select("id")
+            .eq("name", songName)
+            .maybeSingle();
+
+          if (existingSong) {
+            console.log(`Song ${songName} already exists, skipping`);
+            continue;
+          }
+
+          const { error: songError } = await supabase
+            .from("songs")
+            .insert({
+              album_id: insertedAlbum.id,
+              name: songName,
+              track_number: i + 1,
+            });
+
+          if (songError) {
+            console.error("Error inserting song:", songError);
+          }
+        }
+      }
     }
 
     return new Response(JSON.stringify({ artists }), {
