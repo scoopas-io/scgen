@@ -4,7 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Generator from "./pages/Generator";
-import Songkatalog from "./pages/Songkatalog";
+import Katalog from "./pages/Katalog";
 import SocialTools from "./pages/SocialTools";
 import AudioGenerator from "./pages/AudioGenerator";
 import NotFound from "./pages/NotFound";
@@ -19,7 +19,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Generator />} />
-          <Route path="/songkatalog" element={<Songkatalog />} />
+          <Route path="/katalog" element={<Katalog />} />
           <Route path="/social-tools" element={<SocialTools />} />
           <Route path="/audio-generator" element={<AudioGenerator />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
