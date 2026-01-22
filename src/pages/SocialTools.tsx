@@ -593,8 +593,8 @@ const SocialTools = () => {
             </TabsList>
 
             {/* Generator Tab */}
-            <TabsContent value="generator" className="flex-1 min-h-0 mt-6">
-              <div className="grid lg:grid-cols-[400px_1fr] gap-6 h-full">
+            <TabsContent value="generator" className="flex-1 min-h-0 mt-6 overflow-hidden">
+              <div className="grid lg:grid-cols-[400px_1fr] gap-6 h-full min-h-0">
                 {/* Generator Panel */}
                 <ScrollArea className="h-full pr-4">
                   <div className="space-y-6 pb-4">
@@ -852,8 +852,8 @@ const SocialTools = () => {
                 </ScrollArea>
 
                 {/* Content Library */}
-                <div className="flex flex-col h-full">
-                  <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-col h-full min-h-0 overflow-hidden">
+                  <div className="flex items-center justify-between mb-4 shrink-0">
                     <h2 className="text-lg font-semibold flex items-center gap-2">
                       <Share2 className="h-5 w-5 text-primary" />
                       Content Bibliothek ({generatedContent.length})
@@ -864,7 +864,7 @@ const SocialTools = () => {
                     </Button>
                   </div>
 
-                  <ScrollArea className="flex-1">
+                  <ScrollArea className="flex-1 min-h-0">
                     {generatedContent.length === 0 ? (
                       <div className="flex flex-col items-center justify-center py-12 text-center">
                         <div className="h-16 w-16 rounded-xl bg-secondary/50 flex items-center justify-center mb-4">
