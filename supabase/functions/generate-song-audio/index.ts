@@ -46,22 +46,9 @@ serve(async (req) => {
       .update({ generation_status: "generating" })
       .eq("id", songId);
 
-    // Build the prompt for Suno - combining voice prompt and personality for lyrics/style
-    const musicPrompt = buildMusicPrompt({
-      title,
-      genre,
-      style,
-      voicePrompt,
-      personality,
-      bpm,
-      tonart,
-      artistName,
-    });
+    // Build style tags for Suno - includes genre, style, voice characteristics
+    const styleTags = buildStyleTags(genre, style, voicePrompt, personality, bpm, tonart);
 
-    // Build style tags for Suno
-    const styleTags = buildStyleTags(genre, style, bpm, tonart);
-
-    console.log("Music prompt:", musicPrompt);
     console.log("Style tags:", styleTags);
 
     // Build callback URL for Suno to notify when complete
@@ -69,6 +56,8 @@ serve(async (req) => {
     console.log("Callback URL:", callbackUrl);
 
     // Call Suno API (api.sunoapi.org) to generate music
+    // For customMode: false, Suno auto-generates lyrics based on the style
+    // This avoids the issue where voice prompts are sung as lyrics
     const sunoResponse = await fetch("https://api.sunoapi.org/api/v1/generate", {
       method: "POST",
       headers: {
@@ -76,12 +65,11 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        prompt: musicPrompt,
-        customMode: true,
+        prompt: `A ${genre} song called "${title}" in ${style} style`, // Description for non-custom mode
+        customMode: false, // Let Suno generate lyrics automatically
         instrumental: false,
         model: "V5",
         title: title,
-        style: styleTags,
         callbackUrl: callbackUrl,
       }),
     });
@@ -168,41 +156,79 @@ serve(async (req) => {
   }
 });
 
-function buildMusicPrompt(params: {
-  title: string;
-  genre: string;
-  style: string;
-  voicePrompt: string;
-  personality: string;
-  bpm: number | null;
-  tonart: string | null;
-  artistName: string;
-}): string {
-  // For custom mode, the prompt is used for lyrics/vocal direction
-  const parts: string[] = [];
-
-  // Add vocal/voice characteristics from voicePrompt
-  if (params.voicePrompt) {
-    parts.push(params.voicePrompt);
-  }
-
-  // Add mood/personality context
-  if (params.personality) {
-    parts.push(`\n\nMood and character: ${params.personality.substring(0, 300)}`);
-  }
-
-  return parts.join("\n") || `A ${params.genre} song in ${params.style} style`;
-}
-
-function buildStyleTags(genre: string, style: string, bpm: number | null, tonart: string | null): string {
+function buildStyleTags(
+  genre: string,
+  style: string,
+  voicePrompt: string,
+  personality: string,
+  bpm: number | null,
+  tonart: string | null
+): string {
   const tags: string[] = [];
   
+  // Add genre and style first
   if (genre) tags.push(genre);
   if (style) tags.push(style);
+  
+  // Extract key voice characteristics (e.g., "male voice", "female vocals", "raspy")
+  if (voicePrompt) {
+    // Extract short voice descriptors for style tags
+    const voiceKeywords = extractVoiceKeywords(voicePrompt);
+    if (voiceKeywords) tags.push(voiceKeywords);
+  }
+  
+  // Add mood from personality
+  if (personality) {
+    const moodKeywords = extractMoodKeywords(personality);
+    if (moodKeywords) tags.push(moodKeywords);
+  }
+  
+  // Add technical details
   if (bpm) tags.push(`${bpm} BPM`);
   if (tonart) tags.push(tonart);
   
   return tags.join(", ");
+}
+
+function extractVoiceKeywords(voicePrompt: string): string {
+  // Extract relevant voice descriptors for Suno style tags
+  const keywords: string[] = [];
+  const lowerPrompt = voicePrompt.toLowerCase();
+  
+  // Gender detection
+  if (lowerPrompt.includes("female") || lowerPrompt.includes("woman") || lowerPrompt.includes("weiblich")) {
+    keywords.push("female vocals");
+  } else if (lowerPrompt.includes("male") || lowerPrompt.includes("man") || lowerPrompt.includes("männlich")) {
+    keywords.push("male vocals");
+  }
+  
+  // Voice characteristics
+  if (lowerPrompt.includes("raspy") || lowerPrompt.includes("rauchig")) keywords.push("raspy");
+  if (lowerPrompt.includes("smooth") || lowerPrompt.includes("weich")) keywords.push("smooth");
+  if (lowerPrompt.includes("powerful") || lowerPrompt.includes("kraftvoll")) keywords.push("powerful");
+  if (lowerPrompt.includes("soft") || lowerPrompt.includes("sanft")) keywords.push("soft");
+  if (lowerPrompt.includes("high") || lowerPrompt.includes("hoch")) keywords.push("high-pitched");
+  if (lowerPrompt.includes("deep") || lowerPrompt.includes("tief")) keywords.push("deep voice");
+  if (lowerPrompt.includes("breathy") || lowerPrompt.includes("hauchig")) keywords.push("breathy");
+  
+  return keywords.slice(0, 3).join(", ");
+}
+
+function extractMoodKeywords(personality: string): string {
+  const keywords: string[] = [];
+  const lowerPersonality = personality.toLowerCase();
+  
+  // Mood detection
+  if (lowerPersonality.includes("melanchol") || lowerPersonality.includes("traurig")) keywords.push("melancholic");
+  if (lowerPersonality.includes("energetic") || lowerPersonality.includes("energisch")) keywords.push("energetic");
+  if (lowerPersonality.includes("romantic") || lowerPersonality.includes("romantisch")) keywords.push("romantic");
+  if (lowerPersonality.includes("aggressive") || lowerPersonality.includes("aggressiv")) keywords.push("aggressive");
+  if (lowerPersonality.includes("dreamy") || lowerPersonality.includes("verträumt")) keywords.push("dreamy");
+  if (lowerPersonality.includes("dark") || lowerPersonality.includes("dunkel")) keywords.push("dark");
+  if (lowerPersonality.includes("happy") || lowerPersonality.includes("fröhlich")) keywords.push("uplifting");
+  if (lowerPersonality.includes("rebel") || lowerPersonality.includes("aufrührer")) keywords.push("rebellious");
+  
+  return keywords.slice(0, 2).join(", ");
 }
 
 async function downloadAndStoreAudio(
