@@ -448,17 +448,32 @@ export function SunoGeneratorDialog({ open, onOpenChange }: Props) {
     link.click();
   };
 
-  const getStatusBadge = (status: string | null) => {
+  const getStatusBadge = (status: string | null, song?: SongWithDetails) => {
     switch (status) {
       case "completed":
         return <Badge className="bg-green-500/20 text-green-400"><CheckCircle2 className="h-3 w-3 mr-1" />Fertig</Badge>;
       case "processing":
       case "generating":
-        return <Badge className="bg-blue-500/20 text-blue-400"><Loader2 className="h-3 w-3 mr-1 animate-spin" />Generiert...</Badge>;
+        return (
+          <div className="flex items-center gap-2">
+            <Badge className="bg-blue-500/20 text-blue-400 animate-pulse">
+              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+              Audio wird generiert
+            </Badge>
+            <span className="text-xs text-muted-foreground">~2-3 Min</span>
+          </div>
+        );
       case "error":
         return <Badge className="bg-red-500/20 text-red-400"><XCircle className="h-3 w-3 mr-1" />Fehler</Badge>;
+      case "pending":
+        return (
+          <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/30">
+            <Clock className="h-3 w-3 mr-1" />
+            In Warteschlange
+          </Badge>
+        );
       default:
-        return <Badge variant="outline"><Clock className="h-3 w-3 mr-1" />Ausstehend</Badge>;
+        return <Badge variant="outline"><Clock className="h-3 w-3 mr-1" />Bereit</Badge>;
     }
   };
 
