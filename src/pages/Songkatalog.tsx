@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { AppHeader } from "@/components/AppHeader";
-import { SunoGeneratorDialog } from "@/components/SunoGeneratorDialog";
 import { SongDetailDialog } from "@/components/SongDetailDialog";
 import { exportCatalogAsCSV, exportCatalogAsJSON } from "@/lib/exportCatalog";
 import { toast } from "sonner";
@@ -83,7 +82,6 @@ const Songkatalog = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedArtists, setExpandedArtists] = useState<Set<string>>(new Set());
   const [expandedAlbums, setExpandedAlbums] = useState<Set<string>>(new Set());
-  const [sunoDialogOpen, setSunoDialogOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [selectedSong, setSelectedSong] = useState<{ song: Song; artistName: string; albumName: string } | null>(null);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
@@ -238,10 +236,7 @@ const Songkatalog = () => {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <AppHeader 
-        stats={stats} 
-        onOpenSunoDialog={() => setSunoDialogOpen(true)} 
-      />
+      <AppHeader stats={stats} />
 
       <main className="flex-1 min-h-0 overflow-hidden">
         <div className="container h-full py-6">
@@ -423,11 +418,6 @@ const Songkatalog = () => {
           </div>
         </div>
       </main>
-
-      <SunoGeneratorDialog 
-        open={sunoDialogOpen} 
-        onOpenChange={setSunoDialogOpen} 
-      />
 
       {selectedSong && (
         <SongDetailDialog
