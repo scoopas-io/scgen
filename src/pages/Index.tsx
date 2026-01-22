@@ -111,6 +111,7 @@ const Index = () => {
         created_at: artist.created_at,
         profile_image_url: artist.profile_image_url,
         katalognummer: artist.katalognummer,
+        language: artist.language,
       });
     }
 

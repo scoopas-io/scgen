@@ -56,7 +56,47 @@ export interface Artist {
   profileImageUrl?: string;
   profile_image_url?: string;
   katalognummer?: string;
+  language?: string;
 }
+
+// Language flag mapping
+const LANGUAGE_FLAGS: Record<string, { flag: string; name: string }> = {
+  de: { flag: "🇩🇪", name: "Deutsch" },
+  en: { flag: "🇬🇧", name: "English" },
+  es: { flag: "🇪🇸", name: "Español" },
+  fr: { flag: "🇫🇷", name: "Français" },
+  it: { flag: "🇮🇹", name: "Italiano" },
+  pt: { flag: "🇧🇷", name: "Português" },
+  nl: { flag: "🇳🇱", name: "Nederlands" },
+  pl: { flag: "🇵🇱", name: "Polski" },
+  ru: { flag: "🇷🇺", name: "Русский" },
+  uk: { flag: "🇺🇦", name: "Українська" },
+  tr: { flag: "🇹🇷", name: "Türkçe" },
+  ar: { flag: "🇸🇦", name: "العربية" },
+  he: { flag: "🇮🇱", name: "עברית" },
+  hi: { flag: "🇮🇳", name: "हिन्दी" },
+  zh: { flag: "🇨🇳", name: "中文" },
+  ja: { flag: "🇯🇵", name: "日本語" },
+  ko: { flag: "🇰🇷", name: "한국어" },
+  th: { flag: "🇹🇭", name: "ไทย" },
+  vi: { flag: "🇻🇳", name: "Tiếng Việt" },
+  id: { flag: "🇮🇩", name: "Bahasa Indonesia" },
+  ms: { flag: "🇲🇾", name: "Bahasa Melayu" },
+  tl: { flag: "🇵🇭", name: "Filipino" },
+  sv: { flag: "🇸🇪", name: "Svenska" },
+  da: { flag: "🇩🇰", name: "Dansk" },
+  fi: { flag: "🇫🇮", name: "Suomi" },
+  no: { flag: "🇳🇴", name: "Norsk" },
+  el: { flag: "🇬🇷", name: "Ελληνικά" },
+  cs: { flag: "🇨🇿", name: "Čeština" },
+  hu: { flag: "🇭🇺", name: "Magyar" },
+  ro: { flag: "🇷🇴", name: "Română" },
+  bg: { flag: "🇧🇬", name: "Български" },
+  hr: { flag: "🇭🇷", name: "Hrvatski" },
+  sk: { flag: "🇸🇰", name: "Slovenčina" },
+  sr: { flag: "🇷🇸", name: "Српски" },
+  sw: { flag: "🇰🇪", name: "Kiswahili" },
+};
 
 interface ArtistCardProps {
   artist: Artist;
@@ -233,6 +273,19 @@ export function ArtistCard({ artist, index, onDelete, showDelete = false, onRefr
                   )}
                 </div>
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  {/* Language Flag */}
+                  {artist.language && LANGUAGE_FLAGS[artist.language] && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="text-base cursor-default" title={LANGUAGE_FLAGS[artist.language].name}>
+                          {LANGUAGE_FLAGS[artist.language].flag}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{LANGUAGE_FLAGS[artist.language].name}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
                   <span className="px-2 py-0.5 rounded-full bg-primary/20 text-primary text-xs font-medium">
                     {artist.genre}
                   </span>
