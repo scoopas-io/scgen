@@ -35,6 +35,8 @@ serve(async (req) => {
       scheduledAt,
     } = await req.json();
 
+    console.log(`Starting content generation for ${artistName}, type: ${contentType}, platform: ${platform}`);
+
     // Generate text content (caption, hashtags, title)
     const textPrompt = `Du bist ein Social Media Manager für den Künstler "${artistName}".
     
@@ -96,6 +98,7 @@ Die Caption sollte:
 
     const textData = await textResponse.json();
     const textContent = textData.choices?.[0]?.message?.content;
+    console.log("Text content generated successfully");
     
     let parsedContent;
     try {
@@ -118,7 +121,144 @@ Die Caption sollte:
     let imageUrl = null;
     let videoUrl = null;
 
-    // Generate image for post/story
+    // Generate video for reel content - PRIORITY
+    if (contentType === "reel" && artistImageUrl) {
+      console.log("Generating video content for reel...");
+      console.log("Artist image URL:", artistImageUrl);
+      
+      const videoPrompt = `${artistGenre} music artist promotional video. ${parsedContent.videoScript || customPrompt || "Dynamic, engaging music content"}. Modern, stylish, social media ready. Smooth camera movement, professional lighting.`;
+      console.log("Video prompt:", videoPrompt);
+
+      try {
+        // Use image-to-video generation with artist image as starting frame
+        console.log("Calling video generation API...");
+        const videoResponse = await fetch("https://ai.gateway.lovable.dev/v1/videos/generations", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "wavespeed-ai/wan-2.1-i2v-480p",
+            prompt: videoPrompt,
+            image: artistImageUrl,
+            duration: 5,
+            aspect_ratio: "9:16",
+          }),
+        });
+
+        console.log("Video API response status:", videoResponse.status);
+
+        if (videoResponse.ok) {
+          const videoData = await videoResponse.json();
+          console.log("Video API response data:", JSON.stringify(videoData, null, 2));
+          const generatedVideoUrl = videoData.data?.[0]?.url;
+          
+          if (generatedVideoUrl) {
+            console.log("Video generated successfully, downloading and uploading...");
+            
+            // Download video
+            const videoFetchResponse = await fetch(generatedVideoUrl);
+            if (!videoFetchResponse.ok) {
+              console.error("Failed to download video:", videoFetchResponse.status);
+            } else {
+              const videoBuffer = new Uint8Array(await videoFetchResponse.arrayBuffer());
+              console.log("Video downloaded, size:", videoBuffer.length);
+              
+              const videoFilename = `${artistId}/${Date.now()}-reel.mp4`;
+              
+              const { error: videoUploadError } = await supabase.storage
+                .from("social-content")
+                .upload(videoFilename, videoBuffer, {
+                  contentType: "video/mp4",
+                  upsert: true,
+                });
+
+              if (videoUploadError) {
+                console.error("Video upload error:", videoUploadError);
+              } else {
+                const { data: { publicUrl } } = supabase.storage
+                  .from("social-content")
+                  .getPublicUrl(videoFilename);
+                videoUrl = publicUrl;
+                console.log("Video uploaded successfully:", videoUrl);
+              }
+            }
+          } else {
+            console.log("No video URL in response, videoData:", JSON.stringify(videoData));
+          }
+        } else {
+          const errorText = await videoResponse.text();
+          console.error("Video generation API error:", videoResponse.status, errorText);
+        }
+      } catch (videoError) {
+        console.error("Video generation exception:", videoError);
+      }
+
+      // If video generation failed, generate a cover image as fallback
+      if (!videoUrl && artistImageUrl) {
+        console.log("Video generation failed, generating cover image as fallback...");
+        
+        const coverPrompt = `Create a dynamic ${platform} reel cover image for a ${artistGenre} musician. 
+Style: Eye-catching, modern, vertical format for reels.
+Theme: ${customPrompt || "Music promotion, energetic, engaging"}
+Make it look like a video thumbnail with dynamic energy.`;
+
+        try {
+          const coverResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${LOVABLE_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "google/gemini-2.5-flash-image-preview",
+              messages: [
+                {
+                  role: "user",
+                  content: [
+                    { type: "text", text: coverPrompt },
+                    { type: "image_url", image_url: { url: artistImageUrl } },
+                  ],
+                },
+              ],
+              modalities: ["image", "text"],
+            }),
+          });
+
+          if (coverResponse.ok) {
+            const coverData = await coverResponse.json();
+            const coverImageUrl = coverData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+            
+            if (coverImageUrl) {
+              const base64Data = coverImageUrl.replace(/^data:image\/\w+;base64,/, "");
+              const imageBuffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+              
+              const filename = `${artistId}/${Date.now()}-reel-cover.png`;
+              
+              const { error: uploadError } = await supabase.storage
+                .from("social-content")
+                .upload(filename, imageBuffer, {
+                  contentType: "image/png",
+                  upsert: true,
+                });
+
+              if (!uploadError) {
+                const { data: { publicUrl } } = supabase.storage
+                  .from("social-content")
+                  .getPublicUrl(filename);
+                imageUrl = publicUrl;
+                console.log("Cover image uploaded:", imageUrl);
+              }
+            }
+          }
+        } catch (coverError) {
+          console.error("Cover image generation error:", coverError);
+        }
+      }
+    }
+
+    // Generate image for post/story (not for reel if video was generated)
     if (artistImageUrl && (contentType === "post" || contentType === "story")) {
       console.log("Generating social content image...");
       
@@ -174,6 +314,7 @@ Aspect ratio: ${contentType === "story" ? "9:16 portrait" : "1:1 square"}`;
                 .from("social-content")
                 .getPublicUrl(filename);
               imageUrl = publicUrl;
+              console.log("Image uploaded successfully:", imageUrl);
             }
           }
         } else {
@@ -184,126 +325,11 @@ Aspect ratio: ${contentType === "story" ? "9:16 portrait" : "1:1 square"}`;
       }
     }
 
-    // Generate video for reel content
-    if (contentType === "reel" && artistImageUrl) {
-      console.log("Generating video content...");
-      
-      const videoPrompt = `${artistGenre} music artist promotional video. ${parsedContent.videoScript || customPrompt || "Dynamic, engaging music content"}. Modern, stylish, social media ready. Vertical 9:16 aspect ratio for Reels/TikTok.`;
-
-      try {
-        // Use image-to-video generation with artist image as starting frame
-        const videoResponse = await fetch("https://ai.gateway.lovable.dev/v1/videos/generations", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "wavespeed-ai/wan-2.1-i2v-480p",
-            prompt: videoPrompt,
-            image: artistImageUrl,
-            duration: 5,
-            aspect_ratio: "9:16",
-          }),
-        });
-
-        if (videoResponse.ok) {
-          const videoData = await videoResponse.json();
-          const generatedVideoUrl = videoData.data?.[0]?.url;
-          
-          if (generatedVideoUrl) {
-            console.log("Video generated, downloading and uploading...");
-            
-            // Download video
-            const videoFetchResponse = await fetch(generatedVideoUrl);
-            const videoBuffer = new Uint8Array(await videoFetchResponse.arrayBuffer());
-            
-            const videoFilename = `${artistId}/${Date.now()}-reel.mp4`;
-            
-            const { error: videoUploadError } = await supabase.storage
-              .from("social-content")
-              .upload(videoFilename, videoBuffer, {
-                contentType: "video/mp4",
-                upsert: true,
-              });
-
-            if (videoUploadError) {
-              console.error("Video upload error:", videoUploadError);
-            } else {
-              const { data: { publicUrl } } = supabase.storage
-                .from("social-content")
-                .getPublicUrl(videoFilename);
-              videoUrl = publicUrl;
-              console.log("Video uploaded successfully:", videoUrl);
-            }
-          }
-        } else {
-          const errorText = await videoResponse.text();
-          console.error("Video generation failed:", errorText);
-          // Fallback: generate an image instead
-          console.log("Falling back to image generation for reel cover...");
-          
-          const coverPrompt = `Create a dynamic ${platform} reel cover image for a ${artistGenre} musician. 
-Style: Eye-catching, modern, vertical format for reels.
-Theme: ${customPrompt || "Music promotion, energetic, engaging"}
-Make it look like a video thumbnail with play button overlay feel.`;
-
-          const coverResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${LOVABLE_API_KEY}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              model: "google/gemini-2.5-flash-image-preview",
-              messages: [
-                {
-                  role: "user",
-                  content: [
-                    { type: "text", text: coverPrompt },
-                    { type: "image_url", image_url: { url: artistImageUrl } },
-                  ],
-                },
-              ],
-              modalities: ["image", "text"],
-            }),
-          });
-
-          if (coverResponse.ok) {
-            const coverData = await coverResponse.json();
-            const coverImageUrl = coverData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-            
-            if (coverImageUrl) {
-              const base64Data = coverImageUrl.replace(/^data:image\/\w+;base64,/, "");
-              const imageBuffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
-              
-              const filename = `${artistId}/${Date.now()}-reel-cover.png`;
-              
-              const { error: uploadError } = await supabase.storage
-                .from("social-content")
-                .upload(filename, imageBuffer, {
-                  contentType: "image/png",
-                  upsert: true,
-                });
-
-              if (!uploadError) {
-                const { data: { publicUrl } } = supabase.storage
-                  .from("social-content")
-                  .getPublicUrl(filename);
-                imageUrl = publicUrl;
-              }
-            }
-          }
-        }
-      } catch (videoError) {
-        console.error("Video generation error:", videoError);
-      }
-    }
-
     // Determine status based on scheduling
     const status = scheduledAt ? "scheduled" : "generated";
 
     // Save to database
+    console.log("Saving content to database...");
     const { data: insertedContent, error: insertError } = await supabase
       .from("social_content")
       .insert({
@@ -326,6 +352,9 @@ Make it look like a video thumbnail with play button overlay feel.`;
       console.error("Database insert error:", insertError);
       throw new Error("Failed to save content");
     }
+
+    console.log("Content saved successfully:", insertedContent.id);
+    console.log("Has video:", !!videoUrl, "Has image:", !!imageUrl);
 
     return new Response(
       JSON.stringify({ 

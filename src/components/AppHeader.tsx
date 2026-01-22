@@ -13,7 +13,7 @@ export const AppHeader = ({ stats, onOpenSunoDialog }: AppHeaderProps) => {
   const location = useLocation();
   
   const navItems = [
-    { path: "/", label: "Generator", icon: Zap },
+    { path: "/", label: "KI-Artists", icon: Zap },
     { path: "/songkatalog", label: "Songkatalog", icon: ListMusic },
     { path: "/social-tools", label: "Social-Tools", icon: Share2 },
   ];
@@ -64,7 +64,7 @@ export const AppHeader = ({ stats, onOpenSunoDialog }: AppHeaderProps) => {
                 onClick={onOpenSunoDialog}
               >
                 <Volume2 className="h-4 w-4" />
-                <span className="hidden sm:inline">scoopas.ai Alben</span>
+                <span className="hidden sm:inline">Album-Generator</span>
               </Button>
             )}
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
