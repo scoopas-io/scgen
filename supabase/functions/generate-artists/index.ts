@@ -208,12 +208,14 @@ WICHTIG: Antworte NUR mit dem JSON-Array!`;
       throw new Error("Fehler beim Parsen der KI-Antwort");
     }
 
-    console.log(`Generated ${artists.length} artists, now generating images...`);
+    console.log(`Generated ${artists.length} artists, now processing...`);
 
-    // Generate images and save to database
+    // Process artists - first save all to DB, then generate images in parallel
     const savedArtists = [];
     let katalogIndex = lastKatalogNr + 1;
-
+    
+    // Step 1: Save all artists to DB first (fast)
+    const artistsToProcess = [];
     for (let artistIdx = 0; artistIdx < artists.length; artistIdx++) {
       const artist = artists[artistIdx];
       
@@ -224,57 +226,9 @@ WICHTIG: Antworte NUR mit dem JSON-Array!`;
         continue;
       }
 
-      let profileImageUrl = null;
-
-      // Generate profile image
-      try {
-        const imagePrompt = artist.imagePrompt || `Portrait of a ${artist.genre} musician, ${artist.style} aesthetic, professional photo, artistic lighting`;
-        console.log(`Generating image for ${artist.name}...`);
-        
-        const imageResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "google/gemini-2.5-flash-image-preview",
-            messages: [{ role: "user", content: `Generate a professional artist portrait photo: ${imagePrompt}. The image should be suitable for a music artist profile, high quality, artistic.` }],
-            modalities: ["image", "text"],
-          }),
-        });
-
-        if (imageResponse.ok) {
-          const imageData = await imageResponse.json();
-          const base64Image = imageData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-          
-          if (base64Image && base64Image.startsWith('data:image')) {
-            // Extract base64 data
-            const base64Data = base64Image.split(',')[1];
-            const imageBytes = decode(base64Data);
-            const fileName = `${artist.name.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.png`;
-            
-            // Upload to storage
-            const { data: uploadData, error: uploadError } = await supabase.storage
-              .from('artist-images')
-              .upload(fileName, imageBytes, { contentType: 'image/png', upsert: true });
-
-            if (!uploadError && uploadData) {
-              const { data: publicUrl } = supabase.storage.from('artist-images').getPublicUrl(fileName);
-              profileImageUrl = publicUrl.publicUrl;
-              console.log(`Image uploaded for ${artist.name}`);
-            } else {
-              console.error("Upload error:", uploadError);
-            }
-          }
-        }
-      } catch (imgError) {
-        console.error(`Image generation failed for ${artist.name}:`, imgError);
-      }
-
       const katalognummer = generateKatalogNr(katalogIndex++);
 
-      // Insert artist with neutral labels (no AI/KI references)
+      // Insert artist without image first
       const { data: insertedArtist, error: artistError } = await supabase
         .from("artists")
         .insert({
@@ -283,7 +237,7 @@ WICHTIG: Antworte NUR mit dem JSON-Array!`;
           voice_prompt: artist.voicePrompt,
           genre: artist.genre,
           style: artist.style,
-          profile_image_url: profileImageUrl,
+          profile_image_url: null,
           katalognummer,
           verlag: 'Musikverlag',
           label: 'Eigenproduktion',
@@ -356,16 +310,77 @@ WICHTIG: Antworte NUR mit dem JSON-Array!`;
           }
         }
 
-        savedAlbums.push({ name: album.name, songs: savedSongs });
+        savedAlbums.push({ id: insertedAlbum.id, name: album.name, songs: savedSongs });
       }
 
-      savedArtists.push({
+      artistsToProcess.push({
         ...artist,
         id: insertedArtist.id,
-        profileImageUrl,
         katalognummer,
         albums: savedAlbums,
       });
+    }
+
+    console.log(`Saved ${artistsToProcess.length} artists to DB, generating images in parallel...`);
+
+    // Step 2: Generate images in parallel (batches of 3 to avoid rate limits)
+    const PARALLEL_IMAGES = 3;
+    for (let i = 0; i < artistsToProcess.length; i += PARALLEL_IMAGES) {
+      const batch = artistsToProcess.slice(i, i + PARALLEL_IMAGES);
+      
+      const imagePromises = batch.map(async (artist) => {
+        try {
+          const imagePrompt = artist.imagePrompt || `Portrait of a ${artist.genre} musician, ${artist.style} aesthetic, professional photo, artistic lighting`;
+          console.log(`Generating image for ${artist.name}...`);
+          
+          const imageResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${LOVABLE_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "google/gemini-2.5-flash-image-preview",
+              messages: [{ role: "user", content: `Generate a professional artist portrait photo: ${imagePrompt}. High quality, artistic.` }],
+              modalities: ["image", "text"],
+            }),
+          });
+
+          if (imageResponse.ok) {
+            const imageData = await imageResponse.json();
+            const base64Image = imageData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+            
+            if (base64Image && base64Image.startsWith('data:image')) {
+              const base64Data = base64Image.split(',')[1];
+              const imageBytes = decode(base64Data);
+              const fileName = `${artist.name.replace(/[^a-zA-Z0-9\u4e00-\u9fff\uac00-\ud7af]/g, '_')}_${Date.now()}.png`;
+              
+              const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('artist-images')
+                .upload(fileName, imageBytes, { contentType: 'image/png', upsert: true });
+
+              if (!uploadError && uploadData) {
+                const { data: publicUrl } = supabase.storage.from('artist-images').getPublicUrl(fileName);
+                
+                // Update artist with image URL
+                await supabase.from("artists").update({ profile_image_url: publicUrl.publicUrl }).eq("id", artist.id);
+                artist.profileImageUrl = publicUrl.publicUrl;
+                console.log(`Image uploaded for ${artist.name}`);
+              }
+            }
+          }
+        } catch (imgError) {
+          console.error(`Image generation failed for ${artist.name}:`, imgError);
+        }
+        return artist;
+      });
+
+      await Promise.all(imagePromises);
+    }
+
+    // Build final response
+    for (const artist of artistsToProcess) {
+      savedArtists.push(artist);
     }
 
     console.log(`Saved ${savedArtists.length} artists to database`);
