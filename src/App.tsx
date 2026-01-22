@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Generator from "./pages/Generator";
 import Songkatalog from "./pages/Songkatalog";
 import SocialTools from "./pages/SocialTools";
+import AudioGenerator from "./pages/AudioGenerator";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -20,6 +21,7 @@ const App = () => (
           <Route path="/" element={<Generator />} />
           <Route path="/songkatalog" element={<Songkatalog />} />
           <Route path="/social-tools" element={<SocialTools />} />
+          <Route path="/audio-generator" element={<AudioGenerator />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

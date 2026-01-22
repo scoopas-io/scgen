@@ -6,14 +6,14 @@ import { cn } from "@/lib/utils";
 
 interface AppHeaderProps {
   stats: { artists: number; albums: number; songs: number };
-  onOpenSunoDialog?: () => void;
 }
 
-export const AppHeader = ({ stats, onOpenSunoDialog }: AppHeaderProps) => {
+export const AppHeader = ({ stats }: AppHeaderProps) => {
   const location = useLocation();
   
   const navItems = [
     { path: "/", label: "KI-Artists", icon: Zap },
+    { path: "/audio-generator", label: "Audio-Generator", icon: Volume2 },
     { path: "/songkatalog", label: "Songkatalog", icon: ListMusic },
     { path: "/social-tools", label: "Social-Tools", icon: Share2 },
   ];
@@ -56,17 +56,6 @@ export const AppHeader = ({ stats, onOpenSunoDialog }: AppHeaderProps) => {
                 </Button>
               ))}
             </nav>
-            {onOpenSunoDialog && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="gap-2"
-                onClick={onOpenSunoDialog}
-              >
-                <Volume2 className="h-4 w-4" />
-                <span className="hidden sm:inline">Album-Generator</span>
-              </Button>
-            )}
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <div className="flex items-center gap-1.5">
                 <Database className="h-3.5 w-3.5 text-primary" />

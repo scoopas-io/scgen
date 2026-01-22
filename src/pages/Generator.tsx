@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
-import { Music, Zap, History, X, Database, Download, FileJson, FileSpreadsheet, Volume2 } from "lucide-react";
+import { Music, Zap, History, X, Database, Download, FileJson, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GeneratorControls } from "@/components/GeneratorControls";
 import { GenreFilter } from "@/components/GenreFilter";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { ArtistCard, type Artist } from "@/components/ArtistCard";
 import { LoadingState, type GenerationPhase } from "@/components/LoadingState";
-import { SunoGeneratorDialog } from "@/components/SunoGeneratorDialog";
 import { ScoopasIcon } from "@/components/ScoopasIcon";
 import { exportCatalogAsCSV, exportCatalogAsJSON } from "@/lib/exportCatalog";
 import { toast } from "sonner";
@@ -27,7 +26,6 @@ const Generator = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [stats, setStats] = useState({ artists: 0, albums: 0, songs: 0 });
-  const [sunoDialogOpen, setSunoDialogOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [generationState, setGenerationState] = useState<{
     phase: GenerationPhase;
@@ -268,10 +266,7 @@ const Generator = () => {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <AppHeader 
-        stats={stats} 
-        onOpenSunoDialog={() => setSunoDialogOpen(true)} 
-      />
+      <AppHeader stats={stats} />
 
       <main className="flex-1 min-h-0 overflow-hidden">
         <div className="container h-full py-4">
@@ -462,11 +457,6 @@ const Generator = () => {
           </div>
         </div>
       </footer>
-
-      <SunoGeneratorDialog 
-        open={sunoDialogOpen} 
-        onOpenChange={setSunoDialogOpen} 
-      />
     </div>
   );
 };
