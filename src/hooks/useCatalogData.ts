@@ -66,25 +66,77 @@ export function useCatalogData() {
   const [stats, setStats] = useState<CatalogStats>({ artists: 0, albums: 0, songs: 0 });
   const [isLoading, setIsLoading] = useState(true);
 
+  const fetchAll = useCallback(async <T,>(
+    table: "artists" | "albums" | "songs",
+    select: string,
+    orderBy: Array<{ column: string; ascending?: boolean }> = [],
+    pageSize = 1000
+  ): Promise<T[]> => {
+    const all: T[] = [];
+    let from = 0;
+
+    while (true) {
+      let q: any = supabase.from(table).select(select);
+      for (const ord of orderBy) {
+        q = q.order(ord.column, { ascending: ord.ascending ?? true });
+      }
+      q = q.range(from, from + pageSize - 1);
+
+      const { data, error } = await q;
+      if (error) throw error;
+
+      const batch = (data || []) as T[];
+      all.push(...batch);
+      if (batch.length < pageSize) break;
+      from += pageSize;
+    }
+
+    return all;
+  }, []);
+
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Single batch load - no N+1 queries
-      const [artistsRes, albumsRes, songsRes] = await Promise.all([
-        supabase.from("artists").select("*").order("created_at", { ascending: false }),
-        supabase.from("albums").select("*").order("created_at", { ascending: true }),
-        supabase.from("songs").select("*").order("track_number", { ascending: true }),
+      // IMPORTANT: The backend caps result sets to 1000 rows by default.
+      // We therefore:
+      // 1) read exact counts via count queries
+      // 2) load full catalog data in 1000-row pages
+      const [counts, artistsData, albumsData, songsData] = await Promise.all([
+        (async (): Promise<CatalogStats> => {
+          const [a, al, s] = await Promise.all([
+            supabase.from("artists").select("id", { count: "exact", head: true }),
+            supabase.from("albums").select("id", { count: "exact", head: true }),
+            supabase.from("songs").select("id", { count: "exact", head: true }),
+          ]);
+
+          // If count fails for any reason, fall back to 0 (we'll still render data lists).
+          return {
+            artists: a.count ?? 0,
+            albums: al.count ?? 0,
+            songs: s.count ?? 0,
+          };
+        })(),
+        fetchAll<any>("artists", "*", [{ column: "created_at", ascending: false }]),
+        fetchAll<any>(
+          "albums",
+          "*",
+          [
+            { column: "artist_id", ascending: true },
+            { column: "created_at", ascending: true },
+          ]
+        ),
+        fetchAll<any>(
+          "songs",
+          "*",
+          [
+            { column: "album_id", ascending: true },
+            { column: "track_number", ascending: true },
+            { column: "created_at", ascending: true },
+          ]
+        ),
       ]);
 
-      const artistsData = artistsRes.data || [];
-      const albumsData = albumsRes.data || [];
-      const songsData = songsRes.data || [];
-
-      setStats({
-        artists: artistsData.length,
-        albums: albumsData.length,
-        songs: songsData.length,
-      });
+      setStats(counts);
 
       // Create lookup maps for O(1) access
       const songsByAlbum = new Map<string, Song[]>();
@@ -117,7 +169,8 @@ export function useCatalogData() {
           id: album.id,
           name: album.name,
           release_date: album.release_date,
-          songs: songsByAlbum.get(album.id) || [],
+          // Ensure deterministic ordering within the album
+          songs: (songsByAlbum.get(album.id) || []).slice().sort((a, b) => (a.track_number ?? 0) - (b.track_number ?? 0)),
         })),
       }));
 
@@ -128,7 +181,7 @@ export function useCatalogData() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [fetchAll]);
 
   useEffect(() => {
     loadData();
