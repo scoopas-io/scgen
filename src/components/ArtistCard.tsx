@@ -351,7 +351,7 @@ export function ArtistCard({ artist, index, onDelete, showDelete = false, onRefr
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                 <Mic className="h-4 w-4" />
-                <span>SUNO Stimmfrequenz Prompt</span>
+                <span>scoopas Stimmfrequenz Prompt</span>
               </div>
               <div className="flex items-start gap-2 p-4 rounded-lg bg-secondary/50">
                 <p className="text-sm text-foreground flex-1 leading-relaxed font-mono">
