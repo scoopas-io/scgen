@@ -38,77 +38,121 @@ interface CatalogSong {
   bemerkungen: string;
 }
 
+// Helper function to fetch all rows in batches (bypasses 1000 row limit)
+async function fetchAllBatched<T>(
+  table: "artists" | "albums" | "songs",
+  select: string,
+  orderBy: Array<{ column: string; ascending?: boolean }> = [],
+  filters?: { column: string; value: string }[],
+  pageSize = 1000
+): Promise<T[]> {
+  const all: T[] = [];
+  let from = 0;
+
+  while (true) {
+    let query: any = supabase.from(table).select(select);
+    
+    // Apply filters
+    if (filters) {
+      for (const filter of filters) {
+        query = query.eq(filter.column, filter.value);
+      }
+    }
+    
+    // Apply ordering
+    for (const ord of orderBy) {
+      query = query.order(ord.column, { ascending: ord.ascending ?? true });
+    }
+    
+    query = query.range(from, from + pageSize - 1);
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    const batch = (data || []) as T[];
+    all.push(...batch);
+    
+    if (batch.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return all;
+}
+
 export async function exportCatalogAsCSV() {
   try {
-    // Fetch all data with relationships
-    const { data: artists, error: artistsError } = await supabase
-      .from("artists")
-      .select("*")
-      .order("created_at", { ascending: true });
+    toast.info("Lade Katalogdaten...");
 
-    if (artistsError) throw artistsError;
+    // Fetch all data in batches - no more 1000 row limit
+    const [artists, albums, songs] = await Promise.all([
+      fetchAllBatched<any>("artists", "*", [{ column: "created_at", ascending: true }]),
+      fetchAllBatched<any>("albums", "*", [{ column: "artist_id", ascending: true }, { column: "created_at", ascending: true }]),
+      fetchAllBatched<any>("songs", "*", [{ column: "album_id", ascending: true }, { column: "track_number", ascending: true }]),
+    ]);
+
+    // Create lookup maps for efficient access
+    const artistsById = new Map(artists.map(a => [a.id, a]));
+    const albumsById = new Map(albums.map(a => [a.id, a]));
+    const songsByAlbum = new Map<string, any[]>();
+    
+    for (const song of songs) {
+      const existing = songsByAlbum.get(song.album_id) || [];
+      existing.push(song);
+      songsByAlbum.set(song.album_id, existing);
+    }
 
     const catalogEntries: CatalogSong[] = [];
 
-    for (const artist of artists || []) {
-      const { data: albums } = await supabase
-        .from("albums")
-        .select("*")
-        .eq("artist_id", artist.id)
-        .order("created_at", { ascending: true });
+    for (const album of albums) {
+      const artist = artistsById.get(album.artist_id);
+      if (!artist) continue;
 
-      for (const album of albums || []) {
-        const { data: songs } = await supabase
-          .from("songs")
-          .select("*")
-          .eq("album_id", album.id)
-          .order("track_number", { ascending: true });
+      const albumSongs = songsByAlbum.get(album.id) || [];
 
-        for (const song of songs || []) {
-          // Clean up AI/KI references - replace with neutral terms
-          const cleanVerlag = (artist.verlag || "Eigenverlag").replace(/KI-|AI-|AI |KI /gi, "");
-          const cleanLabel = (artist.label || "Independent").replace(/KI-|AI-|AI |KI |AI Records/gi, "Eigenproduktion");
-          const cleanRechteMaster = (artist.rechteinhaber_master || "Independent").replace(/KI-|AI-|AI |KI |AI Records/gi, "Eigenproduktion");
-          const cleanRechtePublishing = (artist.rechteinhaber_publishing || "Eigenverlag").replace(/KI-|AI-|AI |KI /gi, "");
-          const cleanBemerkungen = (song.bemerkungen || "").replace(/KI-generierter Inhalt|AI-generiert|KI-generiert/gi, "Maschinell erstellt");
+      for (const song of albumSongs) {
+        // Clean up AI/KI references - replace with neutral terms
+        const cleanVerlag = (artist.verlag || "Eigenverlag").replace(/KI-|AI-|AI |KI /gi, "");
+        const cleanLabel = (artist.label || "Independent").replace(/KI-|AI-|AI |KI |AI Records/gi, "Eigenproduktion");
+        const cleanRechteMaster = (artist.rechteinhaber_master || "Independent").replace(/KI-|AI-|AI |KI |AI Records/gi, "Eigenproduktion");
+        const cleanRechtePublishing = (artist.rechteinhaber_publishing || "Eigenverlag").replace(/KI-|AI-|AI |KI /gi, "");
+        const cleanBemerkungen = (song.bemerkungen || "").replace(/KI-generierter Inhalt|AI-generiert|KI-generiert/gi, "Maschinell erstellt");
 
-          catalogEntries.push({
-            katalognummer: artist.katalognummer || "",
-            song_id: song.song_id || "",
-            songtitel: song.name || "",
-            kuenstler: artist.name || "",
-            komponist: song.komponist || artist.name || "",
-            textdichter: song.textdichter || artist.name || "",
-            verlag: cleanVerlag,
-            label: cleanLabel,
-            isrc: song.isrc || "",
-            iswc: song.iswc || "",
-            gema_status: song.gema_status || "Nicht angemeldet",
-            gema_werknummer: song.gema_werknummer || "",
-            rechteinhaber_master: cleanRechteMaster,
-            rechteinhaber_publishing: cleanRechtePublishing,
-            anteil_komponist: song.anteil_komponist || 100,
-            anteil_text: song.anteil_text || 0,
-            anteil_verlag: song.anteil_verlag || 0,
-            anteile_gesamt: (song.anteil_komponist || 100) + (song.anteil_text || 0) + (song.anteil_verlag || 0),
-            exklusivitaet: song.exklusivitaet || "Exklusiv",
-            genre: artist.genre || "",
-            bpm: song.bpm || 120,
-            tonart: song.tonart || "C-Dur",
-            laenge: song.laenge || "03:30",
-            release_datum: album.release_date || new Date().toISOString().split("T")[0],
-            version: song.version || "Original",
-            ki_generiert: "Ja",
-            verwertungsstatus: song.verwertungsstatus || "Aktiv",
-            einnahmequelle: song.einnahmequelle || "Streaming",
-            jahresumsatz: song.jahresumsatz || 0,
-            katalogwert: song.katalogwert || 0,
-            vertragsart: song.vertragsart || "Eigenproduktion",
-            vertragsbeginn: song.vertragsbeginn || new Date().toISOString().split("T")[0],
-            vertragsende: song.vertragsende || "",
-            bemerkungen: cleanBemerkungen || "",
-          });
-        }
+        catalogEntries.push({
+          katalognummer: artist.katalognummer || "",
+          song_id: song.song_id || "",
+          songtitel: song.name || "",
+          kuenstler: artist.name || "",
+          komponist: song.komponist || artist.name || "",
+          textdichter: song.textdichter || artist.name || "",
+          verlag: cleanVerlag,
+          label: cleanLabel,
+          isrc: song.isrc || "",
+          iswc: song.iswc || "",
+          gema_status: song.gema_status || "Nicht angemeldet",
+          gema_werknummer: song.gema_werknummer || "",
+          rechteinhaber_master: cleanRechteMaster,
+          rechteinhaber_publishing: cleanRechtePublishing,
+          anteil_komponist: song.anteil_komponist || 100,
+          anteil_text: song.anteil_text || 0,
+          anteil_verlag: song.anteil_verlag || 0,
+          anteile_gesamt: (song.anteil_komponist || 100) + (song.anteil_text || 0) + (song.anteil_verlag || 0),
+          exklusivitaet: song.exklusivitaet || "Exklusiv",
+          genre: artist.genre || "",
+          bpm: song.bpm || 120,
+          tonart: song.tonart || "C-Dur",
+          laenge: song.laenge || "03:30",
+          release_datum: album.release_date || new Date().toISOString().split("T")[0],
+          version: song.version || "Original",
+          ki_generiert: "Ja",
+          verwertungsstatus: song.verwertungsstatus || "Aktiv",
+          einnahmequelle: song.einnahmequelle || "Streaming",
+          jahresumsatz: song.jahresumsatz || 0,
+          katalogwert: song.katalogwert || 0,
+          vertragsart: song.vertragsart || "Eigenproduktion",
+          vertragsbeginn: song.vertragsbeginn || new Date().toISOString().split("T")[0],
+          vertragsende: song.vertragsende || "",
+          bemerkungen: cleanBemerkungen || "",
+        });
       }
     }
 
@@ -185,34 +229,40 @@ export async function exportCatalogAsCSV() {
 
 export async function exportCatalogAsJSON() {
   try {
-    const { data: artists, error } = await supabase
-      .from("artists")
-      .select("*")
-      .order("created_at", { ascending: true });
+    toast.info("Lade Katalogdaten...");
 
-    if (error) throw error;
+    // Fetch all data in batches - no more 1000 row limit
+    const [artists, albums, songs] = await Promise.all([
+      fetchAllBatched<any>("artists", "*", [{ column: "created_at", ascending: true }]),
+      fetchAllBatched<any>("albums", "*", [{ column: "artist_id", ascending: true }, { column: "created_at", ascending: true }]),
+      fetchAllBatched<any>("songs", "*", [{ column: "album_id", ascending: true }, { column: "track_number", ascending: true }]),
+    ]);
 
-    const fullData = [];
-
-    for (const artist of artists || []) {
-      const { data: albums } = await supabase
-        .from("albums")
-        .select("*")
-        .eq("artist_id", artist.id);
-
-      const albumsWithSongs = [];
-      for (const album of albums || []) {
-        const { data: songs } = await supabase
-          .from("songs")
-          .select("*")
-          .eq("album_id", album.id)
-          .order("track_number");
-
-        albumsWithSongs.push({ ...album, songs });
-      }
-
-      fullData.push({ ...artist, albums: albumsWithSongs });
+    // Create lookup maps
+    const songsByAlbum = new Map<string, any[]>();
+    for (const song of songs) {
+      const existing = songsByAlbum.get(song.album_id) || [];
+      existing.push(song);
+      songsByAlbum.set(song.album_id, existing);
     }
+
+    const albumsByArtist = new Map<string, any[]>();
+    for (const album of albums) {
+      const existing = albumsByArtist.get(album.artist_id) || [];
+      existing.push({
+        ...album,
+        songs: songsByAlbum.get(album.id) || [],
+      });
+      albumsByArtist.set(album.artist_id, existing);
+    }
+
+    // Build full hierarchy
+    const fullData = artists.map(artist => ({
+      ...artist,
+      albums: albumsByArtist.get(artist.id) || [],
+    }));
+
+    const totalSongs = songs.length;
 
     const jsonContent = JSON.stringify(fullData, null, 2);
     const blob = new Blob([jsonContent], { type: "application/json" });
@@ -223,7 +273,7 @@ export async function exportCatalogAsJSON() {
     link.click();
     URL.revokeObjectURL(url);
 
-    toast.success(`${fullData.length} Künstler exportiert`);
+    toast.success(`${fullData.length} Künstler mit ${totalSongs} Songs exportiert`);
     return fullData.length;
   } catch (error) {
     console.error("Export error:", error);
