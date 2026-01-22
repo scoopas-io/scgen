@@ -219,8 +219,14 @@ export function SunoGeneratorDialog({ open, onOpenChange }: Props) {
   };
 
   const librarySongs = useMemo(() => {
-    // Only show songs that have been successfully generated (have audio_url)
-    return songs.filter((s) => s.audio_url);
+    // Show songs with audio OR songs currently being generated
+    return songs.filter((s) => {
+      if (s.audio_url) return true;
+      // Show in-progress generations
+      if (s.suno_task_id) return true;
+      const status = s.generation_status;
+      return status === "processing" || status === "generating";
+    });
   }, [songs]);
 
   const hasInFlightGenerations = useMemo(() => {
