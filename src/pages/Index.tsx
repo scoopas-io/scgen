@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
-import { Sparkles, Music, Zap, History, X, Trash2, Database } from "lucide-react";
+import { Sparkles, Music, Zap, History, X, Database, Download, FileJson, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GeneratorControls } from "@/components/GeneratorControls";
+import { GenreFilter } from "@/components/GenreFilter";
 import { ArtistCard, type Artist } from "@/components/ArtistCard";
 import { LoadingState } from "@/components/LoadingState";
+import { exportCatalogAsCSV, exportCatalogAsJSON } from "@/lib/exportCatalog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -11,13 +13,14 @@ const Index = () => {
   const [artistCount, setArtistCount] = useState(3);
   const [albumCount, setAlbumCount] = useState(2);
   const [songCount, setSongCount] = useState(5);
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [artists, setArtists] = useState<Artist[]>([]);
   const [savedArtists, setSavedArtists] = useState<Artist[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [stats, setStats] = useState({ artists: 0, albums: 0, songs: 0 });
+  const [isExporting, setIsExporting] = useState(false);
 
-  // Load saved artists and stats on mount
   useEffect(() => {
     loadSavedArtists();
     loadStats();
@@ -47,7 +50,6 @@ const Index = () => {
       return;
     }
 
-    // Load albums and songs for each artist
     const artistsWithAlbums: Artist[] = [];
     for (const artist of artistsData || []) {
       const { data: albumsData } = await supabase
@@ -80,6 +82,8 @@ const Index = () => {
         style: artist.style,
         albums: albumsWithSongs,
         created_at: artist.created_at,
+        profile_image_url: artist.profile_image_url,
+        katalognummer: artist.katalognummer,
       });
     }
 
@@ -114,6 +118,7 @@ const Index = () => {
             artistCount,
             albumCount,
             songCount,
+            selectedGenres,
           }),
         }
       );
@@ -138,9 +143,8 @@ const Index = () => {
 
       const data = await response.json();
       setArtists(data.artists);
-      toast.success(`${data.artists.length} Künstler generiert und gespeichert!`);
+      toast.success(`${data.artists.length} Künstler mit Profilbildern generiert!`);
       
-      // Reload saved artists and stats
       await loadSavedArtists();
       await loadStats();
     } catch (error) {
@@ -153,28 +157,46 @@ const Index = () => {
     }
   };
 
+  const handleExportCSV = async () => {
+    setIsExporting(true);
+    try {
+      await exportCatalogAsCSV();
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportJSON = async () => {
+    setIsExporting(true);
+    try {
+      await exportCatalogAsJSON();
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
       <header className="relative overflow-hidden border-b border-border">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent" />
-        <div className="container relative py-12 md:py-20">
-          <div className="flex flex-col items-center text-center space-y-6 max-w-3xl mx-auto">
+        <div className="container relative py-10 md:py-16">
+          <div className="flex flex-col items-center text-center space-y-5 max-w-3xl mx-auto">
             <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
               <Sparkles className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium text-primary">
-                Powered by AI
+                Powered by AI + Bildgenerierung
               </span>
             </div>
-            <h1 className="text-4xl md:text-6xl font-display font-bold tracking-tight">
+            <h1 className="text-4xl md:text-5xl font-display font-bold tracking-tight">
               <span className="text-foreground">KI Artist</span>{" "}
               <span className="text-gradient-gold">Generator</span>
             </h1>
-            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl">
-              Generiere einzigartige Künstlerprofile mit Persönlichkeit, 
-              SUNO Voice-Prompts, Alben und Songtiteln – vollautomatisch.
+            <p className="text-lg text-muted-foreground max-w-2xl">
+              Generiere einzigartige Künstlerprofile mit KI-Profilbildern, 
+              SUNO Voice-Prompts, Alben und vollständigem Musikkatalog.
             </p>
-            <div className="flex items-center gap-6 text-sm text-muted-foreground flex-wrap justify-center">
+            <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap justify-center">
               <div className="flex items-center gap-2">
                 <Database className="h-4 w-4 text-primary" />
                 <span>{stats.artists} Künstler</span>
@@ -193,8 +215,8 @@ const Index = () => {
       </header>
 
       {/* Main Content */}
-      <main className="container py-8 md:py-12">
-        <div className="grid lg:grid-cols-[400px_1fr] gap-8">
+      <main className="container py-8">
+        <div className="grid lg:grid-cols-[420px_1fr] gap-8">
           {/* Controls Sidebar */}
           <aside className="space-y-6">
             <GeneratorControls
@@ -205,6 +227,12 @@ const Index = () => {
               onAlbumCountChange={setAlbumCount}
               onSongCountChange={setSongCount}
             />
+            
+            <GenreFilter
+              selectedGenres={selectedGenres}
+              onGenresChange={setSelectedGenres}
+            />
+
             <Button
               variant="gold"
               size="xl"
@@ -223,8 +251,41 @@ const Index = () => {
               onClick={() => setShowHistory(!showHistory)}
             >
               <History className="h-5 w-5" />
-              {showHistory ? "Neue Ergebnisse anzeigen" : `Datenbank anzeigen (${stats.artists})`}
+              {showHistory ? "Neue Ergebnisse" : `Datenbank (${stats.artists})`}
             </Button>
+
+            {/* Export Buttons */}
+            {stats.songs > 0 && (
+              <div className="p-4 rounded-xl border border-border bg-card/50 space-y-3">
+                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <Download className="h-4 w-4 text-primary" />
+                  <span>Katalog exportieren</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleExportCSV}
+                    disabled={isExporting}
+                  >
+                    <FileSpreadsheet className="h-4 w-4" />
+                    CSV
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleExportJSON}
+                    disabled={isExporting}
+                  >
+                    <FileJson className="h-4 w-4" />
+                    JSON
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Vollständiger Musikkatalog mit allen Feldern
+                </p>
+              </div>
+            )}
             
             {artists.length > 0 && !showHistory && (
               <p className="text-center text-sm text-muted-foreground">
@@ -236,18 +297,13 @@ const Index = () => {
           {/* Results */}
           <section className="space-y-4">
             {showHistory ? (
-              // History View
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-display font-semibold text-foreground flex items-center gap-2">
                     <Database className="h-5 w-5 text-primary" />
                     Gespeicherte Künstler ({savedArtists.length})
                   </h2>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setShowHistory(false)}
-                  >
+                  <Button variant="ghost" size="icon" onClick={() => setShowHistory(false)}>
                     <X className="h-5 w-5" />
                   </Button>
                 </div>
@@ -270,7 +326,7 @@ const Index = () => {
                       Keine gespeicherten Künstler
                     </h3>
                     <p className="text-muted-foreground max-w-md">
-                      Generiere Künstler, um sie automatisch in der Datenbank zu speichern.
+                      Generiere Künstler, um sie in der Datenbank zu speichern.
                     </p>
                   </div>
                 )}
@@ -282,7 +338,7 @@ const Index = () => {
                 <ArtistCard key={`${artist.name}-${index}`} artist={artist} index={index} />
               ))
             ) : (
-              <div className="flex flex-col items-center justify-center py-24 text-center">
+              <div className="flex flex-col items-center justify-center py-20 text-center">
                 <div className="h-24 w-24 rounded-2xl bg-secondary/50 flex items-center justify-center mb-6">
                   <Music className="h-12 w-12 text-muted-foreground" />
                 </div>
@@ -290,8 +346,8 @@ const Index = () => {
                   Bereit zur Generierung
                 </h3>
                 <p className="text-muted-foreground max-w-md">
-                  Wähle links die gewünschte Anzahl an Künstlern, Alben und Songs 
-                  und klicke auf "Künstler generieren" um zu starten.
+                  Wähle Anzahl, Genre-Filter und klicke auf "Künstler generieren".
+                  Jeder Künstler erhält ein KI-generiertes Profilbild.
                 </p>
               </div>
             )}
@@ -300,9 +356,9 @@ const Index = () => {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border py-8">
+      <footer className="border-t border-border py-6">
         <div className="container text-center text-sm text-muted-foreground">
-          <p>Alle generierten Inhalte sind einzigartig und werden in der Datenbank gespeichert.</p>
+          <p>Alle Inhalte sind einzigartig, KI-generiert und exportierbar als vollständiger Musikkatalog.</p>
         </div>
       </footer>
     </div>

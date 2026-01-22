@@ -20,18 +20,21 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          release_date: string | null
         }
         Insert: {
           artist_id: string
           created_at?: string
           id?: string
           name: string
+          release_date?: string | null
         }
         Update: {
           artist_id?: string
           created_at?: string
           id?: string
           name?: string
+          release_date?: string | null
         }
         Relationships: [
           {
@@ -48,27 +51,45 @@ export type Database = {
           created_at: string
           genre: string
           id: string
+          katalognummer: string | null
+          label: string | null
           name: string
           personality: string
+          profile_image_url: string | null
+          rechteinhaber_master: string | null
+          rechteinhaber_publishing: string | null
           style: string
+          verlag: string | null
           voice_prompt: string
         }
         Insert: {
           created_at?: string
           genre: string
           id?: string
+          katalognummer?: string | null
+          label?: string | null
           name: string
           personality: string
+          profile_image_url?: string | null
+          rechteinhaber_master?: string | null
+          rechteinhaber_publishing?: string | null
           style: string
+          verlag?: string | null
           voice_prompt: string
         }
         Update: {
           created_at?: string
           genre?: string
           id?: string
+          katalognummer?: string | null
+          label?: string | null
           name?: string
           personality?: string
+          profile_image_url?: string | null
+          rechteinhaber_master?: string | null
+          rechteinhaber_publishing?: string | null
           style?: string
+          verlag?: string | null
           voice_prompt?: string
         }
         Relationships: []
@@ -76,24 +97,96 @@ export type Database = {
       songs: {
         Row: {
           album_id: string
+          anteil_komponist: number | null
+          anteil_text: number | null
+          anteil_verlag: number | null
+          bemerkungen: string | null
+          bpm: number | null
           created_at: string
+          einnahmequelle: string | null
+          exklusivitaet: string | null
+          gema_status: string | null
+          gema_werknummer: string | null
           id: string
+          isrc: string | null
+          iswc: string | null
+          jahresumsatz: number | null
+          katalogwert: number | null
+          ki_generiert: string | null
+          komponist: string | null
+          laenge: string | null
           name: string
+          song_id: string | null
+          textdichter: string | null
+          tonart: string | null
           track_number: number
+          version: string | null
+          vertragsart: string | null
+          vertragsbeginn: string | null
+          vertragsende: string | null
+          verwertungsstatus: string | null
         }
         Insert: {
           album_id: string
+          anteil_komponist?: number | null
+          anteil_text?: number | null
+          anteil_verlag?: number | null
+          bemerkungen?: string | null
+          bpm?: number | null
           created_at?: string
+          einnahmequelle?: string | null
+          exklusivitaet?: string | null
+          gema_status?: string | null
+          gema_werknummer?: string | null
           id?: string
+          isrc?: string | null
+          iswc?: string | null
+          jahresumsatz?: number | null
+          katalogwert?: number | null
+          ki_generiert?: string | null
+          komponist?: string | null
+          laenge?: string | null
           name: string
+          song_id?: string | null
+          textdichter?: string | null
+          tonart?: string | null
           track_number: number
+          version?: string | null
+          vertragsart?: string | null
+          vertragsbeginn?: string | null
+          vertragsende?: string | null
+          verwertungsstatus?: string | null
         }
         Update: {
           album_id?: string
+          anteil_komponist?: number | null
+          anteil_text?: number | null
+          anteil_verlag?: number | null
+          bemerkungen?: string | null
+          bpm?: number | null
           created_at?: string
+          einnahmequelle?: string | null
+          exklusivitaet?: string | null
+          gema_status?: string | null
+          gema_werknummer?: string | null
           id?: string
+          isrc?: string | null
+          iswc?: string | null
+          jahresumsatz?: number | null
+          katalogwert?: number | null
+          ki_generiert?: string | null
+          komponist?: string | null
+          laenge?: string | null
           name?: string
+          song_id?: string | null
+          textdichter?: string | null
+          tonart?: string | null
           track_number?: number
+          version?: string | null
+          vertragsart?: string | null
+          vertragsbeginn?: string | null
+          vertragsende?: string | null
+          verwertungsstatus?: string | null
         }
         Relationships: [
           {
