@@ -55,39 +55,77 @@ serve(async (req) => {
     const callbackUrl = `${SUPABASE_URL}/functions/v1/suno-callback`;
     console.log("Callback URL:", callbackUrl);
 
-    // Call Suno API (api.sunoapi.org) to generate music
-    // For customMode: false, Suno auto-generates lyrics based on the style
-    // This avoids the issue where voice prompts are sung as lyrics
-    const sunoResponse = await fetch("https://api.sunoapi.org/api/v1/generate", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${SUNO_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        prompt: `A ${genre} song called "${title}" in ${style} style`, // Description for non-custom mode
-        customMode: false, // Let Suno generate lyrics automatically
-        instrumental: false,
-        model: "V5",
-        title: title,
-        callbackUrl: callbackUrl,
-      }),
-    });
+    // Call Suno API with retry logic for timeout errors
+    const maxRetries = 3;
+    let lastError: Error | null = null;
+    let sunoData: any = null;
 
-    if (!sunoResponse.ok) {
-      const errorText = await sunoResponse.text();
-      console.error("Suno API error:", sunoResponse.status, errorText);
-      
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`Suno API call attempt ${attempt}/${maxRetries}`);
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 55000); // 55s timeout
+        
+        const sunoResponse = await fetch("https://api.sunoapi.org/api/v1/generate", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${SUNO_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            prompt: `A ${genre} song called "${title}" in ${style} style`,
+            customMode: false,
+            instrumental: false,
+            model: "V5",
+            title: title,
+            callbackUrl: callbackUrl,
+          }),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!sunoResponse.ok) {
+          const errorText = await sunoResponse.text();
+          console.error(`Suno API error (attempt ${attempt}):`, sunoResponse.status, errorText.substring(0, 200));
+          
+          // Retry on 5xx errors (server issues, timeouts)
+          if (sunoResponse.status >= 500 && attempt < maxRetries) {
+            const waitTime = attempt * 5000; // 5s, 10s, 15s
+            console.log(`Retrying in ${waitTime}ms...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+            continue;
+          }
+          
+          throw new Error(`API Fehler ${sunoResponse.status}: Server nicht erreichbar`);
+        }
+
+        sunoData = await sunoResponse.json();
+        console.log("Suno response:", JSON.stringify(sunoData));
+        break; // Success, exit retry loop
+        
+      } catch (fetchError) {
+        console.error(`Fetch error (attempt ${attempt}):`, fetchError);
+        lastError = fetchError instanceof Error ? fetchError : new Error(String(fetchError));
+        
+        if (attempt < maxRetries) {
+          const waitTime = attempt * 5000;
+          console.log(`Network error, retrying in ${waitTime}ms...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+      }
+    }
+
+    if (!sunoData) {
       await supabase
         .from("songs")
         .update({ generation_status: "error" })
         .eq("id", songId);
         
-      throw new Error(`Suno API error: ${sunoResponse.status} - ${errorText}`);
+      throw lastError || new Error("Suno API nicht erreichbar nach mehreren Versuchen");
     }
 
-    const sunoData = await sunoResponse.json();
-    console.log("Suno response:", JSON.stringify(sunoData));
 
     // Extract task ID for polling - sunoapi.org returns taskId or data.taskId
     const taskId = sunoData.data?.taskId || sunoData.taskId || sunoData.data?.task_id || sunoData.task_id || sunoData.id;
