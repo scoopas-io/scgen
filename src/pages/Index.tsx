@@ -272,7 +272,7 @@ const Index = () => {
       {/* Main Content - Fixed Height */}
       <main className="flex-1 min-h-0 overflow-hidden">
         <div className="container h-full py-4">
-          <div className="grid lg:grid-cols-[360px_1fr] gap-6 h-full">
+          <div className="grid lg:grid-cols-[420px_1fr] gap-6 h-full">
             {/* Controls Sidebar - Scrollable */}
             <ScrollArea className="h-full pr-4">
               <aside className="space-y-4 pb-4">

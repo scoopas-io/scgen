@@ -41,6 +41,16 @@ const LANGUAGE_NAMES: Record<string, string> = {
   sv: "Schwedisch",
   da: "Dänisch",
   fi: "Finnisch",
+  no: "Norwegisch",
+  el: "Griechisch",
+  cs: "Tschechisch",
+  hu: "Ungarisch",
+  ro: "Rumänisch",
+  bg: "Bulgarisch",
+  hr: "Kroatisch",
+  sk: "Slowakisch",
+  sr: "Serbisch",
+  sw: "Suaheli",
 };
 
 const TONARTEN = ["C-Dur", "D-Dur", "E-Dur", "F-Dur", "G-Dur", "A-Dur", "H-Dur", "a-Moll", "d-Moll", "e-Moll", "g-Moll"];
