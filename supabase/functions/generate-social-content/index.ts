@@ -186,7 +186,7 @@ Die Caption sollte:
             promptImage: artistImageUrl,
             promptText: `Cinematic ${artistGenre} music video scene. Subtle camera movement, dramatic lighting, atmospheric effects. Professional music video quality.`,
             duration: 5,
-            ratio: "9:16", // Vertical format for reels (valid options: 16:9, 9:16, 768:1280, 1280:768)
+            ratio: "768:1280", // Vertical reels ratio supported by image_to_video
           }),
         });
 
