@@ -245,9 +245,9 @@ const Songkatalog = () => {
 
       <main className="flex-1 min-h-0 overflow-hidden">
         <div className="container h-full py-6">
-          <div className="flex flex-col h-full gap-4">
+          <div className="flex flex-col h-full gap-4 min-h-0">
             {/* Toolbar */}
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center justify-between gap-4 shrink-0">
               <div className="flex items-center gap-4 flex-1">
                 <div className="relative flex-1 max-w-md">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -287,7 +287,7 @@ const Songkatalog = () => {
             </div>
 
             {/* Catalog Tree */}
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 min-h-0">
               {isLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="text-center space-y-3">

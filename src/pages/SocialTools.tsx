@@ -1038,9 +1038,9 @@ const SocialTools = () => {
             </TabsContent>
 
             {/* Calendar Tab */}
-            <TabsContent value="calendar" className="flex-1 min-h-0 mt-6">
-              <div className="h-full flex flex-col">
-                <div className="flex items-center justify-between mb-4">
+            <TabsContent value="calendar" className="flex-1 min-h-0 mt-6 overflow-hidden">
+              <div className="h-full flex flex-col min-h-0 overflow-hidden">
+                <div className="flex items-center justify-between mb-4 shrink-0">
                   <h2 className="text-lg font-semibold flex items-center gap-2">
                     <CalendarDays className="h-5 w-5 text-primary" />
                     Content Kalender
@@ -1071,7 +1071,7 @@ const SocialTools = () => {
                 </div>
 
                 {/* Stats */}
-                <div className="grid grid-cols-3 gap-4 mb-4">
+                <div className="grid grid-cols-3 gap-4 mb-4 shrink-0">
                   <Card>
                     <CardContent className="p-4 flex items-center gap-3">
                       <div className="h-10 w-10 rounded-lg bg-yellow-500/10 flex items-center justify-center">
@@ -1108,7 +1108,7 @@ const SocialTools = () => {
                 </div>
 
                 {/* Calendar Grid */}
-                <ScrollArea className="flex-1">
+                <ScrollArea className="flex-1 min-h-0">
                   <div className="grid grid-cols-7 gap-2 pr-4">
                     {calendarDays.map((day, i) => {
                       const dayContent = getContentForDay(day);
@@ -1168,9 +1168,9 @@ const SocialTools = () => {
               </div>
             </TabsContent>
 
-            {/* Connections Tab */}
-            <TabsContent value="connections" className="flex-1 min-h-0 mt-6">
-              <div className="max-w-2xl">
+            <TabsContent value="connections" className="flex-1 min-h-0 mt-6 overflow-hidden">
+              <ScrollArea className="h-full">
+                <div className="max-w-2xl pr-4 pb-4">
                 <div className="mb-6">
                   <h2 className="text-lg font-semibold flex items-center gap-2 mb-2">
                     <Link2 className="h-5 w-5 text-primary" />
@@ -1245,7 +1245,8 @@ const SocialTools = () => {
                     Diese erhältst du über die jeweiligen Developer-Portale der Plattformen.
                   </p>
                 </div>
-              </div>
+                </div>
+              </ScrollArea>
             </TabsContent>
           </Tabs>
         </div>
