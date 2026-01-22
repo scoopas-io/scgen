@@ -5,7 +5,7 @@ import { GeneratorControls } from "@/components/GeneratorControls";
 import { GenreFilter } from "@/components/GenreFilter";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { ArtistCard, type Artist } from "@/components/ArtistCard";
-import { LoadingState } from "@/components/LoadingState";
+import { LoadingState, type GenerationPhase } from "@/components/LoadingState";
 import { ScoopasIcon } from "@/components/ScoopasIcon";
 import { exportCatalogAsCSV, exportCatalogAsJSON } from "@/lib/exportCatalog";
 import { toast } from "sonner";
@@ -26,7 +26,25 @@ const Index = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [stats, setStats] = useState({ artists: 0, albums: 0, songs: 0 });
   const [isExporting, setIsExporting] = useState(false);
-  const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0, generated: 0, progress: 0 });
+  const [generationState, setGenerationState] = useState<{
+    phase: GenerationPhase;
+    currentBatch: number;
+    totalBatches: number;
+    generated: number;
+    progress: number;
+    currentArtist?: string;
+    imagesGenerated: number;
+    imagesTotal: number;
+    startTime?: number;
+  }>({
+    phase: "preparing",
+    currentBatch: 0,
+    totalBatches: 0,
+    generated: 0,
+    progress: 0,
+    imagesGenerated: 0,
+    imagesTotal: 0,
+  });
 
   useEffect(() => {
     loadSavedArtists();
@@ -146,11 +164,18 @@ const Index = () => {
     setArtists([]);
     
     const totalBatches = Math.ceil(artistCount / BATCH_SIZE);
-    const isBulkMode = totalBatches > 1;
+    const startTime = Date.now();
     
-    if (isBulkMode) {
-      setBatchProgress({ current: 0, total: totalBatches, generated: 0, progress: 0 });
-    }
+    setGenerationState({
+      phase: "preparing",
+      currentBatch: 0,
+      totalBatches,
+      generated: 0,
+      progress: 0,
+      imagesGenerated: 0,
+      imagesTotal: artistCount,
+      startTime,
+    });
 
     try {
       let allArtists: Artist[] = [];
@@ -159,28 +184,25 @@ const Index = () => {
       for (let batch = 1; batch <= totalBatches; batch++) {
         const batchCount = Math.min(remaining, BATCH_SIZE);
         
-        if (isBulkMode) {
-          setBatchProgress({
-            current: batch,
-            total: totalBatches,
-            generated: allArtists.length,
-            progress: ((batch - 1) / totalBatches) * 100,
-          });
-        }
+        setGenerationState(prev => ({
+          ...prev,
+          phase: "generating_text",
+          currentBatch: batch,
+          progress: ((batch - 1) / totalBatches) * 100,
+        }));
         
         try {
           const batchArtists = await generateBatch(batchCount);
           allArtists = [...allArtists, ...batchArtists];
           setArtists([...allArtists]);
           
-          if (isBulkMode) {
-            setBatchProgress({
-              current: batch,
-              total: totalBatches,
-              generated: allArtists.length,
-              progress: (batch / totalBatches) * 100,
-            });
-          }
+          setGenerationState(prev => ({
+            ...prev,
+            phase: "complete",
+            generated: allArtists.length,
+            progress: (batch / totalBatches) * 100,
+            imagesGenerated: allArtists.filter(a => a.profileImageUrl || a.profile_image_url).length,
+          }));
           
           remaining -= batchCount;
           
@@ -208,7 +230,15 @@ const Index = () => {
       toast.error(error instanceof Error ? error.message : "Verbindungsfehler");
     } finally {
       setIsLoading(false);
-      setBatchProgress({ current: 0, total: 0, generated: 0, progress: 0 });
+      setGenerationState({
+        phase: "preparing",
+        currentBatch: 0,
+        totalBatches: 0,
+        generated: 0,
+        progress: 0,
+        imagesGenerated: 0,
+        imagesTotal: 0,
+      });
     }
   };
 
@@ -306,7 +336,7 @@ const Index = () => {
                     <ScoopasIcon size={18} />
                     {isLoading 
                       ? isBulkMode 
-                        ? `Batch ${batchProgress.current}/${batchProgress.total}...` 
+                        ? `Batch ${generationState.currentBatch}/${generationState.totalBatches}...` 
                         : "Generiere..." 
                       : isBulkMode 
                         ? `${artistCount} Künstler generieren (${totalBatches} Batches)` 
@@ -404,11 +434,16 @@ const Index = () => {
                   </div>
                 ) : isLoading ? (
                   <LoadingState 
-                    progress={batchProgress.progress}
-                    currentBatch={batchProgress.current}
-                    totalBatches={batchProgress.total}
-                    generatedCount={batchProgress.generated}
+                    progress={generationState.progress}
+                    currentBatch={generationState.currentBatch}
+                    totalBatches={generationState.totalBatches}
+                    generatedCount={generationState.generated}
                     totalCount={artistCount}
+                    phase={generationState.phase}
+                    currentArtist={generationState.currentArtist}
+                    imagesGenerated={generationState.imagesGenerated}
+                    imagesTotal={generationState.imagesTotal}
+                    startTime={generationState.startTime}
                   />
                 ) : artists.length > 0 ? (
                   <>
