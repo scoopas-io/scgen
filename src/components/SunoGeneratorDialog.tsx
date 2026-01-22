@@ -496,9 +496,9 @@ export function SunoGeneratorDialog({ open, onOpenChange }: Props) {
               <Volume2 className="h-5 w-5 text-primary-foreground" />
             </div>
             <div>
-              <span className="text-xl">SUNO Audio Generator</span>
+              <span className="text-xl">scoopas Audio Generator</span>
               <p className="text-sm text-muted-foreground font-normal mt-1">
-                Generiere echte Musik aus deinem Katalog mit KI
+                Generiere echte Musik aus deinem Katalog mit scoopas.AI
               </p>
             </div>
           </DialogTitle>
@@ -657,7 +657,7 @@ export function SunoGeneratorDialog({ open, onOpenChange }: Props) {
                   <Volume2 className="h-12 w-12 text-muted-foreground mb-4" />
                   <h3 className="font-medium text-lg">Noch keine Songs generiert</h3>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Wähle Songs aus und generiere sie mit SUNO
+                    Wähle Songs aus und generiere sie mit scoopas
                   </p>
                 </div>
               ) : (

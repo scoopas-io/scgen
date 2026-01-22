@@ -291,7 +291,7 @@ const Index = () => {
                 onClick={() => setSunoDialogOpen(true)}
               >
                 <Volume2 className="h-4 w-4" />
-                <span className="hidden sm:inline">SUNO Generator</span>
+                <span className="hidden sm:inline">scoopas Audio</span>
               </Button>
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
                 <div className="flex items-center gap-1.5">

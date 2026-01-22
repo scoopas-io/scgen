@@ -357,7 +357,7 @@ export function ArtistManagementDialog({ artistId, open, onOpenChange, onSaved }
               </div>
 
               <div className="space-y-2">
-                <Label>SUNO Voice Prompt</Label>
+                <Label>scoopas Voice Prompt</Label>
                 <Textarea 
                   value={artist.voice_prompt} 
                   onChange={e => updateArtistField("voice_prompt", e.target.value)}
