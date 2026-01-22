@@ -25,13 +25,23 @@ serve(async (req) => {
     const callbackData = await req.json();
     console.log("Suno callback received:", JSON.stringify(callbackData));
 
-    // Extract task ID and audio URL from various possible response formats
-    const taskId = callbackData.taskId || callbackData.task_id || callbackData.data?.taskId || callbackData.data?.task_id;
-    const status = callbackData.status || callbackData.data?.status;
-    const audioUrl = callbackData.audioUrl || callbackData.audio_url || 
+    // Extract task ID from nested structure: data.task_id (sunoapi.org format)
+    const taskId = callbackData.data?.task_id || callbackData.data?.taskId ||
+                   callbackData.taskId || callbackData.task_id;
+    
+    // Extract callback type and status
+    const callbackType = callbackData.data?.callbackType;
+    const status = callbackType === "complete" ? "completed" : 
+                   (callbackData.status || callbackData.data?.status);
+    
+    // Extract audio data from nested array: data.data[0].audio_url (sunoapi.org format)
+    const songsArray = callbackData.data?.data || callbackData.data?.songs || callbackData.songs || [];
+    const firstSong = songsArray[0];
+    const audioUrl = firstSong?.audio_url || firstSong?.audioUrl ||
                      callbackData.data?.audioUrl || callbackData.data?.audio_url ||
-                     callbackData.data?.songs?.[0]?.audioUrl || callbackData.data?.songs?.[0]?.audio_url ||
-                     callbackData.songs?.[0]?.audioUrl || callbackData.songs?.[0]?.audio_url;
+                     callbackData.audioUrl || callbackData.audio_url;
+    
+    console.log("Extracted - taskId:", taskId, "status:", status, "audioUrl:", audioUrl);
 
     if (!taskId) {
       console.error("No taskId in callback:", callbackData);
