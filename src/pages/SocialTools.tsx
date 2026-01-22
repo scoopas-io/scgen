@@ -123,6 +123,7 @@ const SocialTools = () => {
   const [isPublishing, setIsPublishing] = useState<string | null>(null);
   const [previewContent, setPreviewContent] = useState<SocialContent | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [isRegeneratingVideo, setIsRegeneratingVideo] = useState<string | null>(null);
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -400,6 +401,61 @@ const SocialTools = () => {
       URL.revokeObjectURL(downloadUrl);
     } catch (error) {
       toast.error("Fehler beim Download");
+    }
+  };
+
+  const regenerateVideo = async (content: SocialContent) => {
+    const artist = getArtistForContent(content.artist_id);
+    if (!artist) {
+      toast.error("Künstler nicht gefunden");
+      return;
+    }
+
+    setIsRegeneratingVideo(content.id);
+    
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-social-content`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            artistId: artist.id,
+            artistName: artist.name,
+            artistPersonality: artist.personality,
+            artistGenre: artist.genre,
+            artistStyle: artist.style,
+            artistImageUrl: artist.profile_image_url,
+            platform: content.platform,
+            contentType: "reel",
+            customPrompt: content.prompt || "",
+            regenerateVideoFor: content.id,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Fehler bei der Video-Generierung");
+      }
+
+      const data = await response.json();
+      
+      if (data.hasVideo) {
+        toast.success("Video erfolgreich generiert!");
+      } else {
+        toast(data.note || "Video konnte nicht generiert werden, neues Cover erstellt.");
+      }
+      
+      await loadGeneratedContent();
+    } catch (error) {
+      console.error("Error regenerating video:", error);
+      toast.error(error instanceof Error ? error.message : "Fehler bei der Video-Generierung");
+    } finally {
+      setIsRegeneratingVideo(null);
     }
   };
 
@@ -936,6 +992,23 @@ const SocialTools = () => {
                                         title="Download"
                                       >
                                         <Download className="h-4 w-4" />
+                                      </Button>
+                                    )}
+                                    {/* Regenerate Video Button - for reels without video */}
+                                    {content.content_type === "reel" && !content.video_url && content.image_url && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-primary"
+                                        onClick={() => regenerateVideo(content)}
+                                        disabled={isRegeneratingVideo === content.id}
+                                        title="Video neu generieren"
+                                      >
+                                        {isRegeneratingVideo === content.id ? (
+                                          <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                          <RefreshCw className="h-4 w-4" />
+                                        )}
                                       </Button>
                                     )}
                                     {content.published_url && (
