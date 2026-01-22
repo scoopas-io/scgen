@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { 
   Share2, User, Sparkles, Instagram, Twitter, Facebook, Linkedin, 
   Youtube, Music2, Download, Trash2, RefreshCw, Image as ImageIcon,
   FileText, Video, MessageSquare, Loader2, Calendar, Clock, Link2,
-  ExternalLink, Play, CheckCircle2, XCircle, Send, CalendarDays
+  ExternalLink, Play, CheckCircle2, XCircle, Send, CalendarDays, Eye, X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,7 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
 import { AppHeader } from "@/components/AppHeader";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -85,6 +86,22 @@ const PHASE_LABELS: Record<GenerationPhase, string> = {
   complete: "Fertig!",
 };
 
+const PHASE_DURATIONS: Record<GenerationPhase, number> = {
+  idle: 0,
+  text: 5,
+  image: 15,
+  video: 30,
+  saving: 3,
+  complete: 0,
+};
+
+function formatTime(seconds: number): string {
+  if (seconds < 60) return `${Math.round(seconds)}s`;
+  const minutes = Math.floor(seconds / 60);
+  const secs = Math.round(seconds % 60);
+  return `${minutes}m ${secs}s`;
+}
+
 const SocialTools = () => {
   const [artists, setArtists] = useState<Artist[]>([]);
   const [selectedArtistId, setSelectedArtistId] = useState<string>("");
@@ -95,12 +112,18 @@ const SocialTools = () => {
   const [scheduledTime, setScheduledTime] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationPhase, setGenerationPhase] = useState<GenerationPhase>("idle");
+  const [generationProgress, setGenerationProgress] = useState(0);
+  const [generationStartTime, setGenerationStartTime] = useState<number | null>(null);
+  const [estimatedRemaining, setEstimatedRemaining] = useState<number | null>(null);
   const [generatedContent, setGeneratedContent] = useState<SocialContent[]>([]);
   const [platformConnections, setPlatformConnections] = useState<PlatformConnection[]>([]);
   const [stats, setStats] = useState({ artists: 0, albums: 0, songs: 0 });
   const [activeTab, setActiveTab] = useState("generator");
   const [calendarWeekStart, setCalendarWeekStart] = useState(startOfWeek(new Date(), { locale: de }));
   const [isPublishing, setIsPublishing] = useState<string | null>(null);
+  const [previewContent, setPreviewContent] = useState<SocialContent | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     loadArtists();
@@ -108,6 +131,40 @@ const SocialTools = () => {
     loadGeneratedContent();
     loadPlatformConnections();
   }, []);
+
+  // Progress timer effect
+  useEffect(() => {
+    if (isGenerating && generationStartTime) {
+      progressIntervalRef.current = setInterval(() => {
+        const elapsed = (Date.now() - generationStartTime) / 1000;
+        
+        // Calculate total expected duration based on content type
+        let totalDuration = PHASE_DURATIONS.text + PHASE_DURATIONS.saving;
+        if (selectedContentType === "reel") {
+          totalDuration += PHASE_DURATIONS.video;
+        } else if (selectedContentType === "post" || selectedContentType === "story") {
+          totalDuration += PHASE_DURATIONS.image;
+        }
+        
+        const progress = Math.min(95, (elapsed / totalDuration) * 100);
+        setGenerationProgress(progress);
+        
+        const remaining = Math.max(0, totalDuration - elapsed);
+        setEstimatedRemaining(remaining);
+      }, 500);
+    } else {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
+    }
+    
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+    };
+  }, [isGenerating, generationStartTime, selectedContentType]);
 
   const loadStats = async () => {
     const [artistsRes, albumsRes, songsRes] = await Promise.all([
@@ -172,6 +229,9 @@ const SocialTools = () => {
 
     setIsGenerating(true);
     setGenerationPhase("text");
+    setGenerationProgress(0);
+    setGenerationStartTime(Date.now());
+    setEstimatedRemaining(null);
     
     try {
       // Schedule phase updates based on content type
@@ -186,7 +246,9 @@ const SocialTools = () => {
       }, 3000));
 
       if (selectedContentType === "reel") {
-        phaseTimeouts.push(setTimeout(() => setGenerationPhase("saving"), 15000));
+        phaseTimeouts.push(setTimeout(() => setGenerationPhase("saving"), 25000));
+      } else if (selectedContentType === "post" || selectedContentType === "story") {
+        phaseTimeouts.push(setTimeout(() => setGenerationPhase("saving"), 12000));
       }
 
       // Build scheduled datetime if provided
@@ -227,8 +289,11 @@ const SocialTools = () => {
       }
 
       setGenerationPhase("saving");
+      setGenerationProgress(90);
       const data = await response.json();
+      
       setGenerationPhase("complete");
+      setGenerationProgress(100);
       
       const message = data.hasVideo 
         ? "Video erfolgreich generiert!" 
@@ -239,15 +304,29 @@ const SocialTools = () => {
       toast.success(message);
       await loadGeneratedContent();
       
+      // Show preview of generated content
+      if (data.content) {
+        setPreviewContent(data.content);
+        setShowPreview(true);
+      }
+      
       // Reset scheduling inputs
       setScheduledDate("");
       setScheduledTime("");
       
-      setTimeout(() => setGenerationPhase("idle"), 1500);
+      setTimeout(() => {
+        setGenerationPhase("idle");
+        setGenerationProgress(0);
+        setGenerationStartTime(null);
+        setEstimatedRemaining(null);
+      }, 1500);
     } catch (error) {
       console.error("Error generating content:", error);
       toast.error(error instanceof Error ? error.message : "Fehler bei der Generierung");
       setGenerationPhase("idle");
+      setGenerationProgress(0);
+      setGenerationStartTime(null);
+      setEstimatedRemaining(null);
     } finally {
       setIsGenerating(false);
     }
@@ -301,21 +380,6 @@ const SocialTools = () => {
       return;
     }
     toast.success("Content gelöscht");
-    loadGeneratedContent();
-  };
-
-  const scheduleContent = async (id: string, date: string, time: string) => {
-    const scheduledAt = new Date(`${date}T${time}`).toISOString();
-    const { error } = await supabase
-      .from("social_content")
-      .update({ scheduled_at: scheduledAt, status: "scheduled" })
-      .eq("id", id);
-    
-    if (error) {
-      toast.error("Fehler beim Planen");
-      return;
-    }
-    toast.success("Content geplant!");
     loadGeneratedContent();
   };
 
@@ -378,9 +442,132 @@ const SocialTools = () => {
   const scheduledContent = generatedContent.filter(c => c.status === "scheduled");
   const publishedContent = generatedContent.filter(c => c.status === "published");
 
+  // Content Preview Dialog Component
+  const ContentPreviewDialog = () => {
+    if (!previewContent) return null;
+    
+    const artist = getArtistForContent(previewContent.artist_id);
+    const platform = getPlatformInfo(previewContent.platform);
+    const PlatformIcon = platform?.icon || Share2;
+    
+    return (
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5 text-primary" />
+              Content Vorschau
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Platform & Type Header */}
+            <div className="flex items-center gap-2">
+              <PlatformIcon className={cn("h-5 w-5", platform?.color)} />
+              <span className="font-medium">{platform?.name}</span>
+              <Badge variant="outline">
+                {previewContent.content_type === "reel" ? "Video" : previewContent.content_type}
+              </Badge>
+              {artist && (
+                <span className="text-sm text-muted-foreground ml-auto">
+                  von {artist.name}
+                </span>
+              )}
+            </div>
+            
+            {/* Media Preview */}
+            {(previewContent.image_url || previewContent.video_url) && (
+              <div className="relative aspect-square max-w-sm mx-auto rounded-lg overflow-hidden bg-muted">
+                {previewContent.video_url ? (
+                  <video
+                    src={previewContent.video_url}
+                    className="w-full h-full object-cover"
+                    controls
+                    autoPlay
+                    muted
+                  />
+                ) : previewContent.image_url ? (
+                  <img
+                    src={previewContent.image_url}
+                    alt={previewContent.title || "Generated content"}
+                    className="w-full h-full object-cover"
+                  />
+                ) : null}
+              </div>
+            )}
+            
+            {/* Text Content */}
+            <div className="space-y-3">
+              {previewContent.title && (
+                <h3 className="font-semibold text-lg">{previewContent.title}</h3>
+              )}
+              
+              {previewContent.caption && (
+                <p className="text-muted-foreground whitespace-pre-wrap">
+                  {previewContent.caption}
+                </p>
+              )}
+              
+              {previewContent.hashtags && previewContent.hashtags.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {previewContent.hashtags.map((tag, i) => (
+                    <Badge key={i} variant="secondary" className="text-xs">
+                      #{tag}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            {/* Actions */}
+            <div className="flex items-center gap-2 pt-4 border-t">
+              {(previewContent.image_url || previewContent.video_url) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => downloadMedia(
+                    previewContent.video_url || previewContent.image_url!,
+                    `${artist?.name || 'content'}-${previewContent.content_type}.${previewContent.video_url ? 'mp4' : 'png'}`
+                  )}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download
+                </Button>
+              )}
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setShowPreview(false);
+                  setActiveTab("generator");
+                }}
+              >
+                <Share2 className="h-4 w-4 mr-2" />
+                Zur Bibliothek
+              </Button>
+              
+              <Button
+                variant="default"
+                size="sm"
+                className="ml-auto"
+                onClick={() => setShowPreview(false)}
+              >
+                Schließen
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       <AppHeader stats={stats} />
+      
+      {/* Content Preview Dialog */}
+      <ContentPreviewDialog />
 
       <main className="flex-1 min-h-0 overflow-hidden">
         <div className="container h-full py-6">
@@ -577,19 +764,40 @@ const SocialTools = () => {
                         )}
                       </Button>
                       
-                      {/* Generation Status */}
+                      {/* Generation Status with Progress Bar */}
                       {isGenerating && (
                         <Card className="border-primary/30 bg-primary/5">
                           <CardContent className="p-4">
-                            <div className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                                <span className="text-sm font-medium text-primary">
-                                  {PHASE_LABELS[generationPhase]}
-                                </span>
+                            <div className="space-y-4">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                                  <span className="text-sm font-medium text-primary">
+                                    {PHASE_LABELS[generationPhase]}
+                                  </span>
+                                </div>
+                                {estimatedRemaining !== null && estimatedRemaining > 0 && (
+                                  <span className="text-xs text-muted-foreground">
+                                    ~{formatTime(estimatedRemaining)} verbleibend
+                                  </span>
+                                )}
                               </div>
                               
-                              {/* Phase Progress */}
+                              {/* Progress Bar */}
+                              <div className="space-y-2">
+                                <Progress value={generationProgress} className="h-2" />
+                                <div className="flex justify-between text-xs text-muted-foreground">
+                                  <span>{Math.round(generationProgress)}%</span>
+                                  {generationStartTime && (
+                                    <span className="flex items-center gap-1">
+                                      <Clock className="h-3 w-3" />
+                                      {formatTime((Date.now() - generationStartTime) / 1000)}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              {/* Phase Progress Indicators */}
                               <div className="flex items-center gap-2">
                                 {(["text", "image", "video", "saving", "complete"] as GenerationPhase[]).map((phase, i) => {
                                   const phases: GenerationPhase[] = ["text", "image", "video", "saving", "complete"];
@@ -602,16 +810,17 @@ const SocialTools = () => {
                                   if (phase === "image" && selectedContentType === "reel") return null;
                                   if (phase === "video" && selectedContentType !== "reel") return null;
                                   if (phase === "image" && selectedContentType === "text") return null;
+                                  if (phase === "video" && selectedContentType === "text") return null;
                                   
                                   return (
                                     <div key={phase} className="flex items-center gap-1">
                                       <div className={cn(
-                                        "h-2 w-2 rounded-full transition-colors",
+                                        "h-2.5 w-2.5 rounded-full transition-colors",
                                         isCompleted ? "bg-green-500" : 
                                         isCurrent ? "bg-primary animate-pulse" : 
                                         "bg-muted-foreground/30"
                                       )} />
-                                      {i < phases.length - 1 && (
+                                      {i < phases.length - 1 && phase !== "complete" && (
                                         <div className={cn(
                                           "h-0.5 w-6 transition-colors",
                                           isCompleted ? "bg-green-500" : "bg-muted-foreground/30"
@@ -682,6 +891,34 @@ const SocialTools = () => {
                                     {getStatusBadge(content)}
                                   </div>
                                   <div className="flex items-center gap-1">
+                                    {/* Share Button */}
+                                    {content.status === "generated" && isConnected && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-primary"
+                                        onClick={() => publishContent(content.id, content.platform)}
+                                        disabled={isPublishing === content.id}
+                                        title="Teilen"
+                                      >
+                                        {isPublishing === content.id ? (
+                                          <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                          <Send className="h-4 w-4" />
+                                        )}
+                                      </Button>
+                                    )}
+                                    {content.status === "generated" && !isConnected && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-muted-foreground"
+                                        onClick={() => setActiveTab("connections")}
+                                        title="Verbindung erforderlich"
+                                      >
+                                        <Share2 className="h-4 w-4" />
+                                      </Button>
+                                    )}
                                     {(content.image_url || content.video_url) && (
                                       <Button
                                         variant="ghost"
@@ -691,23 +928,9 @@ const SocialTools = () => {
                                           content.video_url || content.image_url!,
                                           `${artist?.name || 'content'}-${content.content_type}.${content.video_url ? 'mp4' : 'png'}`
                                         )}
+                                        title="Download"
                                       >
                                         <Download className="h-4 w-4" />
-                                      </Button>
-                                    )}
-                                    {content.status === "generated" && isConnected && (
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 text-primary"
-                                        onClick={() => publishContent(content.id, content.platform)}
-                                        disabled={isPublishing === content.id}
-                                      >
-                                        {isPublishing === content.id ? (
-                                          <Loader2 className="h-4 w-4 animate-spin" />
-                                        ) : (
-                                          <Send className="h-4 w-4" />
-                                        )}
                                       </Button>
                                     )}
                                     {content.published_url && (
@@ -716,6 +939,7 @@ const SocialTools = () => {
                                         size="icon"
                                         className="h-8 w-8"
                                         onClick={() => window.open(content.published_url, "_blank")}
+                                        title="Öffnen"
                                       >
                                         <ExternalLink className="h-4 w-4" />
                                       </Button>
@@ -725,6 +949,7 @@ const SocialTools = () => {
                                       size="icon"
                                       className="h-8 w-8 text-destructive"
                                       onClick={() => deleteContent(content.id)}
+                                      title="Löschen"
                                     >
                                       <Trash2 className="h-4 w-4" />
                                     </Button>
