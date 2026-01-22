@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -39,6 +39,7 @@ interface Song {
   audio_url: string | null;
   generation_status: string | null;
   suno_task_id: string | null;
+  created_at?: string;
 }
 
 interface SongWithDetails extends Song {
@@ -74,6 +75,10 @@ export function SunoGeneratorDialog({ open, onOpenChange }: Props) {
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const pollIntervalRef = useRef<number | null>(null);
+  const refreshInFlightRef = useRef(false);
+  // Workaround for occasional type-server desyncs; keep runtime behavior identical.
+  const db = supabase as any;
 
   // Load data when dialog opens
   useEffect(() => {
@@ -137,6 +142,47 @@ export function SunoGeneratorDialog({ open, onOpenChange }: Props) {
     };
   }, [open]);
 
+  const mapSongsWithDetails = (
+    songsData: Song[] | null | undefined,
+    artistsData: Artist[] | null | undefined,
+    albumsData: Album[] | null | undefined
+  ): SongWithDetails[] => {
+    return (songsData || []).map((song) => {
+      const album = albumsData?.find((a) => a.id === song.album_id);
+      const artist = artistsData?.find((a) => a.id === album?.artist_id);
+      return {
+        ...song,
+        artistId: artist?.id || "",
+        artistName: artist?.name || "Unknown",
+        albumName: album?.name || "Unknown",
+        genre: artist?.genre || "",
+        style: artist?.style || "",
+        voicePrompt: artist?.voice_prompt || "",
+        personality: artist?.personality || "",
+      };
+    });
+  };
+
+  const refreshSongs = async (opts?: { silent?: boolean }) => {
+    // If base data isn't loaded yet, fall back to full load.
+    if (artists.length === 0 || albums.length === 0) {
+      await loadData();
+      return;
+    }
+
+    try {
+      const { data: songsData } = await supabase
+        .from("songs")
+        .select("id, name, album_id, bpm, tonart, audio_url, generation_status, suno_task_id, created_at")
+        .order("track_number");
+
+      setSongs(mapSongsWithDetails(songsData as Song[] | null | undefined, artists, albums));
+    } catch (error) {
+      console.error("Error refreshing songs:", error);
+      if (!opts?.silent) toast.error("Fehler beim Aktualisieren der Songs");
+    }
+  };
+
   const loadData = async () => {
     setLoading(true);
     try {
@@ -155,29 +201,13 @@ export function SunoGeneratorDialog({ open, onOpenChange }: Props) {
       // Load all songs with their relationships
       const { data: songsData } = await supabase
         .from("songs")
-        .select("id, name, album_id, bpm, tonart, audio_url, generation_status, suno_task_id")
+        .select("id, name, album_id, bpm, tonart, audio_url, generation_status, suno_task_id, created_at")
         .order("track_number");
 
       setArtists(artistsData || []);
       setAlbums(albumsData || []);
 
-      // Map songs with artist/album details
-      const songsWithDetails: SongWithDetails[] = (songsData || []).map(song => {
-        const album = albumsData?.find(a => a.id === song.album_id);
-        const artist = artistsData?.find(a => a.id === album?.artist_id);
-        return {
-          ...song,
-          artistId: artist?.id || "",
-          artistName: artist?.name || "Unknown",
-          albumName: album?.name || "Unknown",
-          genre: artist?.genre || "",
-          style: artist?.style || "",
-          voicePrompt: artist?.voice_prompt || "",
-          personality: artist?.personality || "",
-        };
-      });
-
-      setSongs(songsWithDetails);
+      setSongs(mapSongsWithDetails(songsData as Song[] | null | undefined, artistsData, albumsData));
     } catch (error) {
       console.error("Error loading data:", error);
       toast.error("Fehler beim Laden der Daten");
@@ -185,6 +215,52 @@ export function SunoGeneratorDialog({ open, onOpenChange }: Props) {
       setLoading(false);
     }
   };
+
+  const librarySongs = useMemo(() => {
+    // Show items that are already playable OR have a generation job in progress/completed/error.
+    return songs.filter((s) => {
+      if (s.audio_url) return true;
+      if (s.suno_task_id) return true;
+      return s.generation_status === "processing" || s.generation_status === "generating" || s.generation_status === "completed" || s.generation_status === "error";
+    });
+  }, [songs]);
+
+  const hasInFlightGenerations = useMemo(() => {
+    return librarySongs.some((s) => {
+      if (s.audio_url) return false;
+      const status = s.generation_status;
+      if (status === "completed" || status === "error") return false;
+      return Boolean(s.suno_task_id) || status === "processing" || status === "generating" || status === "pending";
+    });
+  }, [librarySongs]);
+
+  // Auto-refresh while there are in-flight generations (works even if realtime isn't enabled)
+  useEffect(() => {
+    if (!open) return;
+
+    if (pollIntervalRef.current) {
+      window.clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+
+    if (!hasInFlightGenerations) return;
+
+    pollIntervalRef.current = window.setInterval(() => {
+      if (refreshInFlightRef.current) return;
+      refreshInFlightRef.current = true;
+
+      refreshSongs({ silent: true }).finally(() => {
+        refreshInFlightRef.current = false;
+      });
+    }, 8000);
+
+    return () => {
+      if (pollIntervalRef.current) {
+        window.clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    };
+  }, [open, hasInFlightGenerations]);
 
   const toggleArtist = (artistId: string) => {
     const newExpanded = new Set(expandedArtists);
@@ -337,9 +413,9 @@ export function SunoGeneratorDialog({ open, onOpenChange }: Props) {
   const getArtistAlbums = (artistId: string) => albums.filter(a => a.artist_id === artistId);
   const getAlbumSongs = (albumId: string) => songs.filter(s => s.album_id === albumId);
 
-  // Sorted and filtered generated songs
-  const sortedGeneratedSongs = useMemo(() => {
-    const generated = songs.filter(s => s.audio_url);
+  // Sorted and filtered library songs
+  const sortedLibrarySongs = useMemo(() => {
+    const generated = [...librarySongs];
     
     return generated.sort((a, b) => {
       let comparison = 0;
@@ -356,20 +432,19 @@ export function SunoGeneratorDialog({ open, onOpenChange }: Props) {
           break;
         case "date":
         default:
-          // Use the song id as a proxy for creation date (UUIDs are time-based)
-          comparison = a.id.localeCompare(b.id);
+          comparison = new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
           break;
       }
       
       return sortDirection === "asc" ? comparison : -comparison;
     });
-  }, [songs, sortBy, sortDirection]);
+  }, [librarySongs, sortBy, sortDirection]);
 
-  const generatedSongs = songs.filter(s => s.audio_url);
+  const generatedSongs = librarySongs.filter(s => s.audio_url);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await loadData();
+    await refreshSongs();
     setIsRefreshing(false);
     toast.success("Bibliothek aktualisiert");
   };
@@ -543,7 +618,7 @@ export function SunoGeneratorDialog({ open, onOpenChange }: Props) {
 
             {/* Library Tab */}
             <TabsContent value="library" className="mt-0 space-y-3">
-              {generatedSongs.length === 0 ? (
+              {librarySongs.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <Volume2 className="h-12 w-12 text-muted-foreground mb-4" />
                   <h3 className="font-medium text-lg">Noch keine Songs generiert</h3>
@@ -591,36 +666,49 @@ export function SunoGeneratorDialog({ open, onOpenChange }: Props) {
                   </div>
 
                   {/* Song List */}
-                  {sortedGeneratedSongs.map(song => (
+                  {sortedLibrarySongs.map(song => (
                     <div 
                       key={song.id} 
                       className="flex items-center gap-4 p-4 rounded-lg border bg-card"
                     >
-                      <Button 
-                        size="icon" 
-                        variant={currentlyPlaying === song.id ? "default" : "outline"}
-                        onClick={() => playAudio(song.id, song.audio_url!)}
-                      >
-                        {currentlyPlaying === song.id ? (
-                          <Pause className="h-4 w-4" />
-                        ) : (
-                          <Play className="h-4 w-4" />
-                        )}
-                      </Button>
+                      {song.audio_url ? (
+                        <Button 
+                          size="icon" 
+                          variant={currentlyPlaying === song.id ? "default" : "outline"}
+                          onClick={() => playAudio(song.id, song.audio_url!)}
+                        >
+                          {currentlyPlaying === song.id ? (
+                            <Pause className="h-4 w-4" />
+                          ) : (
+                            <Play className="h-4 w-4" />
+                          )}
+                        </Button>
+                      ) : (
+                        <div className="w-10 flex items-center justify-center">
+                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{song.name}</p>
                         <p className="text-sm text-muted-foreground truncate">
                           {song.artistName} • {song.albumName}
                         </p>
+                        {!song.audio_url && (
+                          <div className="mt-1">{getStatusBadge(song.generation_status)}</div>
+                        )}
                       </div>
                       <Badge variant="outline">{song.genre}</Badge>
-                      <Button 
-                        size="icon" 
-                        variant="ghost"
-                        onClick={() => downloadAudio(song.audio_url!, song.name)}
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
+                      {song.audio_url ? (
+                        <Button 
+                          size="icon" 
+                          variant="ghost"
+                          onClick={() => downloadAudio(song.audio_url!, song.name)}
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <div className="w-10" />
+                      )}
                     </div>
                   ))}
                 </>
