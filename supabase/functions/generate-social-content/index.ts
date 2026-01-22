@@ -173,78 +173,158 @@ Die Caption sollte:
       console.log("Generating video with Runway API...");
 
       try {
-        // Start Runway video generation with image-to-video
-        const runwayResponse = await fetch("https://api.dev.runwayml.com/v1/image_to_video", {
+        // Step 1: Generate a starting frame image using Gemini
+        console.log("Generating starting frame image for video...");
+        
+        const framePrompt = `Create a cinematic ${artistGenre} music video still frame. 
+Style: Vertical 9:16 format, dramatic lighting, atmospheric, professional.
+Theme: ${customPrompt || artistStyle}
+The image should be visually striking and suitable for animation into a music video.
+Ultra high resolution, photorealistic quality.`;
+
+        const frameResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${RUNWAY_API_KEY}`,
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
             "Content-Type": "application/json",
-            "X-Runway-Version": "2024-11-06",
           },
           body: JSON.stringify({
-            model: "gen3a_turbo",
-            promptImage: artistImageUrl,
-            promptText: `Cinematic ${artistGenre} music video scene. Subtle camera movement, dramatic lighting, atmospheric effects. Professional music video quality.`,
-            duration: 5,
-            ratio: "768:1280", // Vertical reels ratio supported by image_to_video
+            model: "google/gemini-2.5-flash-image-preview",
+            messages: [
+              {
+                role: "user",
+                content: [
+                  { type: "text", text: framePrompt },
+                  { type: "image_url", image_url: { url: artistImageUrl } },
+                ],
+              },
+            ],
+            modalities: ["image", "text"],
           }),
         });
 
-        if (runwayResponse.ok) {
-          const runwayData = await runwayResponse.json();
-          const taskId = runwayData.id;
-          console.log("Runway task created:", taskId);
+        let runwayInputImageUrl: string | null = null;
 
-          // Poll for completion
-          const runwayVideoUrl = await pollRunwayTask(taskId, RUNWAY_API_KEY);
-
-          if (runwayVideoUrl) {
-            console.log("Downloading video from Runway...");
+        if (frameResponse.ok) {
+          const frameData = await frameResponse.json();
+          const generatedFrameUrl = frameData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+          
+          if (generatedFrameUrl) {
+            console.log("Starting frame generated, uploading to storage...");
             
-            // Download the video from Runway's CDN
-            const videoResponse = await fetch(runwayVideoUrl);
-            if (videoResponse.ok) {
-              const videoBuffer = new Uint8Array(await videoResponse.arrayBuffer());
-              
-              const filename = `${artistId}/${Date.now()}-reel.mp4`;
-              
-              const { error: uploadError } = await supabase.storage
-                .from("social-content")
-                .upload(filename, videoBuffer, {
-                  contentType: "video/mp4",
-                  upsert: true,
-                });
+            // Upload the frame to storage to get a public URL for Runway
+            const base64Data = generatedFrameUrl.replace(/^data:image\/\w+;base64,/, "");
+            const frameBuffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+            
+            const frameFilename = `${artistId}/${Date.now()}-video-frame.png`;
+            
+            const { error: frameUploadError } = await supabase.storage
+              .from("social-content")
+              .upload(frameFilename, frameBuffer, {
+                contentType: "image/png",
+                upsert: true,
+              });
 
-              if (uploadError) {
-                console.error("Video upload error:", uploadError);
-                videoFailureNote = "Video konnte nicht hochgeladen werden; Fallback-Bild wurde erstellt.";
-              } else {
-                const { data: { publicUrl } } = supabase.storage
-                  .from("social-content")
-                  .getPublicUrl(filename);
-                videoUrl = publicUrl;
-                console.log("Video uploaded:", videoUrl);
-              }
+            if (!frameUploadError) {
+              const { data: { publicUrl } } = supabase.storage
+                .from("social-content")
+                .getPublicUrl(frameFilename);
+              runwayInputImageUrl = publicUrl;
+              console.log("Frame uploaded for Runway:", runwayInputImageUrl);
             } else {
-              console.error("Failed to download video from Runway:", videoResponse.status);
-              videoFailureNote = "Video-Download von Runway fehlgeschlagen – es wurde stattdessen ein Reel-Cover (PNG) erstellt.";
+              console.error("Frame upload error:", frameUploadError);
             }
-          } else {
-            videoFailureNote = "Runway Video-Generierung fehlgeschlagen – es wurde stattdessen ein Reel-Cover (PNG) erstellt.";
           }
         } else {
-          const errorText = await runwayResponse.text();
-          console.error("Runway API error:", runwayResponse.status, errorText);
+          console.error("Frame generation failed:", await frameResponse.text());
+        }
 
-          if (errorText.includes("insufficient") || errorText.includes("credit") || errorText.includes("balance")) {
-            videoFailureNote = "Runway: nicht genug Credits – es wurde stattdessen ein Reel-Cover (PNG) erstellt.";
-          } else if (runwayResponse.status === 401) {
-            videoFailureNote = "Runway API-Key ungültig – es wurde stattdessen ein Reel-Cover (PNG) erstellt.";
-          } else if (runwayResponse.status === 422) {
-            videoFailureNote = "Runway: Bildformat nicht unterstützt – es wurde stattdessen ein Reel-Cover (PNG) erstellt.";
+        // Step 2: Send the generated frame to Runway for video generation
+        if (runwayInputImageUrl) {
+          console.log("Sending frame to Runway for video generation...");
+          
+          const runwayResponse = await fetch("https://api.dev.runwayml.com/v1/image_to_video", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${RUNWAY_API_KEY}`,
+              "Content-Type": "application/json",
+              "X-Runway-Version": "2024-11-06",
+            },
+            body: JSON.stringify({
+              model: "gen3a_turbo",
+              promptImage: runwayInputImageUrl,
+              promptText: `Cinematic ${artistGenre} music video scene. Subtle camera movement, dramatic lighting, atmospheric effects. Professional music video quality.`,
+              duration: 5,
+              ratio: "768:1280", // Vertical reels ratio
+            }),
+          });
+
+          if (runwayResponse.ok) {
+            const runwayData = await runwayResponse.json();
+            const taskId = runwayData.id;
+            console.log("Runway task created:", taskId);
+
+            // Poll for completion
+            const runwayVideoUrl = await pollRunwayTask(taskId, RUNWAY_API_KEY);
+
+            if (runwayVideoUrl) {
+              console.log("Downloading video from Runway...");
+              
+              // Download the video from Runway's CDN
+              const videoResponse = await fetch(runwayVideoUrl);
+              if (videoResponse.ok) {
+                const videoBuffer = new Uint8Array(await videoResponse.arrayBuffer());
+                
+                const filename = `${artistId}/${Date.now()}-reel.mp4`;
+                
+                const { error: uploadError } = await supabase.storage
+                  .from("social-content")
+                  .upload(filename, videoBuffer, {
+                    contentType: "video/mp4",
+                    upsert: true,
+                  });
+
+                if (uploadError) {
+                  console.error("Video upload error:", uploadError);
+                  videoFailureNote = "Video konnte nicht hochgeladen werden; Fallback-Bild wurde erstellt.";
+                } else {
+                  const { data: { publicUrl } } = supabase.storage
+                    .from("social-content")
+                    .getPublicUrl(filename);
+                  videoUrl = publicUrl;
+                  console.log("Video uploaded:", videoUrl);
+                  
+                  // Use the frame as the cover image
+                  imageUrl = runwayInputImageUrl;
+                }
+              } else {
+                console.error("Failed to download video from Runway:", videoResponse.status);
+                videoFailureNote = "Video-Download von Runway fehlgeschlagen – es wurde stattdessen ein Reel-Cover (PNG) erstellt.";
+              }
+            } else {
+              videoFailureNote = "Runway Video-Generierung fehlgeschlagen – es wurde stattdessen ein Reel-Cover (PNG) erstellt.";
+            }
           } else {
-            videoFailureNote = `Runway Video-Fehler (${runwayResponse.status}) – es wurde stattdessen ein Reel-Cover (PNG) erstellt.`;
+            const errorText = await runwayResponse.text();
+            console.error("Runway API error:", runwayResponse.status, errorText);
+
+            if (errorText.includes("insufficient") || errorText.includes("credit") || errorText.includes("balance")) {
+              videoFailureNote = "Runway: nicht genug Credits – es wurde stattdessen ein Reel-Cover (PNG) erstellt.";
+            } else if (runwayResponse.status === 401) {
+              videoFailureNote = "Runway API-Key ungültig – es wurde stattdessen ein Reel-Cover (PNG) erstellt.";
+            } else if (runwayResponse.status === 422) {
+              videoFailureNote = "Runway: Bildformat nicht unterstützt – es wurde stattdessen ein Reel-Cover (PNG) erstellt.";
+            } else {
+              videoFailureNote = `Runway Video-Fehler (${runwayResponse.status}) – es wurde stattdessen ein Reel-Cover (PNG) erstellt.`;
+            }
           }
+          
+          // If video failed but we have the frame, use it as cover
+          if (!videoUrl && runwayInputImageUrl) {
+            imageUrl = runwayInputImageUrl;
+          }
+        } else {
+          videoFailureNote = "Startbild konnte nicht generiert werden – es wurde stattdessen ein Reel-Cover erstellt.";
         }
       } catch (runwayError) {
         console.error("Runway video generation error:", runwayError);
