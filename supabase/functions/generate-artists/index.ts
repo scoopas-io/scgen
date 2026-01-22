@@ -12,7 +12,36 @@ interface GenerateRequest {
   albumCount: number;
   songCount: number;
   selectedGenres: string[];
+  selectedLanguages: string[];
 }
+
+const LANGUAGE_NAMES: Record<string, string> = {
+  de: "Deutsch",
+  en: "Englisch", 
+  es: "Spanisch",
+  fr: "Französisch",
+  it: "Italienisch",
+  pt: "Portugiesisch",
+  nl: "Niederländisch",
+  pl: "Polnisch",
+  ru: "Russisch",
+  uk: "Ukrainisch",
+  tr: "Türkisch",
+  ar: "Arabisch",
+  he: "Hebräisch",
+  hi: "Hindi",
+  zh: "Chinesisch",
+  ja: "Japanisch",
+  ko: "Koreanisch",
+  th: "Thai",
+  vi: "Vietnamesisch",
+  id: "Indonesisch",
+  ms: "Malaiisch",
+  tl: "Filipino",
+  sv: "Schwedisch",
+  da: "Dänisch",
+  fi: "Finnisch",
+};
 
 const TONARTEN = ["C-Dur", "D-Dur", "E-Dur", "F-Dur", "G-Dur", "A-Dur", "H-Dur", "a-Moll", "d-Moll", "e-Moll", "g-Moll"];
 const generateISRC = () => `DE-KI${Date.now().toString(36).slice(-3).toUpperCase()}-${Math.floor(Math.random() * 99).toString().padStart(2, '0')}-${Math.floor(Math.random() * 99999).toString().padStart(5, '0')}`;
@@ -35,7 +64,7 @@ serve(async (req) => {
   }
 
   try {
-    const { artistCount, albumCount, songCount, selectedGenres }: GenerateRequest = await req.json();
+    const { artistCount, albumCount, songCount, selectedGenres, selectedLanguages }: GenerateRequest = await req.json();
     
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
@@ -64,6 +93,14 @@ serve(async (req) => {
       ? `Generiere NUR Künstler aus diesen Genres: ${selectedGenres.join(", ")}.`
       : "Verwende diverse Genres.";
 
+    const languageNames = (selectedLanguages || [])
+      .map(code => LANGUAGE_NAMES[code])
+      .filter(Boolean);
+    
+    const languageFilter = languageNames.length > 0
+      ? `WICHTIG: Generiere Künstler, deren Namen, Albumtitel und Songtitel in diesen Sprachen sind: ${languageNames.join(", ")}. Die Namen und Titel sollen authentisch in der jeweiligen Sprache klingen, mit korrekter Grammatik und typischen Namenskonventionen der jeweiligen Kultur.`
+      : "Generiere deutsche Künstlernamen, Album- und Songtitel.";
+
     const systemPrompt = `Du bist ein kreativer Musik-Industrie-Experte für einzigartige fiktive Künstlerprofile.
 
 REGELN:
@@ -71,8 +108,9 @@ REGELN:
 2. KEINE Ähnlichkeit zu bekannten Künstlern
 3. Vermeide KI-Klischees: Neon, Lichter, Straßen, Stadt, Urban, Cyber, Echo, Shadow, Dream, Pulse
 4. ${genreFilter}
-5. Persönlichkeitsprompts sollen tiefgründig sein
-6. SUNO Stimmfrequenz-Prompts müssen technisch präzise sein (auf Englisch)
+5. ${languageFilter}
+6. Persönlichkeitsprompts sollen tiefgründig sein
+7. SUNO Stimmfrequenz-Prompts müssen technisch präzise sein (auf Englisch)
 
 EXISTIERENDE NAMEN (NICHT VERWENDEN!):
 - Künstler: ${existingArtists.slice(0, 100).join(", ") || "keine"}
