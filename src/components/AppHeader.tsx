@@ -13,7 +13,7 @@ export const AppHeader = ({ stats, onOpenSunoDialog }: AppHeaderProps) => {
   const location = useLocation();
   
   const navItems = [
-    { path: "/", label: "KI-Artists", icon: Zap },
+    { path: "/generator", label: "KI-Artists", icon: Zap },
     { path: "/songkatalog", label: "Songkatalog", icon: ListMusic },
     { path: "/social-tools", label: "Social-Tools", icon: Share2 },
   ];
@@ -45,7 +45,7 @@ export const AppHeader = ({ stats, onOpenSunoDialog }: AppHeaderProps) => {
                   size="sm"
                   className={cn(
                     "gap-2",
-                    location.pathname === path && "bg-primary/10 text-primary"
+                    (location.pathname === path || (path === "/generator" && location.pathname === "/")) && "bg-primary/10 text-primary"
                   )}
                   asChild
                 >
