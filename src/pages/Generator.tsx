@@ -128,37 +128,113 @@ const Generator = () => {
     loadStats();
   };
 
+  const generateWithStreaming = async (count: number): Promise<Artist[]> => {
+    return new Promise((resolve, reject) => {
+      const eventSource = new EventSource(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-artists?stream=true`
+      );
+      
+      // We need to send POST data, so use fetch with SSE reader instead
+      fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-artists?stream=true`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            artistCount: count,
+            albumCount,
+            songCount,
+            selectedGenres,
+            selectedLanguages,
+          }),
+        }
+      ).then(async (response) => {
+        if (!response.ok) {
+          if (response.status === 429) {
+            reject(new Error("Rate Limit erreicht. Warte 30 Sekunden..."));
+          } else if (response.status === 402) {
+            reject(new Error("Kontingent erschöpft."));
+          } else {
+            const error = await response.json().catch(() => ({}));
+            reject(new Error(error.error || "Ein Fehler ist aufgetreten."));
+          }
+          return;
+        }
+        
+        const reader = response.body?.getReader();
+        if (!reader) {
+          reject(new Error("Streaming nicht verfügbar"));
+          return;
+        }
+        
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let finalArtists: Artist[] = [];
+        
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+          
+          for (const line of lines) {
+            if (line.startsWith("event: ")) {
+              const eventType = line.replace("event: ", "").trim();
+              continue;
+            }
+            if (line.startsWith("data: ")) {
+              try {
+                const data = JSON.parse(line.replace("data: ", ""));
+                
+                if (data.phase) {
+                  setGenerationState(prev => ({
+                    ...prev,
+                    phase: data.phase as GenerationPhase,
+                    progress: data.progress || prev.progress,
+                    currentArtist: data.currentArtist,
+                    imagesGenerated: data.imagesGenerated ?? prev.imagesGenerated,
+                    imagesTotal: data.imagesTotal ?? prev.imagesTotal,
+                  }));
+                }
+                
+                if (data.progress !== undefined) {
+                  setGenerationState(prev => ({
+                    ...prev,
+                    progress: data.progress,
+                    currentArtist: data.currentArtist || prev.currentArtist,
+                    imagesGenerated: data.imagesGenerated ?? prev.imagesGenerated,
+                    generated: data.current || prev.generated,
+                  }));
+                }
+                
+                if (data.artists) {
+                  finalArtists = data.artists;
+                }
+                
+                if (data.error) {
+                  reject(new Error(data.error));
+                  return;
+                }
+              } catch (e) {
+                console.warn("SSE parse error:", e);
+              }
+            }
+          }
+        }
+        
+        resolve(finalArtists);
+      }).catch(reject);
+    });
+  };
+  
   const generateBatch = async (count: number): Promise<Artist[]> => {
-    const response = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-artists`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          artistCount: count,
-          albumCount,
-          songCount,
-          selectedGenres,
-          selectedLanguages,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const error = await response.json();
-      if (response.status === 429) {
-        throw new Error("Rate Limit erreicht. Warte 30 Sekunden...");
-      } else if (response.status === 402) {
-        throw new Error("Kontingent erschöpft.");
-      }
-      throw new Error(error.error || "Ein Fehler ist aufgetreten.");
-    }
-
-    const data = await response.json();
-    return data.artists || [];
+    // Use streaming for real-time progress updates
+    return generateWithStreaming(count);
   };
 
   const generateArtists = async () => {
