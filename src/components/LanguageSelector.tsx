@@ -61,23 +61,23 @@ export function LanguageSelector({ selectedLanguages, onLanguagesChange }: Langu
   };
 
   return (
-    <div className="space-y-4 p-6 rounded-xl border border-border bg-card/50 backdrop-blur-sm">
+    <div className="space-y-3 p-4 rounded-lg border border-border bg-card/50 backdrop-blur-sm">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Globe className="h-4 w-4 text-primary" />
-          <h3 className="text-base font-medium text-foreground">Sprachen</h3>
+        <div className="flex items-center gap-1.5">
+          <Globe className="h-3.5 w-3.5 text-primary" />
+          <h3 className="text-sm font-medium text-foreground">Sprachen</h3>
         </div>
-        <div className="flex gap-2">
-          <Button variant="ghost" size="sm" onClick={clearAll} className="text-xs">
+        <div className="flex gap-1">
+          <Button variant="ghost" size="sm" onClick={clearAll} className="text-xs h-7 px-2">
             Keine
           </Button>
-          <Button variant="ghost" size="sm" onClick={selectAll} className="text-xs">
+          <Button variant="ghost" size="sm" onClick={selectAll} className="text-xs h-7 px-2">
             Alle
           </Button>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1.5">
         {displayedLanguages.map((lang) => {
           const isSelected = selectedLanguages.includes(lang.code);
           return (
@@ -85,14 +85,14 @@ export function LanguageSelector({ selectedLanguages, onLanguagesChange }: Langu
               key={lang.code}
               onClick={() => toggleLanguage(lang.code)}
               className={cn(
-                "px-3 py-1.5 rounded-full text-xs font-medium transition-all",
-                "border flex items-center gap-1.5",
+                "px-2 py-1 rounded-full text-xs font-medium transition-all",
+                "border flex items-center gap-1",
                 isSelected
                   ? "bg-primary text-primary-foreground border-primary"
                   : "bg-secondary/50 text-secondary-foreground border-border hover:border-primary/50"
               )}
             >
-              {isSelected && <Check className="h-3 w-3" />}
+              {isSelected && <Check className="h-2.5 w-2.5" />}
               <span>{lang.flag}</span>
               <span>{lang.name}</span>
             </button>
@@ -105,9 +105,9 @@ export function LanguageSelector({ selectedLanguages, onLanguagesChange }: Langu
           variant="ghost"
           size="sm"
           onClick={() => setExpanded(!expanded)}
-          className="w-full text-xs text-muted-foreground"
+          className="w-full text-xs text-muted-foreground h-7"
         >
-          {expanded ? "Weniger anzeigen" : `+${LANGUAGES.length - 10} weitere Sprachen`}
+          {expanded ? "Weniger" : `+${LANGUAGES.length - 10} mehr`}
         </Button>
       )}
 

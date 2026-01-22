@@ -19,13 +19,13 @@ export function GeneratorControls({
   onSongCountChange,
 }: GeneratorControlsProps) {
   return (
-    <div className="space-y-8 p-6 rounded-xl border border-border bg-card/50 backdrop-blur-sm">
-      <div className="space-y-4">
+    <div className="space-y-5 p-4 rounded-lg border border-border bg-card/50 backdrop-blur-sm">
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <Label className="text-base font-medium text-foreground">
+          <Label className="text-sm font-medium text-foreground">
             Anzahl Künstler
           </Label>
-          <span className="text-2xl font-display font-bold text-primary">
+          <span className="text-xl font-display font-bold text-primary">
             {artistCount}
           </span>
         </div>
@@ -33,19 +33,19 @@ export function GeneratorControls({
           value={[artistCount]}
           onValueChange={(v) => onArtistCountChange(v[0])}
           min={1}
-          max={50}
+          max={200}
           step={1}
           className="w-full"
         />
-        <p className="text-sm text-muted-foreground">1 - 50 Künstler generieren</p>
+        <p className="text-xs text-muted-foreground">1 - 200 Künstler (Bulk-Modus ab 11)</p>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <Label className="text-base font-medium text-foreground">
+          <Label className="text-sm font-medium text-foreground">
             Alben pro Künstler
           </Label>
-          <span className="text-2xl font-display font-bold text-primary">
+          <span className="text-xl font-display font-bold text-primary">
             {albumCount}
           </span>
         </div>
@@ -57,15 +57,15 @@ export function GeneratorControls({
           step={1}
           className="w-full"
         />
-        <p className="text-sm text-muted-foreground">1 - 5 Alben pro Künstler</p>
+        <p className="text-xs text-muted-foreground">1 - 5 Alben pro Künstler</p>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <Label className="text-base font-medium text-foreground">
+          <Label className="text-sm font-medium text-foreground">
             Songs pro Album
           </Label>
-          <span className="text-2xl font-display font-bold text-primary">
+          <span className="text-xl font-display font-bold text-primary">
             {songCount}
           </span>
         </div>
@@ -77,7 +77,7 @@ export function GeneratorControls({
           step={1}
           className="w-full"
         />
-        <p className="text-sm text-muted-foreground">3 - 12 Songs pro Album</p>
+        <p className="text-xs text-muted-foreground">3 - 12 Songs pro Album</p>
       </div>
     </div>
   );

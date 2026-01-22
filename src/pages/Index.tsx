@@ -1,14 +1,18 @@
 import { useState, useEffect } from "react";
-import { Sparkles, Music, Zap, History, X, Database, Download, FileJson, FileSpreadsheet, Globe } from "lucide-react";
+import { Music, Zap, History, X, Database, Download, FileJson, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GeneratorControls } from "@/components/GeneratorControls";
 import { GenreFilter } from "@/components/GenreFilter";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { ArtistCard, type Artist } from "@/components/ArtistCard";
 import { LoadingState } from "@/components/LoadingState";
+import { ScoopasIcon } from "@/components/ScoopasIcon";
 import { exportCatalogAsCSV, exportCatalogAsJSON } from "@/lib/exportCatalog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
+const BATCH_SIZE = 10; // Artists per batch for bulk generation
 
 const Index = () => {
   const [artistCount, setArtistCount] = useState(3);
@@ -22,6 +26,7 @@ const Index = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [stats, setStats] = useState({ artists: 0, albums: 0, songs: 0 });
   const [isExporting, setIsExporting] = useState(false);
+  const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0, generated: 0, progress: 0 });
 
   useEffect(() => {
     loadSavedArtists();
@@ -103,60 +108,107 @@ const Index = () => {
     loadStats();
   };
 
+  const generateBatch = async (count: number): Promise<Artist[]> => {
+    const response = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-artists`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          artistCount: count,
+          albumCount,
+          songCount,
+          selectedGenres,
+          selectedLanguages,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      if (response.status === 429) {
+        throw new Error("Rate Limit erreicht. Warte 30 Sekunden...");
+      } else if (response.status === 402) {
+        throw new Error("Kontingent erschöpft.");
+      }
+      throw new Error(error.error || "Ein Fehler ist aufgetreten.");
+    }
+
+    const data = await response.json();
+    return data.artists || [];
+  };
+
   const generateArtists = async () => {
     setIsLoading(true);
     setArtists([]);
+    
+    const totalBatches = Math.ceil(artistCount / BATCH_SIZE);
+    const isBulkMode = totalBatches > 1;
+    
+    if (isBulkMode) {
+      setBatchProgress({ current: 0, total: totalBatches, generated: 0, progress: 0 });
+    }
 
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-artists`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({
-            artistCount,
-            albumCount,
-            songCount,
-            selectedGenres,
-            selectedLanguages,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        if (response.status === 429) {
-          toast.error("Rate Limit erreicht", {
-            description: "Bitte warte einen Moment und versuche es erneut.",
-          });
-        } else if (response.status === 402) {
-          toast.error("Kontingent erschöpft", {
-            description: "Bitte lade Credits auf, um weiterzumachen.",
-          });
-        } else {
-          toast.error("Fehler", {
-            description: error.error || "Ein Fehler ist aufgetreten.",
-          });
-        }
-        return;
-      }
-
-      const data = await response.json();
-      setArtists(data.artists);
-      toast.success(`${data.artists.length} Künstler mit Profilbildern generiert!`);
+      let allArtists: Artist[] = [];
+      let remaining = artistCount;
       
+      for (let batch = 1; batch <= totalBatches; batch++) {
+        const batchCount = Math.min(remaining, BATCH_SIZE);
+        
+        if (isBulkMode) {
+          setBatchProgress({
+            current: batch,
+            total: totalBatches,
+            generated: allArtists.length,
+            progress: ((batch - 1) / totalBatches) * 100,
+          });
+        }
+        
+        try {
+          const batchArtists = await generateBatch(batchCount);
+          allArtists = [...allArtists, ...batchArtists];
+          setArtists([...allArtists]);
+          
+          if (isBulkMode) {
+            setBatchProgress({
+              current: batch,
+              total: totalBatches,
+              generated: allArtists.length,
+              progress: (batch / totalBatches) * 100,
+            });
+          }
+          
+          remaining -= batchCount;
+          
+          // Small delay between batches to avoid rate limits
+          if (batch < totalBatches) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+        } catch (batchError) {
+          console.error(`Batch ${batch} error:`, batchError);
+          if (batchError instanceof Error && batchError.message.includes("Rate Limit")) {
+            toast.warning("Rate Limit - Warte 30 Sekunden...");
+            await new Promise(resolve => setTimeout(resolve, 30000));
+            batch--; // Retry this batch
+          } else {
+            throw batchError;
+          }
+        }
+      }
+      
+      toast.success(`${allArtists.length} Künstler mit Profilbildern generiert!`);
       await loadSavedArtists();
       await loadStats();
     } catch (error) {
       console.error("Error generating artists:", error);
-      toast.error("Verbindungsfehler", {
-        description: "Bitte überprüfe deine Internetverbindung.",
-      });
+      toast.error(error instanceof Error ? error.message : "Verbindungsfehler");
     } finally {
       setIsLoading(false);
+      setBatchProgress({ current: 0, total: 0, generated: 0, progress: 0 });
     }
   };
 
@@ -178,196 +230,221 @@ const Index = () => {
     }
   };
 
+  const totalBatches = Math.ceil(artistCount / BATCH_SIZE);
+  const isBulkMode = totalBatches > 1;
+
   return (
-    <div className="min-h-screen">
-      {/* Hero Section */}
-      <header className="relative overflow-hidden border-b border-border">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent" />
-        <div className="container relative py-10 md:py-16">
-          <div className="flex flex-col items-center text-center space-y-5 max-w-3xl mx-auto">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
-              <Sparkles className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium text-primary">
-                Powered by AI + Bildgenerierung
-              </span>
+    <div className="h-screen flex flex-col overflow-hidden">
+      {/* Compact Header */}
+      <header className="shrink-0 border-b border-border bg-background/95 backdrop-blur">
+        <div className="container py-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl md:text-2xl font-display font-bold tracking-tight">
+                <span className="text-foreground">KI Artist</span>{" "}
+                <span className="text-gradient-gold">Generator</span>
+              </h1>
+              <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20">
+                <ScoopasIcon size={16} />
+                <span className="text-xs font-medium text-primary">
+                  Powered by scoopas.AI
+                </span>
+              </div>
             </div>
-            <h1 className="text-4xl md:text-5xl font-display font-bold tracking-tight">
-              <span className="text-foreground">KI Artist</span>{" "}
-              <span className="text-gradient-gold">Generator</span>
-            </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl">
-              Generiere einzigartige Künstlerprofile mit KI-Profilbildern, 
-              SUNO Voice-Prompts, Alben und vollständigem Musikkatalog.
-            </p>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap justify-center">
-              <div className="flex items-center gap-2">
-                <Database className="h-4 w-4 text-primary" />
-                <span>{stats.artists} Künstler</span>
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <Database className="h-3.5 w-3.5 text-primary" />
+                <span>{stats.artists}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Music className="h-4 w-4 text-primary" />
-                <span>{stats.albums} Alben</span>
+              <div className="flex items-center gap-1.5">
+                <Music className="h-3.5 w-3.5 text-primary" />
+                <span>{stats.albums}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Zap className="h-4 w-4 text-primary" />
-                <span>{stats.songs} Songs</span>
+              <div className="flex items-center gap-1.5">
+                <Zap className="h-3.5 w-3.5 text-primary" />
+                <span>{stats.songs}</span>
               </div>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="container py-8">
-        <div className="grid lg:grid-cols-[420px_1fr] gap-8">
-          {/* Controls Sidebar */}
-          <aside className="space-y-6">
-            <GeneratorControls
-              artistCount={artistCount}
-              albumCount={albumCount}
-              songCount={songCount}
-              onArtistCountChange={setArtistCount}
-              onAlbumCountChange={setAlbumCount}
-              onSongCountChange={setSongCount}
-            />
-            
-            <GenreFilter
-              selectedGenres={selectedGenres}
-              onGenresChange={setSelectedGenres}
-            />
-            
-            <LanguageSelector
-              selectedLanguages={selectedLanguages}
-              onLanguagesChange={setSelectedLanguages}
-            />
+      {/* Main Content - Fixed Height */}
+      <main className="flex-1 min-h-0 overflow-hidden">
+        <div className="container h-full py-4">
+          <div className="grid lg:grid-cols-[360px_1fr] gap-6 h-full">
+            {/* Controls Sidebar - Scrollable */}
+            <ScrollArea className="h-full pr-4">
+              <aside className="space-y-4 pb-4">
+                <GeneratorControls
+                  artistCount={artistCount}
+                  albumCount={albumCount}
+                  songCount={songCount}
+                  onArtistCountChange={setArtistCount}
+                  onAlbumCountChange={setAlbumCount}
+                  onSongCountChange={setSongCount}
+                />
+                
+                <GenreFilter
+                  selectedGenres={selectedGenres}
+                  onGenresChange={setSelectedGenres}
+                />
+                
+                <LanguageSelector
+                  selectedLanguages={selectedLanguages}
+                  onLanguagesChange={setSelectedLanguages}
+                />
 
-            <Button
-              variant="gold"
-              size="xl"
-              className="w-full"
-              onClick={generateArtists}
-              disabled={isLoading}
-            >
-              <Sparkles className="h-5 w-5" />
-              {isLoading ? "Generiere..." : "Künstler generieren"}
-            </Button>
-            
-            <Button
-              variant="outline"
-              size="lg"
-              className="w-full"
-              onClick={() => setShowHistory(!showHistory)}
-            >
-              <History className="h-5 w-5" />
-              {showHistory ? "Neue Ergebnisse" : `Datenbank (${stats.artists})`}
-            </Button>
-
-            {/* Export Buttons */}
-            {stats.songs > 0 && (
-              <div className="p-4 rounded-xl border border-border bg-card/50 space-y-3">
-                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                  <Download className="h-4 w-4 text-primary" />
-                  <span>Katalog exportieren</span>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-2">
                   <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={handleExportCSV}
-                    disabled={isExporting}
+                    variant="gold"
+                    size="lg"
+                    className="w-full"
+                    onClick={generateArtists}
+                    disabled={isLoading}
                   >
-                    <FileSpreadsheet className="h-4 w-4" />
-                    CSV
+                    <ScoopasIcon size={18} />
+                    {isLoading 
+                      ? isBulkMode 
+                        ? `Batch ${batchProgress.current}/${batchProgress.total}...` 
+                        : "Generiere..." 
+                      : isBulkMode 
+                        ? `${artistCount} Künstler generieren (${totalBatches} Batches)` 
+                        : "Künstler generieren"
+                    }
                   </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={handleExportJSON}
-                    disabled={isExporting}
-                  >
-                    <FileJson className="h-4 w-4" />
-                    JSON
-                  </Button>
+                  
+                  {isBulkMode && !isLoading && (
+                    <p className="text-xs text-muted-foreground text-center">
+                      Bulk-Modus: {BATCH_SIZE} pro Batch, automatische Pausen
+                    </p>
+                  )}
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Vollständiger Musikkatalog mit allen Feldern
-                </p>
-              </div>
-            )}
-            
-            {artists.length > 0 && !showHistory && (
-              <p className="text-center text-sm text-muted-foreground">
-                {artists.length} neu generiert
-              </p>
-            )}
-          </aside>
+                
+                <Button
+                  variant="outline"
+                  size="default"
+                  className="w-full"
+                  onClick={() => setShowHistory(!showHistory)}
+                >
+                  <History className="h-4 w-4" />
+                  {showHistory ? "Neue Ergebnisse" : `Datenbank (${stats.artists})`}
+                </Button>
 
-          {/* Results */}
-          <section className="space-y-4">
-            {showHistory ? (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-display font-semibold text-foreground flex items-center gap-2">
-                    <Database className="h-5 w-5 text-primary" />
-                    Gespeicherte Künstler ({savedArtists.length})
-                  </h2>
-                  <Button variant="ghost" size="icon" onClick={() => setShowHistory(false)}>
-                    <X className="h-5 w-5" />
-                  </Button>
-                </div>
-                {savedArtists.length > 0 ? (
-                  savedArtists.map((artist, index) => (
-                    <ArtistCard
-                      key={artist.id || `${artist.name}-${index}`}
-                      artist={artist}
-                      index={index}
-                      onDelete={deleteArtist}
-                      showDelete
-                      onRefresh={loadSavedArtists}
-                    />
-                  ))
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-16 text-center">
-                    <div className="h-20 w-20 rounded-2xl bg-secondary/50 flex items-center justify-center mb-6">
-                      <Database className="h-10 w-10 text-muted-foreground" />
+                {/* Export Buttons */}
+                {stats.songs > 0 && (
+                  <div className="p-3 rounded-lg border border-border bg-card/50 space-y-2">
+                    <div className="flex items-center gap-2 text-xs font-medium text-foreground">
+                      <Download className="h-3.5 w-3.5 text-primary" />
+                      <span>Katalog exportieren</span>
                     </div>
-                    <h3 className="text-xl font-display font-semibold text-foreground mb-2">
-                      Keine gespeicherten Künstler
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleExportCSV}
+                        disabled={isExporting}
+                      >
+                        <FileSpreadsheet className="h-3.5 w-3.5" />
+                        CSV
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleExportJSON}
+                        disabled={isExporting}
+                      >
+                        <FileJson className="h-3.5 w-3.5" />
+                        JSON
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </aside>
+            </ScrollArea>
+
+            {/* Results - Scrollable */}
+            <ScrollArea className="h-full">
+              <section className="space-y-3 pr-4 pb-4">
+                {showHistory ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between sticky top-0 bg-background/95 backdrop-blur py-2 -mt-2 z-10">
+                      <h2 className="text-lg font-display font-semibold text-foreground flex items-center gap-2">
+                        <Database className="h-4 w-4 text-primary" />
+                        Gespeicherte Künstler ({savedArtists.length})
+                      </h2>
+                      <Button variant="ghost" size="icon" onClick={() => setShowHistory(false)}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    {savedArtists.length > 0 ? (
+                      savedArtists.map((artist, index) => (
+                        <ArtistCard
+                          key={artist.id || `${artist.name}-${index}`}
+                          artist={artist}
+                          index={index}
+                          onDelete={deleteArtist}
+                          showDelete
+                          onRefresh={loadSavedArtists}
+                        />
+                      ))
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <div className="h-16 w-16 rounded-xl bg-secondary/50 flex items-center justify-center mb-4">
+                          <Database className="h-8 w-8 text-muted-foreground" />
+                        </div>
+                        <h3 className="text-lg font-display font-semibold text-foreground mb-1">
+                          Keine gespeicherten Künstler
+                        </h3>
+                        <p className="text-sm text-muted-foreground max-w-sm">
+                          Generiere Künstler, um sie in der Datenbank zu speichern.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : isLoading ? (
+                  <LoadingState 
+                    progress={batchProgress.progress}
+                    currentBatch={batchProgress.current}
+                    totalBatches={batchProgress.total}
+                    generatedCount={batchProgress.generated}
+                    totalCount={artistCount}
+                  />
+                ) : artists.length > 0 ? (
+                  <>
+                    <div className="sticky top-0 bg-background/95 backdrop-blur py-2 -mt-2 z-10">
+                      <p className="text-sm text-muted-foreground">
+                        {artists.length} Künstler generiert
+                      </p>
+                    </div>
+                    {artists.map((artist, index) => (
+                      <ArtistCard key={`${artist.name}-${index}`} artist={artist} index={index} onRefresh={loadSavedArtists} />
+                    ))}
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <div className="h-16 w-16 rounded-xl bg-secondary/50 flex items-center justify-center mb-4">
+                      <Music className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-lg font-display font-semibold text-foreground mb-1">
+                      Bereit zur Generierung
                     </h3>
-                    <p className="text-muted-foreground max-w-md">
-                      Generiere Künstler, um sie in der Datenbank zu speichern.
+                    <p className="text-sm text-muted-foreground max-w-sm">
+                      Wähle Anzahl, Filter und klicke auf "Künstler generieren".
                     </p>
                   </div>
                 )}
-              </div>
-            ) : isLoading ? (
-              <LoadingState />
-            ) : artists.length > 0 ? (
-              artists.map((artist, index) => (
-                <ArtistCard key={`${artist.name}-${index}`} artist={artist} index={index} onRefresh={loadSavedArtists} />
-              ))
-            ) : (
-              <div className="flex flex-col items-center justify-center py-20 text-center">
-                <div className="h-24 w-24 rounded-2xl bg-secondary/50 flex items-center justify-center mb-6">
-                  <Music className="h-12 w-12 text-muted-foreground" />
-                </div>
-                <h3 className="text-xl font-display font-semibold text-foreground mb-2">
-                  Bereit zur Generierung
-                </h3>
-                <p className="text-muted-foreground max-w-md">
-                  Wähle Anzahl, Genre-Filter und klicke auf "Künstler generieren".
-                  Jeder Künstler erhält ein KI-generiertes Profilbild.
-                </p>
-              </div>
-            )}
-          </section>
+              </section>
+            </ScrollArea>
+          </div>
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-border py-6">
-        <div className="container text-center text-sm text-muted-foreground">
-          <p>Alle Inhalte sind einzigartig, KI-generiert und exportierbar als vollständiger Musikkatalog.</p>
+      {/* Compact Footer */}
+      <footer className="shrink-0 border-t border-border py-2 bg-background/95">
+        <div className="container flex items-center justify-center gap-2 text-xs text-muted-foreground">
+          <ScoopasIcon size={14} />
+          <span>Alle Inhalte sind KI-generiert und exportierbar als vollständiger Musikkatalog</span>
         </div>
       </footer>
     </div>
