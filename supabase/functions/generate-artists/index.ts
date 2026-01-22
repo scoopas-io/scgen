@@ -108,10 +108,19 @@ serve(async (req) => {
       .filter(Boolean);
     
     const languageFilter = languageNames.length > 0
-      ? `WICHTIG: Generiere Künstler, deren Namen, Albumtitel und Songtitel in diesen Sprachen sind: ${languageNames.join(", ")}. Die Namen und Titel sollen authentisch in der jeweiligen Sprache klingen, mit korrekter Grammatik und typischen Namenskonventionen der jeweiligen Kultur.`
-      : "Generiere deutsche Künstlernamen, Album- und Songtitel.";
+      ? `KRITISCH - SPRACHVORGABE: 
+- Künstlernamen MÜSSEN typische Namen aus diesen Kulturen/Sprachen sein: ${languageNames.join(", ")}
+- Albumtitel MÜSSEN in diesen Sprachen geschrieben sein: ${languageNames.join(", ")}
+- Songtitel MÜSSEN in diesen Sprachen geschrieben sein: ${languageNames.join(", ")}
+- Der Persönlichkeitsprompt MUSS in der jeweiligen Sprache des Künstlers geschrieben sein (NICHT auf Deutsch!)
+- Bei mehreren Sprachen: Verteile die Künstler gleichmäßig auf die verschiedenen Sprachen
+- Beispiel für Japanisch: Künstler "田中 優子", Album "夜明けの歌", Song "桜の涙"
+- Beispiel für Koreanisch: Künstler "김서연", Album "별빛 속에서", Song "영원한 사랑"
+- Beispiel für Arabisch: Künstler "ليلى العربي", Album "أغاني الصحراء", Song "قلبي يغني"
+- Der SUNO Voice-Prompt bleibt auf Englisch (technische Beschreibung)`
+      : "Generiere deutsche Künstlernamen, Album- und Songtitel. Der Persönlichkeitsprompt auf Deutsch.";
 
-    const systemPrompt = `Du bist ein kreativer Musik-Industrie-Experte für einzigartige fiktive Künstlerprofile.
+    const systemPrompt = `Du bist ein kreativer Musik-Industrie-Experte für einzigartige fiktive Künstlerprofile aus verschiedenen Kulturen und Ländern.
 
 REGELN:
 1. ALLE Namen müssen KOMPLETT NEU und EINZIGARTIG sein
@@ -119,8 +128,7 @@ REGELN:
 3. Vermeide KI-Klischees: Neon, Lichter, Straßen, Stadt, Urban, Cyber, Echo, Shadow, Dream, Pulse
 4. ${genreFilter}
 5. ${languageFilter}
-6. Persönlichkeitsprompts sollen tiefgründig sein
-7. SUNO Stimmfrequenz-Prompts müssen technisch präzise sein (auf Englisch)
+6. SUNO Stimmfrequenz-Prompts müssen technisch präzise sein (immer auf Englisch)
 
 EXISTIERENDE NAMEN (NICHT VERWENDEN!):
 - Künstler: ${existingArtists.slice(0, 100).join(", ") || "keine"}
@@ -129,21 +137,29 @@ EXISTIERENDE NAMEN (NICHT VERWENDEN!):
 
 Antworte NUR mit einem validen JSON-Array.`;
 
+    const personalityLanguageHint = languageNames.length > 0 
+      ? `Der Persönlichkeitsprompt MUSS in der Sprache des Künstlers geschrieben sein (${languageNames.join(" oder ")}) - NICHT auf Deutsch!`
+      : "Der Persönlichkeitsprompt auf Deutsch.";
+
     const userPrompt = `Generiere ${artistCount} einzigartige Künstlerprofile.
 
+${languageNames.length > 0 ? `WICHTIG: Die Künstler sollen aus diesen Sprachräumen/Kulturen kommen: ${languageNames.join(", ")}. 
+Namen, Albumtitel und Songtitel MÜSSEN in der jeweiligen Sprache sein (mit korrekten Schriftzeichen falls nötig)!` : ''}
+
 Für JEDEN Künstler:
-- name: Kreativer Künstlername
-- personality: Detaillierter Persönlichkeitsprompt (3-4 Sätze)
+- name: Kreativer Künstlername IN DER JEWEILIGEN SPRACHE (z.B. japanische Zeichen für japanisch)
+- personality: ${personalityLanguageHint} Detaillierter Persönlichkeitsprompt (3-4 Sätze)
 - voicePrompt: Ausführlicher SUNO Stimmfrequenz-Prompt auf Englisch (mind. 50 Wörter)
 - genre: Hauptgenre
 - style: Spezifischer Stil
-- imagePrompt: Kurze Beschreibung für ein Profilbild (auf Englisch, beschreibe Aussehen, Kleidung, Atmosphäre passend zum Genre, KEINE bekannten Personen)
+- language: Die Sprache des Künstlers (z.B. "Japanisch", "Koreanisch", "Arabisch")
+- imagePrompt: Kurze Beschreibung für ein Profilbild (auf Englisch, beschreibe Aussehen passend zur Kultur/Ethnie, Kleidung, Atmosphäre passend zum Genre, KEINE bekannten Personen)
 - albums: Array mit ${albumCount} Alben, jedes mit:
-  - name: Einzigartiger Albumname
+  - name: Einzigartiger Albumname IN DER SPRACHE DES KÜNSTLERS
   - songs: Array mit ${songCount} Objekten, jedes mit:
-    - name: Songtitel
-    - komponist: Name des Komponisten (kann Künstler sein)
-    - textdichter: Name des Textdichters
+    - name: Songtitel IN DER SPRACHE DES KÜNSTLERS
+    - komponist: Name des Komponisten (in der jeweiligen Sprache)
+    - textdichter: Name des Textdichters (in der jeweiligen Sprache)
 
 WICHTIG: Antworte NUR mit dem JSON-Array!`;
 
