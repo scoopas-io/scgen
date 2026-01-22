@@ -1,0 +1,128 @@
+import { useState } from "react";
+import { Check, Globe } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+const LANGUAGES = [
+  { code: "de", name: "Deutsch", flag: "🇩🇪" },
+  { code: "en", name: "English", flag: "🇬🇧" },
+  { code: "es", name: "Español", flag: "🇪🇸" },
+  { code: "fr", name: "Français", flag: "🇫🇷" },
+  { code: "it", name: "Italiano", flag: "🇮🇹" },
+  { code: "pt", name: "Português", flag: "🇧🇷" },
+  { code: "nl", name: "Nederlands", flag: "🇳🇱" },
+  { code: "pl", name: "Polski", flag: "🇵🇱" },
+  { code: "ru", name: "Русский", flag: "🇷🇺" },
+  { code: "uk", name: "Українська", flag: "🇺🇦" },
+  { code: "tr", name: "Türkçe", flag: "🇹🇷" },
+  { code: "ar", name: "العربية", flag: "🇸🇦" },
+  { code: "he", name: "עברית", flag: "🇮🇱" },
+  { code: "hi", name: "हिन्दी", flag: "🇮🇳" },
+  { code: "zh", name: "中文", flag: "🇨🇳" },
+  { code: "ja", name: "日本語", flag: "🇯🇵" },
+  { code: "ko", name: "한국어", flag: "🇰🇷" },
+  { code: "th", name: "ไทย", flag: "🇹🇭" },
+  { code: "vi", name: "Tiếng Việt", flag: "🇻🇳" },
+  { code: "id", name: "Bahasa Indonesia", flag: "🇮🇩" },
+  { code: "ms", name: "Bahasa Melayu", flag: "🇲🇾" },
+  { code: "tl", name: "Filipino", flag: "🇵🇭" },
+  { code: "sv", name: "Svenska", flag: "🇸🇪" },
+  { code: "da", name: "Dansk", flag: "🇩🇰" },
+  { code: "fi", name: "Suomi", flag: "🇫🇮" },
+];
+
+interface LanguageSelectorProps {
+  selectedLanguages: string[];
+  onLanguagesChange: (languages: string[]) => void;
+}
+
+export function LanguageSelector({ selectedLanguages, onLanguagesChange }: LanguageSelectorProps) {
+  const [expanded, setExpanded] = useState(false);
+
+  const toggleLanguage = (code: string) => {
+    if (selectedLanguages.includes(code)) {
+      onLanguagesChange(selectedLanguages.filter((l) => l !== code));
+    } else {
+      onLanguagesChange([...selectedLanguages, code]);
+    }
+  };
+
+  const clearAll = () => onLanguagesChange([]);
+  const selectAll = () => onLanguagesChange(LANGUAGES.map((l) => l.code));
+
+  const displayedLanguages = expanded ? LANGUAGES : LANGUAGES.slice(0, 10);
+
+  const getSelectedNames = () => {
+    return selectedLanguages
+      .map((code) => LANGUAGES.find((l) => l.code === code))
+      .filter(Boolean)
+      .map((l) => l!.name)
+      .join(", ");
+  };
+
+  return (
+    <div className="space-y-4 p-6 rounded-xl border border-border bg-card/50 backdrop-blur-sm">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Globe className="h-4 w-4 text-primary" />
+          <h3 className="text-base font-medium text-foreground">Sprachen</h3>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="ghost" size="sm" onClick={clearAll} className="text-xs">
+            Keine
+          </Button>
+          <Button variant="ghost" size="sm" onClick={selectAll} className="text-xs">
+            Alle
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {displayedLanguages.map((lang) => {
+          const isSelected = selectedLanguages.includes(lang.code);
+          return (
+            <button
+              key={lang.code}
+              onClick={() => toggleLanguage(lang.code)}
+              className={cn(
+                "px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+                "border flex items-center gap-1.5",
+                isSelected
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-secondary/50 text-secondary-foreground border-border hover:border-primary/50"
+              )}
+            >
+              {isSelected && <Check className="h-3 w-3" />}
+              <span>{lang.flag}</span>
+              <span>{lang.name}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {LANGUAGES.length > 10 && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setExpanded(!expanded)}
+          className="w-full text-xs text-muted-foreground"
+        >
+          {expanded ? "Weniger anzeigen" : `+${LANGUAGES.length - 10} weitere Sprachen`}
+        </Button>
+      )}
+
+      {selectedLanguages.length > 0 && (
+        <p className="text-xs text-muted-foreground">
+          {selectedLanguages.length} Sprache{selectedLanguages.length > 1 ? "n" : ""} ausgewählt
+        </p>
+      )}
+      {selectedLanguages.length === 0 && (
+        <p className="text-xs text-muted-foreground">
+          Keine Auswahl = Deutsch als Standard
+        </p>
+      )}
+    </div>
+  );
+}
+
+export { LANGUAGES };

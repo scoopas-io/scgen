@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { Sparkles, Music, Zap, History, X, Database, Download, FileJson, FileSpreadsheet } from "lucide-react";
+import { Sparkles, Music, Zap, History, X, Database, Download, FileJson, FileSpreadsheet, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GeneratorControls } from "@/components/GeneratorControls";
 import { GenreFilter } from "@/components/GenreFilter";
+import { LanguageSelector } from "@/components/LanguageSelector";
 import { ArtistCard, type Artist } from "@/components/ArtistCard";
 import { LoadingState } from "@/components/LoadingState";
 import { exportCatalogAsCSV, exportCatalogAsJSON } from "@/lib/exportCatalog";
@@ -14,6 +15,7 @@ const Index = () => {
   const [albumCount, setAlbumCount] = useState(2);
   const [songCount, setSongCount] = useState(5);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [artists, setArtists] = useState<Artist[]>([]);
   const [savedArtists, setSavedArtists] = useState<Artist[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -119,6 +121,7 @@ const Index = () => {
             albumCount,
             songCount,
             selectedGenres,
+            selectedLanguages,
           }),
         }
       );
@@ -232,6 +235,11 @@ const Index = () => {
               selectedGenres={selectedGenres}
               onGenresChange={setSelectedGenres}
             />
+            
+            <LanguageSelector
+              selectedLanguages={selectedLanguages}
+              onLanguagesChange={setSelectedLanguages}
+            />
 
             <Button
               variant="gold"
@@ -315,6 +323,7 @@ const Index = () => {
                       index={index}
                       onDelete={deleteArtist}
                       showDelete
+                      onRefresh={loadSavedArtists}
                     />
                   ))
                 ) : (
@@ -335,7 +344,7 @@ const Index = () => {
               <LoadingState />
             ) : artists.length > 0 ? (
               artists.map((artist, index) => (
-                <ArtistCard key={`${artist.name}-${index}`} artist={artist} index={index} />
+                <ArtistCard key={`${artist.name}-${index}`} artist={artist} index={index} onRefresh={loadSavedArtists} />
               ))
             ) : (
               <div className="flex flex-col items-center justify-center py-20 text-center">
