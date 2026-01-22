@@ -179,7 +179,7 @@ Die Caption sollte:
             promptImage: artistImageUrl,
             promptText: videoPrompt,
             duration: 5,
-            ratio: "9:16",
+            ratio: "768:1280",
           }),
         });
 
