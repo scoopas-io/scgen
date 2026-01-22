@@ -73,11 +73,11 @@ export function GeneratorControls({
           value={[songCount]}
           onValueChange={(v) => onSongCountChange(v[0])}
           min={3}
-          max={12}
+          max={20}
           step={1}
           className="w-full"
         />
-        <p className="text-xs text-muted-foreground">3 - 12 Songs pro Album</p>
+        <p className="text-xs text-muted-foreground">3 - 20 Songs pro Album</p>
       </div>
     </div>
   );
