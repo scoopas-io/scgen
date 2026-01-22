@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { 
   Music, Disc, User, Play, Pause, Download, Loader2, 
   CheckCircle2, XCircle, Clock, Volume2, ChevronDown, ChevronRight,
-  ArrowUpDown, RefreshCw
+  ArrowUpDown, RefreshCw, Timer, AlertCircle
 } from "lucide-react";
 
 interface Artist {
@@ -71,6 +71,23 @@ export function SunoGeneratorDialog({ open, onOpenChange }: Props) {
   const [expandedLibraryArtists, setExpandedLibraryArtists] = useState<Set<string>>(new Set());
   const [expandedLibraryAlbums, setExpandedLibraryAlbums] = useState<Set<string>>(new Set());
   const [generating, setGenerating] = useState(false);
+  const [generationState, setGenerationState] = useState<{
+    currentSong: string;
+    currentArtist: string;
+    completed: number;
+    total: number;
+    startTime: number | null;
+    successCount: number;
+    errorCount: number;
+  }>({
+    currentSong: "",
+    currentArtist: "",
+    completed: 0,
+    total: 0,
+    startTime: null,
+    successCount: 0,
+    errorCount: 0,
+  });
   const [generationProgress, setGenerationProgress] = useState(0);
   const [currentlyPlaying, setCurrentlyPlaying] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>("date");
@@ -321,9 +338,29 @@ export function SunoGeneratorDialog({ open, onOpenChange }: Props) {
     setGenerationProgress(0);
 
     const songsToGenerate = songs.filter(s => selectedSongs.has(s.id));
+    const startTime = Date.now();
     let completed = 0;
+    let successCount = 0;
+    let errorCount = 0;
+
+    setGenerationState({
+      currentSong: "",
+      currentArtist: "",
+      completed: 0,
+      total: songsToGenerate.length,
+      startTime,
+      successCount: 0,
+      errorCount: 0,
+    });
 
     for (const song of songsToGenerate) {
+      setGenerationState(prev => ({
+        ...prev,
+        currentSong: song.name,
+        currentArtist: song.artistName,
+        completed,
+      }));
+
       try {
         const response = await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-song-audio`,
@@ -350,32 +387,43 @@ export function SunoGeneratorDialog({ open, onOpenChange }: Props) {
         const result = await response.json();
         
         if (result.success) {
-          // Update local state
           setSongs(prev => prev.map(s => 
             s.id === song.id 
               ? { ...s, generation_status: result.status, suno_task_id: result.taskId }
               : s
           ));
-          toast.success(`${song.name} - Generierung gestartet`);
+          successCount++;
         } else {
+          errorCount++;
           toast.error(`${song.name} - Fehler: ${result.error}`);
         }
       } catch (error) {
         console.error(`Error generating ${song.name}:`, error);
+        errorCount++;
         toast.error(`${song.name} - Verbindungsfehler`);
       }
 
       completed++;
       setGenerationProgress((completed / songsToGenerate.length) * 100);
+      setGenerationState(prev => ({
+        ...prev,
+        completed,
+        successCount,
+        errorCount,
+      }));
       
-      // Small delay between requests
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
     setGenerating(false);
     setSelectedSongs(new Set());
-    toast.success("Generierung abgeschlossen!");
-    loadData(); // Refresh data
+    
+    if (errorCount === 0) {
+      toast.success(`${successCount} Songs zur Generierung gesendet!`);
+    } else {
+      toast.warning(`${successCount} erfolgreich, ${errorCount} fehlgeschlagen`);
+    }
+    loadData();
   };
 
   const playAudio = (songId: string, audioUrl: string) => {
@@ -527,12 +575,56 @@ export function SunoGeneratorDialog({ open, onOpenChange }: Props) {
                 <>
                   {/* Generation Progress */}
                   {generating && (
-                    <div className="p-4 rounded-lg border border-primary/30 bg-primary/5 space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-primary font-medium">Generiere Songs...</span>
-                        <span>{Math.round(generationProgress)}%</span>
+                    <div className="p-4 rounded-lg border border-primary/30 bg-primary/5 space-y-3">
+                      {/* Header with progress */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                          <span className="text-primary font-medium">Audio-Generierung läuft</span>
+                        </div>
+                        <span className="text-sm font-mono">{Math.round(generationProgress)}%</span>
                       </div>
+                      
                       <Progress value={generationProgress} className="h-2" />
+                      
+                      {/* Current Song Info */}
+                      {generationState.currentSong && (
+                        <div className="flex items-center gap-3 p-2 rounded bg-background/50">
+                          <Music className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{generationState.currentSong}</p>
+                            <p className="text-xs text-muted-foreground truncate">{generationState.currentArtist}</p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Stats Row */}
+                      <div className="grid grid-cols-3 gap-2 text-xs">
+                        <div className="flex items-center gap-1.5 p-2 rounded bg-background/50">
+                          <Timer className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span>
+                            {generationState.completed}/{generationState.total}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 p-2 rounded bg-green-500/10">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                          <span className="text-green-600">{generationState.successCount} OK</span>
+                        </div>
+                        {generationState.errorCount > 0 && (
+                          <div className="flex items-center gap-1.5 p-2 rounded bg-red-500/10">
+                            <AlertCircle className="h-3.5 w-3.5 text-red-500" />
+                            <span className="text-red-600">{generationState.errorCount} Fehler</span>
+                          </div>
+                        )}
+                        {generationState.errorCount === 0 && (
+                          <div className="flex items-center gap-1.5 p-2 rounded bg-background/50">
+                            <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span>
+                              ~{Math.ceil((generationState.total - generationState.completed) * 1.5)}s
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
 
