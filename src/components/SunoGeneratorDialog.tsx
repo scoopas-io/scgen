@@ -68,6 +68,8 @@ export function SunoGeneratorDialog({ open, onOpenChange }: Props) {
   const [selectedSongs, setSelectedSongs] = useState<Set<string>>(new Set());
   const [expandedArtists, setExpandedArtists] = useState<Set<string>>(new Set());
   const [expandedAlbums, setExpandedAlbums] = useState<Set<string>>(new Set());
+  const [expandedLibraryArtists, setExpandedLibraryArtists] = useState<Set<string>>(new Set());
+  const [expandedLibraryAlbums, setExpandedLibraryAlbums] = useState<Set<string>>(new Set());
   const [generating, setGenerating] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0);
   const [currentlyPlaying, setCurrentlyPlaying] = useState<string | null>(null);
@@ -413,31 +415,61 @@ export function SunoGeneratorDialog({ open, onOpenChange }: Props) {
   const getArtistAlbums = (artistId: string) => albums.filter(a => a.artist_id === artistId);
   const getAlbumSongs = (albumId: string) => songs.filter(s => s.album_id === albumId);
 
-  // Sorted and filtered library songs
-  const sortedLibrarySongs = useMemo(() => {
-    const generated = [...librarySongs];
-    
-    return generated.sort((a, b) => {
-      let comparison = 0;
-      
-      switch (sortBy) {
-        case "name":
-          comparison = a.name.localeCompare(b.name);
-          break;
-        case "artist":
-          comparison = a.artistName.localeCompare(b.artistName);
-          break;
-        case "genre":
-          comparison = a.genre.localeCompare(b.genre);
-          break;
-        case "date":
-        default:
-          comparison = new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
-          break;
+  // Group library songs by artist and album
+  const groupedLibrarySongs = useMemo(() => {
+    const artistMap: Record<string, {
+      artist: { id: string; name: string; genre: string };
+      albums: Record<string, { album: { id: string; name: string }; songs: SongWithDetails[] }>;
+    }> = {};
+
+    librarySongs.forEach(song => {
+      if (!artistMap[song.artistId]) {
+        artistMap[song.artistId] = {
+          artist: { id: song.artistId, name: song.artistName, genre: song.genre },
+          albums: {},
+        };
       }
-      
-      return sortDirection === "asc" ? comparison : -comparison;
+      if (!artistMap[song.artistId].albums[song.album_id]) {
+        artistMap[song.artistId].albums[song.album_id] = {
+          album: { id: song.album_id, name: song.albumName },
+          songs: [],
+        };
+      }
+      artistMap[song.artistId].albums[song.album_id].songs.push(song);
     });
+
+    // Sort songs within each album
+    Object.values(artistMap).forEach(artistData => {
+      Object.values(artistData.albums).forEach(albumData => {
+        albumData.songs.sort((a, b) => {
+          let comparison = 0;
+          switch (sortBy) {
+            case "name":
+              comparison = a.name.localeCompare(b.name);
+              break;
+            case "date":
+            default:
+              comparison = new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
+              break;
+          }
+          return sortDirection === "asc" ? comparison : -comparison;
+        });
+      });
+    });
+
+    // Convert to array and sort artists
+    const artistArray = Object.values(artistMap);
+    artistArray.sort((a, b) => {
+      if (sortBy === "artist" || sortBy === "genre") {
+        const comparison = sortBy === "artist"
+          ? a.artist.name.localeCompare(b.artist.name)
+          : a.artist.genre.localeCompare(b.artist.genre);
+        return sortDirection === "asc" ? comparison : -comparison;
+      }
+      return a.artist.name.localeCompare(b.artist.name);
+    });
+
+    return artistArray;
   }, [librarySongs, sortBy, sortDirection]);
 
   const generatedSongs = librarySongs.filter(s => s.audio_url);
@@ -665,52 +697,116 @@ export function SunoGeneratorDialog({ open, onOpenChange }: Props) {
                     </Button>
                   </div>
 
-                  {/* Song List */}
-                  {sortedLibrarySongs.map(song => (
-                    <div 
-                      key={song.id} 
-                      className="flex items-center gap-4 p-4 rounded-lg border bg-card"
-                    >
-                      {song.audio_url ? (
-                        <Button 
-                          size="icon" 
-                          variant={currentlyPlaying === song.id ? "default" : "outline"}
-                          onClick={() => playAudio(song.id, song.audio_url!)}
+                  {/* Grouped Song List by Artist and Album */}
+                  <div className="space-y-3">
+                    {groupedLibrarySongs.map(({ artist, albums }) => (
+                      <div key={artist.id} className="border rounded-lg overflow-hidden">
+                        {/* Artist Header */}
+                        <div 
+                          className="flex items-center gap-3 p-3 bg-muted/30 cursor-pointer hover:bg-muted/50"
+                          onClick={() => {
+                            const newExpanded = new Set(expandedLibraryArtists);
+                            if (newExpanded.has(artist.id)) {
+                              newExpanded.delete(artist.id);
+                            } else {
+                              newExpanded.add(artist.id);
+                            }
+                            setExpandedLibraryArtists(newExpanded);
+                          }}
                         >
-                          {currentlyPlaying === song.id ? (
-                            <Pause className="h-4 w-4" />
+                          {expandedLibraryArtists.has(artist.id) ? (
+                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
                           ) : (
-                            <Play className="h-4 w-4" />
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
                           )}
-                        </Button>
-                      ) : (
-                        <div className="w-10 flex items-center justify-center">
-                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                          <User className="h-4 w-4 text-primary" />
+                          <span className="font-medium">{artist.name}</span>
+                          <Badge variant="outline" className="text-xs">{artist.genre}</Badge>
+                          <span className="ml-auto text-xs text-muted-foreground">
+                            {Object.values(albums).reduce((acc, a) => acc + a.songs.length, 0)} Songs
+                          </span>
                         </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{song.name}</p>
-                        <p className="text-sm text-muted-foreground truncate">
-                          {song.artistName} • {song.albumName}
-                        </p>
-                        {!song.audio_url && (
-                          <div className="mt-1">{getStatusBadge(song.generation_status)}</div>
+
+                        {/* Albums within Artist */}
+                        {expandedLibraryArtists.has(artist.id) && (
+                          <div className="pl-4 pb-2">
+                            {Object.values(albums).map(({ album, songs: albumSongs }) => (
+                              <div key={album.id} className="mt-2">
+                                {/* Album Header */}
+                                <div 
+                                  className="flex items-center gap-2 p-2 cursor-pointer hover:bg-muted/30 rounded"
+                                  onClick={() => {
+                                    const newExpanded = new Set(expandedLibraryAlbums);
+                                    if (newExpanded.has(album.id)) {
+                                      newExpanded.delete(album.id);
+                                    } else {
+                                      newExpanded.add(album.id);
+                                    }
+                                    setExpandedLibraryAlbums(newExpanded);
+                                  }}
+                                >
+                                  {expandedLibraryAlbums.has(album.id) ? (
+                                    <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                                  ) : (
+                                    <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                                  )}
+                                  <Disc className="h-3 w-3 text-primary" />
+                                  <span className="text-sm font-medium">{album.name}</span>
+                                  <span className="ml-auto text-xs text-muted-foreground">
+                                    {albumSongs.length} Songs
+                                  </span>
+                                </div>
+
+                                {/* Songs within Album */}
+                                {expandedLibraryAlbums.has(album.id) && (
+                                  <div className="pl-6 space-y-1 mt-1">
+                                    {albumSongs.map(song => (
+                                      <div 
+                                        key={song.id} 
+                                        className="flex items-center gap-3 p-2 rounded hover:bg-muted/30"
+                                      >
+                                        {song.audio_url ? (
+                                          <Button 
+                                            size="icon" 
+                                            variant={currentlyPlaying === song.id ? "default" : "ghost"}
+                                            className="h-7 w-7"
+                                            onClick={() => playAudio(song.id, song.audio_url!)}
+                                          >
+                                            {currentlyPlaying === song.id ? (
+                                              <Pause className="h-3 w-3" />
+                                            ) : (
+                                              <Play className="h-3 w-3" />
+                                            )}
+                                          </Button>
+                                        ) : (
+                                          <div className="w-7 flex items-center justify-center">
+                                            <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                                          </div>
+                                        )}
+                                        <Music className="h-3 w-3 text-muted-foreground" />
+                                        <span className="text-sm flex-1 truncate">{song.name}</span>
+                                        {!song.audio_url && getStatusBadge(song.generation_status)}
+                                        {song.audio_url && (
+                                          <Button 
+                                            size="icon" 
+                                            variant="ghost"
+                                            className="h-7 w-7"
+                                            onClick={() => downloadAudio(song.audio_url!, song.name)}
+                                          >
+                                            <Download className="h-3 w-3" />
+                                          </Button>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
                         )}
                       </div>
-                      <Badge variant="outline">{song.genre}</Badge>
-                      {song.audio_url ? (
-                        <Button 
-                          size="icon" 
-                          variant="ghost"
-                          onClick={() => downloadAudio(song.audio_url!, song.name)}
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      ) : (
-                        <div className="w-10" />
-                      )}
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </>
               )}
             </TabsContent>
