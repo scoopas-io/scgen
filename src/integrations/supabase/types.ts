@@ -97,6 +97,48 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_connections: {
+        Row: {
+          access_token: string
+          created_at: string
+          id: string
+          is_active: boolean | null
+          platform: string
+          platform_avatar_url: string | null
+          platform_user_id: string | null
+          platform_username: string | null
+          refresh_token: string | null
+          token_expires_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          platform: string
+          platform_avatar_url?: string | null
+          platform_user_id?: string | null
+          platform_username?: string | null
+          refresh_token?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          platform?: string
+          platform_avatar_url?: string | null
+          platform_user_id?: string | null
+          platform_username?: string | null
+          refresh_token?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       social_content: {
         Row: {
           artist_id: string
@@ -109,6 +151,8 @@ export type Database = {
           platform: string
           prompt: string | null
           published_at: string | null
+          published_url: string | null
+          scheduled_at: string | null
           status: string | null
           title: string | null
           updated_at: string
@@ -125,6 +169,8 @@ export type Database = {
           platform: string
           prompt?: string | null
           published_at?: string | null
+          published_url?: string | null
+          scheduled_at?: string | null
           status?: string | null
           title?: string | null
           updated_at?: string
@@ -141,6 +187,8 @@ export type Database = {
           platform?: string
           prompt?: string | null
           published_at?: string | null
+          published_url?: string | null
+          scheduled_at?: string | null
           status?: string | null
           title?: string | null
           updated_at?: string
