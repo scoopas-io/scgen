@@ -53,6 +53,7 @@ export type Database = {
           id: string
           katalognummer: string | null
           label: string | null
+          language: string | null
           name: string
           personality: string
           profile_image_url: string | null
@@ -68,6 +69,7 @@ export type Database = {
           id?: string
           katalognummer?: string | null
           label?: string | null
+          language?: string | null
           name: string
           personality: string
           profile_image_url?: string | null
@@ -83,6 +85,7 @@ export type Database = {
           id?: string
           katalognummer?: string | null
           label?: string | null
+          language?: string | null
           name?: string
           personality?: string
           profile_image_url?: string | null

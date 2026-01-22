@@ -53,6 +53,23 @@ const LANGUAGE_NAMES: Record<string, string> = {
   sw: "Suaheli",
 };
 
+// Reverse lookup: language name to code
+const LANGUAGE_CODES: Record<string, string> = Object.fromEntries(
+  Object.entries(LANGUAGE_NAMES).map(([code, name]) => [name.toLowerCase(), code])
+);
+
+const getLanguageCode = (languageName: string): string => {
+  if (!languageName) return "de";
+  const lower = languageName.toLowerCase();
+  // Direct match
+  if (LANGUAGE_CODES[lower]) return LANGUAGE_CODES[lower];
+  // Partial match
+  for (const [name, code] of Object.entries(LANGUAGE_CODES)) {
+    if (lower.includes(name) || name.includes(lower)) return code;
+  }
+  return "de";
+};
+
 const TONARTEN = ["C-Dur", "D-Dur", "E-Dur", "F-Dur", "G-Dur", "A-Dur", "H-Dur", "a-Moll", "d-Moll", "e-Moll", "g-Moll"];
 const generateISRC = () => `DE-KI${Date.now().toString(36).slice(-3).toUpperCase()}-${Math.floor(Math.random() * 99).toString().padStart(2, '0')}-${Math.floor(Math.random() * 99999).toString().padStart(5, '0')}`;
 const generateISWC = () => `T-${Math.floor(Math.random() * 999999999).toString().padStart(9, '0')}-${Math.floor(Math.random() * 9)}`;
@@ -229,6 +246,7 @@ WICHTIG: Antworte NUR mit dem JSON-Array!`;
       const katalognummer = generateKatalogNr(katalogIndex++);
 
       // Insert artist without image first
+      const languageCode = getLanguageCode(artist.language || "");
       const { data: insertedArtist, error: artistError } = await supabase
         .from("artists")
         .insert({
@@ -243,6 +261,7 @@ WICHTIG: Antworte NUR mit dem JSON-Array!`;
           label: 'Eigenproduktion',
           rechteinhaber_master: 'Eigenproduktion',
           rechteinhaber_publishing: 'Musikverlag',
+          language: languageCode,
         })
         .select("id")
         .single();
