@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { Music, Zap, History, X, Database, Download, FileJson, FileSpreadsheet } from "lucide-react";
+import { Music, Zap, History, X, Database, Download, FileJson, FileSpreadsheet, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GeneratorControls } from "@/components/GeneratorControls";
 import { GenreFilter } from "@/components/GenreFilter";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { ArtistCard, type Artist } from "@/components/ArtistCard";
 import { LoadingState, type GenerationPhase } from "@/components/LoadingState";
+import { SunoGeneratorDialog } from "@/components/SunoGeneratorDialog";
 import { ScoopasIcon } from "@/components/ScoopasIcon";
 import { exportCatalogAsCSV, exportCatalogAsJSON } from "@/lib/exportCatalog";
 import { toast } from "sonner";
@@ -25,6 +26,7 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [stats, setStats] = useState({ artists: 0, albums: 0, songs: 0 });
+  const [sunoDialogOpen, setSunoDialogOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [generationState, setGenerationState] = useState<{
     phase: GenerationPhase;
@@ -281,18 +283,29 @@ const Index = () => {
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              <div className="flex items-center gap-1.5">
-                <Database className="h-3.5 w-3.5 text-primary" />
-                <span>{stats.artists}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Music className="h-3.5 w-3.5 text-primary" />
-                <span>{stats.albums}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Zap className="h-3.5 w-3.5 text-primary" />
-                <span>{stats.songs}</span>
+            <div className="flex items-center gap-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="gap-2"
+                onClick={() => setSunoDialogOpen(true)}
+              >
+                <Volume2 className="h-4 w-4" />
+                <span className="hidden sm:inline">SUNO Generator</span>
+              </Button>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1.5">
+                  <Database className="h-3.5 w-3.5 text-primary" />
+                  <span>{stats.artists}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Music className="h-3.5 w-3.5 text-primary" />
+                  <span>{stats.albums}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Zap className="h-3.5 w-3.5 text-primary" />
+                  <span>{stats.songs}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -482,6 +495,12 @@ const Index = () => {
           <span>Alle Inhalte sind KI-generiert und exportierbar als vollständiger Musikkatalog</span>
         </div>
       </footer>
+
+      {/* Suno Generator Dialog */}
+      <SunoGeneratorDialog 
+        open={sunoDialogOpen} 
+        onOpenChange={setSunoDialogOpen} 
+      />
     </div>
   );
 };

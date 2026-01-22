@@ -100,6 +100,7 @@ export type Database = {
           anteil_komponist: number | null
           anteil_text: number | null
           anteil_verlag: number | null
+          audio_url: string | null
           bemerkungen: string | null
           bpm: number | null
           created_at: string
@@ -107,6 +108,7 @@ export type Database = {
           exklusivitaet: string | null
           gema_status: string | null
           gema_werknummer: string | null
+          generation_status: string | null
           id: string
           isrc: string | null
           iswc: string | null
@@ -117,6 +119,7 @@ export type Database = {
           laenge: string | null
           name: string
           song_id: string | null
+          suno_task_id: string | null
           textdichter: string | null
           tonart: string | null
           track_number: number
@@ -131,6 +134,7 @@ export type Database = {
           anteil_komponist?: number | null
           anteil_text?: number | null
           anteil_verlag?: number | null
+          audio_url?: string | null
           bemerkungen?: string | null
           bpm?: number | null
           created_at?: string
@@ -138,6 +142,7 @@ export type Database = {
           exklusivitaet?: string | null
           gema_status?: string | null
           gema_werknummer?: string | null
+          generation_status?: string | null
           id?: string
           isrc?: string | null
           iswc?: string | null
@@ -148,6 +153,7 @@ export type Database = {
           laenge?: string | null
           name: string
           song_id?: string | null
+          suno_task_id?: string | null
           textdichter?: string | null
           tonart?: string | null
           track_number: number
@@ -162,6 +168,7 @@ export type Database = {
           anteil_komponist?: number | null
           anteil_text?: number | null
           anteil_verlag?: number | null
+          audio_url?: string | null
           bemerkungen?: string | null
           bpm?: number | null
           created_at?: string
@@ -169,6 +176,7 @@ export type Database = {
           exklusivitaet?: string | null
           gema_status?: string | null
           gema_werknummer?: string | null
+          generation_status?: string | null
           id?: string
           isrc?: string | null
           iswc?: string | null
@@ -179,6 +187,7 @@ export type Database = {
           laenge?: string | null
           name?: string
           song_id?: string | null
+          suno_task_id?: string | null
           textdichter?: string | null
           tonart?: string | null
           track_number?: number
