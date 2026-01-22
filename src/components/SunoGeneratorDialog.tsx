@@ -219,12 +219,8 @@ export function SunoGeneratorDialog({ open, onOpenChange }: Props) {
   };
 
   const librarySongs = useMemo(() => {
-    // Show items that are already playable OR have a generation job in progress/completed/error.
-    return songs.filter((s) => {
-      if (s.audio_url) return true;
-      if (s.suno_task_id) return true;
-      return s.generation_status === "processing" || s.generation_status === "generating" || s.generation_status === "completed" || s.generation_status === "error";
-    });
+    // Only show songs that have been successfully generated (have audio_url)
+    return songs.filter((s) => s.audio_url);
   }, [songs]);
 
   const hasInFlightGenerations = useMemo(() => {
