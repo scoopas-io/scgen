@@ -46,7 +46,7 @@ serve(async (req) => {
       .update({ generation_status: "generating" })
       .eq("id", songId);
 
-    // Build the prompt for Suno
+    // Build the prompt for Suno - combining voice prompt and personality for lyrics/style
     const musicPrompt = buildMusicPrompt({
       title,
       genre,
@@ -58,11 +58,14 @@ serve(async (req) => {
       artistName,
     });
 
-    console.log("Music prompt:", musicPrompt);
+    // Build style tags for Suno
+    const styleTags = buildStyleTags(genre, style, bpm, tonart);
 
-    // Call Suno API to generate music
-    // Note: Using the unofficial Suno API structure - adjust based on your API version
-    const sunoResponse = await fetch("https://api.sunoapi.com/api/v1/generate", {
+    console.log("Music prompt:", musicPrompt);
+    console.log("Style tags:", styleTags);
+
+    // Call Suno API (api.sunoapi.org) to generate music
+    const sunoResponse = await fetch("https://api.sunoapi.org/api/v1/generate", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${SUNO_API_KEY}`,
@@ -70,10 +73,11 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         prompt: musicPrompt,
-        custom_mode: true,
+        customMode: true,
+        instrumental: false,
+        model: "V4",
         title: title,
-        tags: `${genre}, ${style}`,
-        make_instrumental: false,
+        style: styleTags,
       }),
     });
 
@@ -86,14 +90,14 @@ serve(async (req) => {
         .update({ generation_status: "error" })
         .eq("id", songId);
         
-      throw new Error(`Suno API error: ${sunoResponse.status}`);
+      throw new Error(`Suno API error: ${sunoResponse.status} - ${errorText}`);
     }
 
     const sunoData = await sunoResponse.json();
     console.log("Suno response:", JSON.stringify(sunoData));
 
-    // Extract task ID for polling
-    const taskId = sunoData.data?.task_id || sunoData.task_id || sunoData.id;
+    // Extract task ID for polling - sunoapi.org returns taskId or data.taskId
+    const taskId = sunoData.data?.taskId || sunoData.taskId || sunoData.data?.task_id || sunoData.task_id || sunoData.id;
 
     if (taskId) {
       await supabase
@@ -114,8 +118,8 @@ serve(async (req) => {
       });
     }
 
-    // If we got an immediate audio URL
-    const audioUrl = sunoData.data?.audio_url || sunoData.audio_url;
+    // If we got an immediate audio URL (some APIs return this directly)
+    const audioUrl = sunoData.data?.audioUrl || sunoData.audioUrl || sunoData.data?.audio_url || sunoData.audio_url;
     if (audioUrl) {
       // Download and store the audio
       const storedUrl = await downloadAndStoreAudio(supabase, audioUrl, songId, title, artistName);
@@ -137,7 +141,15 @@ serve(async (req) => {
       });
     }
 
-    throw new Error("Unexpected Suno API response format");
+    // Return full response for debugging
+    return new Response(JSON.stringify({
+      success: true,
+      status: "submitted",
+      message: "Request submitted, check status later",
+      rawResponse: sunoData
+    }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
 
   } catch (error) {
     console.error("Error:", error);
@@ -161,32 +173,31 @@ function buildMusicPrompt(params: {
   tonart: string | null;
   artistName: string;
 }): string {
+  // For custom mode, the prompt is used for lyrics/vocal direction
   const parts: string[] = [];
 
-  // Voice/Vocal characteristics
+  // Add vocal/voice characteristics from voicePrompt
   if (params.voicePrompt) {
-    parts.push(`[Voice: ${params.voicePrompt}]`);
+    parts.push(params.voicePrompt);
   }
 
-  // Musical style
-  parts.push(`[Genre: ${params.genre}]`);
-  parts.push(`[Style: ${params.style}]`);
-
-  // Technical specs
-  if (params.bpm) {
-    parts.push(`[BPM: ${params.bpm}]`);
-  }
-  if (params.tonart) {
-    parts.push(`[Key: ${params.tonart}]`);
-  }
-
-  // Mood from personality
+  // Add mood/personality context
   if (params.personality) {
-    const moodSummary = params.personality.substring(0, 200);
-    parts.push(`[Mood: ${moodSummary}]`);
+    parts.push(`\n\nMood and character: ${params.personality.substring(0, 300)}`);
   }
 
-  return parts.join("\n");
+  return parts.join("\n") || `A ${params.genre} song in ${params.style} style`;
+}
+
+function buildStyleTags(genre: string, style: string, bpm: number | null, tonart: string | null): string {
+  const tags: string[] = [];
+  
+  if (genre) tags.push(genre);
+  if (style) tags.push(style);
+  if (bpm) tags.push(`${bpm} BPM`);
+  if (tonart) tags.push(tonart);
+  
+  return tags.join(", ");
 }
 
 async function downloadAndStoreAudio(
