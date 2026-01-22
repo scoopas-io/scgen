@@ -980,8 +980,11 @@ const SocialTools = () => {
                                         />
                                       )}
                                       {content.content_type === "reel" && !content.video_url && (
-                                        <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
-                                          <Play className="h-8 w-8 text-white" />
+                                        <div className="absolute inset-0 rounded-lg flex flex-col items-center justify-center gap-1 bg-background/70 backdrop-blur-sm">
+                                          <ImageIcon className="h-7 w-7 text-foreground" />
+                                          <span className="text-[11px] font-medium text-foreground">
+                                            Cover (kein Video)
+                                          </span>
                                         </div>
                                       )}
                                     </div>

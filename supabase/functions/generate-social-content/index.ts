@@ -225,7 +225,7 @@ Die Caption sollte:
           } else {
             videoFailureNote = "Stability Video-Generierung fehlgeschlagen – es wurde stattdessen ein Reel-Cover (PNG) erstellt.";
           }
-        } else {
+          } else {
           const errorText = await stabilityResponse.text();
           console.error("Stability API error:", stabilityResponse.status, errorText);
 
@@ -233,6 +233,8 @@ Die Caption sollte:
             videoFailureNote = "Stability AI: nicht genug Credits – es wurde stattdessen ein Reel-Cover (PNG) erstellt.";
           } else if (stabilityResponse.status === 400) {
             videoFailureNote = `Stability API Fehler: Bildformat nicht unterstützt – es wurde stattdessen ein Reel-Cover (PNG) erstellt.`;
+            } else if (stabilityResponse.status === 404) {
+              videoFailureNote = "Stability Video API nicht verfügbar (404) – der API-Key hat evtl. keinen Video-Zugriff oder der Endpoint ist nicht freigeschaltet. Es wurde stattdessen ein Reel-Cover (PNG) erstellt.";
           } else {
             videoFailureNote = `Stability Video-Fehler (${stabilityResponse.status}) – es wurde stattdessen ein Reel-Cover (PNG) erstellt.`;
           }
