@@ -1,17 +1,101 @@
-import { useState } from "react";
-import { Sparkles, Music, Zap } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Sparkles, Music, Zap, History, X, Trash2, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GeneratorControls } from "@/components/GeneratorControls";
 import { ArtistCard, type Artist } from "@/components/ArtistCard";
 import { LoadingState } from "@/components/LoadingState";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [artistCount, setArtistCount] = useState(3);
   const [albumCount, setAlbumCount] = useState(2);
   const [songCount, setSongCount] = useState(5);
   const [artists, setArtists] = useState<Artist[]>([]);
+  const [savedArtists, setSavedArtists] = useState<Artist[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [stats, setStats] = useState({ artists: 0, albums: 0, songs: 0 });
+
+  // Load saved artists and stats on mount
+  useEffect(() => {
+    loadSavedArtists();
+    loadStats();
+  }, []);
+
+  const loadStats = async () => {
+    const [artistsRes, albumsRes, songsRes] = await Promise.all([
+      supabase.from("artists").select("id", { count: "exact", head: true }),
+      supabase.from("albums").select("id", { count: "exact", head: true }),
+      supabase.from("songs").select("id", { count: "exact", head: true }),
+    ]);
+    setStats({
+      artists: artistsRes.count || 0,
+      albums: albumsRes.count || 0,
+      songs: songsRes.count || 0,
+    });
+  };
+
+  const loadSavedArtists = async () => {
+    const { data: artistsData, error } = await supabase
+      .from("artists")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error loading artists:", error);
+      return;
+    }
+
+    // Load albums and songs for each artist
+    const artistsWithAlbums: Artist[] = [];
+    for (const artist of artistsData || []) {
+      const { data: albumsData } = await supabase
+        .from("albums")
+        .select("*")
+        .eq("artist_id", artist.id)
+        .order("created_at", { ascending: true });
+
+      const albumsWithSongs = [];
+      for (const album of albumsData || []) {
+        const { data: songsData } = await supabase
+          .from("songs")
+          .select("*")
+          .eq("album_id", album.id)
+          .order("track_number", { ascending: true });
+
+        albumsWithSongs.push({
+          id: album.id,
+          name: album.name,
+          songs: (songsData || []).map((s) => s.name),
+        });
+      }
+
+      artistsWithAlbums.push({
+        id: artist.id,
+        name: artist.name,
+        personality: artist.personality,
+        voicePrompt: artist.voice_prompt,
+        genre: artist.genre,
+        style: artist.style,
+        albums: albumsWithSongs,
+        created_at: artist.created_at,
+      });
+    }
+
+    setSavedArtists(artistsWithAlbums);
+  };
+
+  const deleteArtist = async (artistId: string) => {
+    const { error } = await supabase.from("artists").delete().eq("id", artistId);
+    if (error) {
+      toast.error("Fehler beim Löschen");
+      return;
+    }
+    toast.success("Künstler gelöscht");
+    loadSavedArtists();
+    loadStats();
+  };
 
   const generateArtists = async () => {
     setIsLoading(true);
@@ -54,7 +138,11 @@ const Index = () => {
 
       const data = await response.json();
       setArtists(data.artists);
-      toast.success(`${data.artists.length} Künstler generiert!`);
+      toast.success(`${data.artists.length} Künstler generiert und gespeichert!`);
+      
+      // Reload saved artists and stats
+      await loadSavedArtists();
+      await loadStats();
     } catch (error) {
       console.error("Error generating artists:", error);
       toast.error("Verbindungsfehler", {
@@ -70,7 +158,7 @@ const Index = () => {
       {/* Hero Section */}
       <header className="relative overflow-hidden border-b border-border">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent" />
-        <div className="container relative py-16 md:py-24">
+        <div className="container relative py-12 md:py-20">
           <div className="flex flex-col items-center text-center space-y-6 max-w-3xl mx-auto">
             <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
               <Sparkles className="h-4 w-4 text-primary" />
@@ -86,14 +174,18 @@ const Index = () => {
               Generiere einzigartige Künstlerprofile mit Persönlichkeit, 
               SUNO Voice-Prompts, Alben und Songtiteln – vollautomatisch.
             </p>
-            <div className="flex items-center gap-6 text-sm text-muted-foreground">
+            <div className="flex items-center gap-6 text-sm text-muted-foreground flex-wrap justify-center">
+              <div className="flex items-center gap-2">
+                <Database className="h-4 w-4 text-primary" />
+                <span>{stats.artists} Künstler</span>
+              </div>
               <div className="flex items-center gap-2">
                 <Music className="h-4 w-4 text-primary" />
-                <span>Einzigartige Namen</span>
+                <span>{stats.albums} Alben</span>
               </div>
               <div className="flex items-center gap-2">
                 <Zap className="h-4 w-4 text-primary" />
-                <span>SUNO-optimiert</span>
+                <span>{stats.songs} Songs</span>
               </div>
             </div>
           </div>
@@ -101,7 +193,7 @@ const Index = () => {
       </header>
 
       {/* Main Content */}
-      <main className="container py-12">
+      <main className="container py-8 md:py-12">
         <div className="grid lg:grid-cols-[400px_1fr] gap-8">
           {/* Controls Sidebar */}
           <aside className="space-y-6">
@@ -124,16 +216,66 @@ const Index = () => {
               {isLoading ? "Generiere..." : "Künstler generieren"}
             </Button>
             
-            {artists.length > 0 && (
+            <Button
+              variant="outline"
+              size="lg"
+              className="w-full"
+              onClick={() => setShowHistory(!showHistory)}
+            >
+              <History className="h-5 w-5" />
+              {showHistory ? "Neue Ergebnisse anzeigen" : `Datenbank anzeigen (${stats.artists})`}
+            </Button>
+            
+            {artists.length > 0 && !showHistory && (
               <p className="text-center text-sm text-muted-foreground">
-                {artists.length} Künstler • {artists.reduce((acc, a) => acc + a.albums.length, 0)} Alben • {artists.reduce((acc, a) => acc + a.albums.reduce((acc2, al) => acc2 + al.songs.length, 0), 0)} Songs
+                {artists.length} neu generiert
               </p>
             )}
           </aside>
 
           {/* Results */}
           <section className="space-y-4">
-            {isLoading ? (
+            {showHistory ? (
+              // History View
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-display font-semibold text-foreground flex items-center gap-2">
+                    <Database className="h-5 w-5 text-primary" />
+                    Gespeicherte Künstler ({savedArtists.length})
+                  </h2>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowHistory(false)}
+                  >
+                    <X className="h-5 w-5" />
+                  </Button>
+                </div>
+                {savedArtists.length > 0 ? (
+                  savedArtists.map((artist, index) => (
+                    <ArtistCard
+                      key={artist.id || `${artist.name}-${index}`}
+                      artist={artist}
+                      index={index}
+                      onDelete={deleteArtist}
+                      showDelete
+                    />
+                  ))
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div className="h-20 w-20 rounded-2xl bg-secondary/50 flex items-center justify-center mb-6">
+                      <Database className="h-10 w-10 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-xl font-display font-semibold text-foreground mb-2">
+                      Keine gespeicherten Künstler
+                    </h3>
+                    <p className="text-muted-foreground max-w-md">
+                      Generiere Künstler, um sie automatisch in der Datenbank zu speichern.
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : isLoading ? (
               <LoadingState />
             ) : artists.length > 0 ? (
               artists.map((artist, index) => (
@@ -160,7 +302,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="border-t border-border py-8">
         <div className="container text-center text-sm text-muted-foreground">
-          <p>Alle generierten Inhalte sind einzigartig und frei von Urheberrechtskonflikten.</p>
+          <p>Alle generierten Inhalte sind einzigartig und werden in der Datenbank gespeichert.</p>
         </div>
       </footer>
     </div>
