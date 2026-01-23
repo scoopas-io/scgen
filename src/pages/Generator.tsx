@@ -380,10 +380,10 @@ const Generator = () => {
                     {isLoading 
                       ? isBulkMode 
                         ? `Batch ${generationState.currentBatch}/${generationState.totalBatches}...` 
-                        : "Generiere..." 
+                        : "Erstelle..." 
                       : isBulkMode 
-                        ? `${artistCount} Künstler generieren (${totalBatches} Batches)` 
-                        : "Künstler generieren"
+                        ? `${artistCount} Künstler erstellen (${totalBatches} Batches)` 
+                        : "Künstler erstellen"
                     }
                   </Button>
                   
@@ -490,7 +490,7 @@ const Generator = () => {
                     <div className="flex items-center justify-between sticky top-0 bg-background/95 backdrop-blur py-2 -mt-2 z-10">
                       <h2 className="text-lg font-display font-semibold text-foreground flex items-center gap-2">
                         <Zap className="h-4 w-4 text-primary" />
-                        Generierte Künstler ({artists.length})
+                        Neue Künstler ({artists.length})
                       </h2>
                     </div>
                     {artists.map((artist, index) => (
@@ -508,10 +508,10 @@ const Generator = () => {
                       <ScoopasIcon size={40} />
                     </div>
                     <h3 className="text-xl font-display font-semibold text-foreground mb-2">
-                      KI Musikkatalog Generator
+                      scoopas Musikkatalog
                     </h3>
                     <p className="text-sm text-muted-foreground max-w-md">
-                      Generiere vollständige Künstlerprofile mit Albums, Songs und
+                      Erstelle vollständige Künstlerprofile mit Albums, Songs und
                       professionellen Metadaten für deinen Musikkatalog.
                     </p>
                   </div>
@@ -527,9 +527,9 @@ const Generator = () => {
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <div className="flex items-center gap-1.5">
               <ScoopasIcon size={14} />
-              <span>scoopas.AI Musikkatalog Generator</span>
+              <span>scoopas Musikkatalog</span>
             </div>
-            <span>Powered by KI</span>
+            <span>Powered by scoopas</span>
           </div>
         </div>
       </footer>
