@@ -29,12 +29,6 @@ export const AppHeader = ({ stats }: AppHeaderProps) => {
                 <span className="text-gradient-gold">Musikkatalog</span>
               </h1>
             </Link>
-            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20">
-              <ScoopasIcon size={16} />
-              <span className="text-xs font-medium text-primary">
-                Powered by scoopas
-              </span>
-            </div>
           </div>
           <div className="flex items-center gap-4">
             <nav className="hidden md:flex items-center gap-1">
