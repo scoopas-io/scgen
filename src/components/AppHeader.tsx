@@ -12,7 +12,7 @@ export const AppHeader = ({ stats }: AppHeaderProps) => {
   const location = useLocation();
   
   const navItems = [
-    { path: "/", label: "Generator", icon: Zap },
+    { path: "/", label: "Erweitern", icon: Zap },
     { path: "/katalog", label: "Katalog", icon: Database },
     { path: "/audio-generator", label: "Audio", icon: Volume2 },
     { path: "/social-tools", label: "Social", icon: Share2 },
@@ -25,14 +25,14 @@ export const AppHeader = ({ stats }: AppHeaderProps) => {
           <div className="flex items-center gap-3">
             <Link to="/" className="flex items-center gap-3">
               <h1 className="text-xl md:text-2xl font-display font-bold tracking-tight">
-                <span className="text-foreground">KI Musikkatalog</span>{" "}
-                <span className="text-gradient-gold">Generator</span>
+                <span className="text-foreground">scoopas</span>{" "}
+                <span className="text-gradient-gold">Musikkatalog</span>
               </h1>
             </Link>
             <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20">
               <ScoopasIcon size={16} />
               <span className="text-xs font-medium text-primary">
-                Powered by scoopas.AI
+                Powered by scoopas
               </span>
             </div>
           </div>
