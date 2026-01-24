@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Music, Zap, Database, Volume2, Share2, Users, Disc } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScoopasIcon } from "@/components/ScoopasIcon";
+import { HeaderMiniPlayer } from "@/components/GlobalAudioPlayer";
 import { cn } from "@/lib/utils";
 
 interface AppHeaderProps {
@@ -51,18 +52,20 @@ export const AppHeader = ({ stats }: AppHeaderProps) => {
               ))}
             </nav>
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              <div className="flex items-center gap-1.5" title="Künstler">
+              <div className="hidden sm:flex items-center gap-1.5" title="Künstler">
                 <Users className="h-3.5 w-3.5 text-primary" />
                 <span>{stats.artists}</span>
               </div>
-              <div className="flex items-center gap-1.5" title="Alben">
+              <div className="hidden sm:flex items-center gap-1.5" title="Alben">
                 <Disc className="h-3.5 w-3.5 text-primary" />
                 <span>{stats.albums}</span>
               </div>
-              <div className="flex items-center gap-1.5" title="Songs">
+              <div className="hidden sm:flex items-center gap-1.5" title="Songs">
                 <Music className="h-3.5 w-3.5 text-primary" />
                 <span>{stats.songs}</span>
               </div>
+              {/* Header Mini Player */}
+              <HeaderMiniPlayer />
             </div>
           </div>
         </div>
