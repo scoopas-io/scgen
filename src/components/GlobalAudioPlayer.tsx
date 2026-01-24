@@ -25,6 +25,86 @@ const formatTime = (seconds: number): string => {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
+// Compact header mini player
+export const HeaderMiniPlayer: React.FC = () => {
+  const { 
+    currentTrack, 
+    isPlaying, 
+    pause, 
+    resume, 
+    currentTime, 
+    duration,
+    openPanel
+  } = useAudioPlayer();
+
+  if (!currentTrack) return null;
+
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+
+  return (
+    <button
+      onClick={openPanel}
+      className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors border border-border/50 group"
+    >
+      {/* Album art / icon */}
+      <div className="relative w-8 h-8 rounded bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
+        {currentTrack.coverUrl ? (
+          <img 
+            src={currentTrack.coverUrl} 
+            alt={currentTrack.title}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <Music className="w-4 h-4 text-primary" />
+        )}
+        {/* Progress ring */}
+        <svg className="absolute inset-0 w-full h-full -rotate-90">
+          <circle
+            cx="16"
+            cy="16"
+            r="14"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            className="text-muted-foreground/20"
+          />
+          <circle
+            cx="16"
+            cy="16"
+            r="14"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeDasharray={`${progress * 0.88} 88`}
+            className="text-primary transition-all duration-150"
+          />
+        </svg>
+      </div>
+      
+      {/* Track info - hidden on small screens */}
+      <div className="hidden lg:block min-w-0 max-w-[120px]">
+        <p className="text-xs font-medium truncate">{currentTrack.title}</p>
+        <p className="text-[10px] text-muted-foreground truncate">{currentTrack.artist}</p>
+      </div>
+      
+      {/* Play/Pause button */}
+      <div
+        onClick={(e) => {
+          e.stopPropagation();
+          isPlaying ? pause() : resume();
+        }}
+        className="w-7 h-7 rounded-full bg-primary/10 hover:bg-primary/20 flex items-center justify-center transition-colors"
+      >
+        {isPlaying ? (
+          <Pause className="h-3.5 w-3.5 text-primary" />
+        ) : (
+          <Play className="h-3.5 w-3.5 text-primary ml-0.5" />
+        )}
+      </div>
+    </button>
+  );
+};
+
 // Mini player bar at bottom
 const MiniPlayer: React.FC = () => {
   const { 
