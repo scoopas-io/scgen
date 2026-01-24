@@ -46,13 +46,19 @@ const LANGUAGE_FLAGS: Record<string, { flag: string; name: string }> = {
 
 interface SongRowProps {
   song: Song;
+  artistName: string;
+  albumName: string;
+  isCurrentTrack: boolean;
   isPlaying: boolean;
   onPlay: () => void;
   onSelect: () => void;
 }
 
-const SongRow = memo(({ song, isPlaying, onPlay, onSelect }: SongRowProps) => (
-  <div className="flex items-center gap-3 p-2 pl-20 hover:bg-muted/50 transition-colors group">
+const SongRow = memo(({ song, artistName, albumName, isCurrentTrack, isPlaying, onPlay, onSelect }: SongRowProps) => (
+  <div className={cn(
+    "flex items-center gap-3 p-2 pl-20 hover:bg-muted/50 transition-colors group",
+    isCurrentTrack && "bg-primary/10"
+  )}>
     <span className="text-xs text-muted-foreground w-6 text-right tabular-nums">
       {song.track_number}
     </span>
@@ -60,10 +66,13 @@ const SongRow = memo(({ song, isPlaying, onPlay, onSelect }: SongRowProps) => (
       <Button
         variant="ghost"
         size="icon"
-        className="h-7 w-7 shrink-0"
+        className={cn(
+          "h-7 w-7 shrink-0",
+          isCurrentTrack && "text-primary"
+        )}
         onClick={(e) => { e.stopPropagation(); onPlay(); }}
       >
-        {isPlaying ? (
+        {isCurrentTrack && isPlaying ? (
           <Pause className="h-3.5 w-3.5" />
         ) : (
           <Play className="h-3.5 w-3.5" />
@@ -74,7 +83,10 @@ const SongRow = memo(({ song, isPlaying, onPlay, onSelect }: SongRowProps) => (
     )}
     <button
       onClick={onSelect}
-      className="flex-1 text-left text-sm hover:text-primary transition-colors truncate"
+      className={cn(
+        "flex-1 text-left text-sm hover:text-primary transition-colors truncate",
+        isCurrentTrack && "text-primary font-medium"
+      )}
     >
       {song.name}
     </button>
@@ -89,19 +101,26 @@ SongRow.displayName = "SongRow";
 
 interface AlbumRowProps {
   album: Album;
+  artistName: string;
   isExpanded: boolean;
   onToggle: () => void;
-  playingAudio: string | null;
-  onPlayAudio: (url: string) => void;
+  currentTrackUrl: string | null;
+  isPlaying: boolean;
+  onPlayAudio: (url: string, songName: string, artistName: string, albumName?: string) => void;
   onSelectSong: (song: Song, albumName: string) => void;
 }
 
-const AlbumRow = memo(({ album, isExpanded, onToggle, playingAudio, onPlayAudio, onSelectSong }: AlbumRowProps) => {
+const AlbumRow = memo(({ 
+  album, 
+  artistName,
+  isExpanded, 
+  onToggle, 
+  currentTrackUrl, 
+  isPlaying,
+  onPlayAudio, 
+  onSelectSong 
+}: AlbumRowProps) => {
   const songCount = album.songs.length;
-  const totalDuration = album.songs.reduce((acc, song) => {
-    if (!song.bpm) return acc;
-    return acc + 1;
-  }, 0);
 
   return (
     <div>
@@ -132,8 +151,11 @@ const AlbumRow = memo(({ album, isExpanded, onToggle, playingAudio, onPlayAudio,
             <SongRow
               key={song.id}
               song={song}
-              isPlaying={playingAudio === song.audio_url}
-              onPlay={() => song.audio_url && onPlayAudio(song.audio_url)}
+              artistName={artistName}
+              albumName={album.name}
+              isCurrentTrack={currentTrackUrl === song.audio_url}
+              isPlaying={isPlaying}
+              onPlay={() => song.audio_url && onPlayAudio(song.audio_url, song.name, artistName, album.name)}
               onSelect={() => onSelectSong(song, album.name)}
             />
           ))}
@@ -151,8 +173,9 @@ interface ArtistTreeRowProps {
   expandedAlbums: Set<string>;
   onToggleArtist: () => void;
   onToggleAlbum: (albumId: string) => void;
-  playingAudio: string | null;
-  onPlayAudio: (url: string) => void;
+  currentTrackUrl: string | null;
+  isPlaying: boolean;
+  onPlayAudio: (url: string, songName: string, artistName: string, albumName?: string) => void;
   onSelectSong: (song: Song, artistName: string, albumName: string) => void;
 }
 
@@ -162,7 +185,8 @@ export const ArtistTreeRow = memo(({
   expandedAlbums,
   onToggleArtist,
   onToggleAlbum,
-  playingAudio,
+  currentTrackUrl,
+  isPlaying,
   onPlayAudio,
   onSelectSong
 }: ArtistTreeRowProps) => {
@@ -219,9 +243,11 @@ export const ArtistTreeRow = memo(({
             <AlbumRow
               key={album.id}
               album={album}
+              artistName={artist.name}
               isExpanded={expandedAlbums.has(album.id)}
               onToggle={() => onToggleAlbum(album.id)}
-              playingAudio={playingAudio}
+              currentTrackUrl={currentTrackUrl}
+              isPlaying={isPlaying}
               onPlayAudio={onPlayAudio}
               onSelectSong={(song, albumName) => handleSelectSong(song, albumName)}
             />

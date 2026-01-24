@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { 
   Database, FileJson, FileSpreadsheet, Search, Users, Disc, Music
 } from "lucide-react";
@@ -14,6 +14,7 @@ import { ArtistWithSocialCard } from "@/components/catalog/ArtistWithSocialCard"
 import { EmptyState } from "@/components/catalog/EmptyState";
 import { LoadingSpinner } from "@/components/catalog/LoadingSpinner";
 import { exportCatalogAsCSV, exportCatalogAsJSON } from "@/lib/exportCatalog";
+import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { 
   useCatalogData, 
   useFilteredCatalog, 
@@ -25,6 +26,7 @@ const ITEMS_PER_PAGE_OPTIONS = [10, 25, 50, 100];
 
 const Katalog = () => {
   const { artists, stats, isLoading, loadData, deleteArtist } = useCatalogData();
+  const { play, currentTrack, isPlaying, pause, resume } = useAudioPlayer();
   
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedArtists, setExpandedArtists] = useState<Set<string>>(new Set());
@@ -35,8 +37,6 @@ const Katalog = () => {
     artistName: string; 
     albumName: string 
   } | null>(null);
-  const [playingAudio, setPlayingAudio] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   
   // Pagination state
   const [artistsPage, setArtistsPage] = useState(1);
@@ -79,20 +79,27 @@ const Katalog = () => {
     });
   }, []);
 
-  const playAudio = useCallback((audioUrl: string) => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
-    if (playingAudio === audioUrl) {
-      setPlayingAudio(null);
+  // Play audio using global player
+  const handlePlayAudio = useCallback((audioUrl: string, songName: string, artistName: string, albumName?: string) => {
+    // If same track is playing, toggle pause/resume
+    if (currentTrack?.audioUrl === audioUrl) {
+      if (isPlaying) {
+        pause();
+      } else {
+        resume();
+      }
       return;
     }
-    const audio = new Audio(audioUrl);
-    audio.play();
-    audio.onended = () => setPlayingAudio(null);
-    audioRef.current = audio;
-    setPlayingAudio(audioUrl);
-  }, [playingAudio]);
+    
+    // Play new track
+    play({
+      id: audioUrl,
+      title: songName,
+      artist: artistName,
+      album: albumName,
+      audioUrl: audioUrl,
+    });
+  }, [currentTrack, isPlaying, pause, resume, play]);
 
   const handleExportCSV = async () => {
     setIsExporting(true);
@@ -254,7 +261,7 @@ const Katalog = () => {
                       actionHref={!searchQuery ? "/" : undefined}
                     />
                   ) : (
-                    <div className="space-y-2 pr-2">
+                    <div className="space-y-2 pr-2 pb-20">
                       {songsPagination.items.map(artist => (
                         <ArtistTreeRow
                           key={artist.id}
@@ -263,8 +270,9 @@ const Katalog = () => {
                           expandedAlbums={expandedAlbums}
                           onToggleArtist={() => toggleArtist(artist.id)}
                           onToggleAlbum={toggleAlbum}
-                          playingAudio={playingAudio}
-                          onPlayAudio={playAudio}
+                          currentTrackUrl={currentTrack?.audioUrl || null}
+                          isPlaying={isPlaying}
+                          onPlayAudio={handlePlayAudio}
                           onSelectSong={handleSelectSong}
                         />
                       ))}
