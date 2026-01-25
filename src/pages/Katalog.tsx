@@ -127,21 +127,22 @@ const Katalog = () => {
     <div className="h-screen flex flex-col overflow-hidden">
       <AppHeader stats={stats} />
 
-      <main className="flex-1 min-h-0 overflow-hidden">
-        <div className="container h-full py-6">
-          <div className="flex flex-col h-full gap-4 min-h-0">
-            {/* Toolbar */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shrink-0">
-              <div className="flex items-center gap-3 flex-1 w-full sm:w-auto">
+      <main className="flex-1 min-h-0 overflow-hidden pb-16 md:pb-0">
+        <div className="container h-full py-4 md:py-6 px-3 md:px-6">
+          <div className="flex flex-col h-full gap-3 md:gap-4 min-h-0">
+            {/* Toolbar - Mobile optimized */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3 shrink-0">
+              <div className="flex items-center gap-2 sm:gap-3 flex-1 w-full sm:w-auto">
                 <div className="relative flex-1 max-w-md">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Suchen..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 h-9"
+                    className="pl-10 h-9 text-sm"
                   />
                 </div>
+                {/* Stats badges - hidden on mobile, shown in header drawer */}
                 <div className="hidden lg:flex items-center gap-2">
                   <Badge variant="secondary" className="gap-1.5">
                     <Users className="h-3 w-3" />
@@ -157,47 +158,47 @@ const Katalog = () => {
                   </Badge>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleExportCSV}
                   disabled={isExporting || stats.songs === 0}
-                  className="h-9"
+                  className="h-8 sm:h-9 flex-1 sm:flex-initial text-xs sm:text-sm"
                 >
-                  <FileSpreadsheet className="h-4 w-4" />
-                  <span className="hidden sm:inline">CSV</span>
+                  <FileSpreadsheet className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="ml-1.5">CSV</span>
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleExportJSON}
                   disabled={isExporting || stats.songs === 0}
-                  className="h-9"
+                  className="h-8 sm:h-9 flex-1 sm:flex-initial text-xs sm:text-sm"
                 >
-                  <FileJson className="h-4 w-4" />
-                  <span className="hidden sm:inline">JSON</span>
+                  <FileJson className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="ml-1.5">JSON</span>
                 </Button>
               </div>
             </div>
 
-            {/* Tabs */}
+            {/* Tabs - Mobile optimized */}
             <Tabs defaultValue="artists" className="flex-1 flex flex-col min-h-0 overflow-hidden">
-              <TabsList className="shrink-0 w-fit">
-                <TabsTrigger value="artists" className="gap-2">
-                  <Users className="h-4 w-4" />
-                  <span className="hidden sm:inline">Künstler</span>
-                  <span className="text-xs opacity-70">({filteredArtists.length})</span>
+              <TabsList className="shrink-0 w-full sm:w-fit grid grid-cols-2 sm:flex h-9 sm:h-10">
+                <TabsTrigger value="artists" className="gap-1.5 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4">
+                  <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="hidden xs:inline">Künstler</span>
+                  <span className="text-[10px] sm:text-xs opacity-70">({filteredArtists.length})</span>
                 </TabsTrigger>
-                <TabsTrigger value="songs" className="gap-2">
-                  <Disc className="h-4 w-4" />
-                  <span className="hidden sm:inline">Alben & Songs</span>
-                  <span className="text-xs opacity-70">({stats.songs})</span>
+                <TabsTrigger value="songs" className="gap-1.5 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4">
+                  <Disc className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="hidden xs:inline">Songs</span>
+                  <span className="text-[10px] sm:text-xs opacity-70">({stats.songs})</span>
                 </TabsTrigger>
               </TabsList>
 
               {/* Artists Tab - Shows artist info + social content */}
-              <TabsContent value="artists" className="flex-1 min-h-0 mt-4 flex flex-col data-[state=active]:flex">
+              <TabsContent value="artists" className="flex-1 min-h-0 mt-3 md:mt-4 flex flex-col data-[state=active]:flex">
                 <div className="flex-1 min-h-0 overflow-y-auto">
                   {isLoading ? (
                     <LoadingSpinner message="Lade Künstler..." />
@@ -213,7 +214,7 @@ const Katalog = () => {
                       actionHref={!searchQuery ? "/" : undefined}
                     />
                   ) : (
-                    <div className="space-y-3 pr-2">
+                    <div className="space-y-2 sm:space-y-3 pr-1 sm:pr-2">
                       {artistsPagination.items.map(artist => (
                         <ArtistWithSocialCard
                           key={artist.id}
@@ -226,7 +227,7 @@ const Katalog = () => {
                   )}
                 </div>
                 {artistsPagination.totalPages > 1 && (
-                  <div className="shrink-0 pt-3 border-t border-border mt-3">
+                  <div className="shrink-0 pt-2 sm:pt-3 border-t border-border mt-2 sm:mt-3">
                     <Pagination
                       currentPage={artistsPage}
                       totalPages={artistsPagination.totalPages}
@@ -245,7 +246,7 @@ const Katalog = () => {
               </TabsContent>
 
               {/* Albums & Songs Tab */}
-              <TabsContent value="songs" className="flex-1 min-h-0 mt-4 flex flex-col data-[state=active]:flex">
+              <TabsContent value="songs" className="flex-1 min-h-0 mt-3 md:mt-4 flex flex-col data-[state=active]:flex">
                 <div className="flex-1 min-h-0 overflow-y-auto">
                   {isLoading ? (
                     <LoadingSpinner message="Lade Katalog..." />
@@ -261,7 +262,7 @@ const Katalog = () => {
                       actionHref={!searchQuery ? "/" : undefined}
                     />
                   ) : (
-                    <div className="space-y-2 pr-2 pb-20">
+                    <div className="space-y-1.5 sm:space-y-2 pr-1 sm:pr-2 pb-20">
                       {songsPagination.items.map(artist => (
                         <ArtistTreeRow
                           key={artist.id}
@@ -280,7 +281,7 @@ const Katalog = () => {
                   )}
                 </div>
                 {songsPagination.totalPages > 1 && (
-                  <div className="shrink-0 pt-3 border-t border-border mt-3">
+                  <div className="shrink-0 pt-2 sm:pt-3 border-t border-border mt-2 sm:mt-3">
                     <Pagination
                       currentPage={songsPage}
                       totalPages={songsPagination.totalPages}

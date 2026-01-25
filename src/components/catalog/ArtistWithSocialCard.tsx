@@ -119,13 +119,13 @@ export const ArtistWithSocialCard = memo(({ artist, onDelete, onRefresh }: Artis
         {/* Header */}
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full flex items-center gap-4 p-4 transition-colors text-left"
+          className="w-full flex items-center gap-2.5 sm:gap-4 p-3 sm:p-4 transition-colors text-left"
         >
           <div className={cn(
             "transition-transform duration-200 shrink-0",
             isExpanded && "rotate-90"
           )}>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
           </div>
           
           {/* Profile Image */}
@@ -133,45 +133,45 @@ export const ArtistWithSocialCard = memo(({ artist, onDelete, onRefresh }: Artis
             <img 
               src={artist.profile_image_url} 
               alt={artist.name}
-              className="h-12 w-12 rounded-full object-cover ring-2 ring-border shrink-0"
+              className="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover ring-2 ring-border shrink-0"
               loading="lazy"
             />
           ) : (
-            <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center ring-2 ring-border shrink-0">
-              <User className="h-5 w-5 text-primary" />
+            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center ring-2 ring-border shrink-0">
+              <User className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
             </div>
           )}
 
           {/* Info */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="font-semibold truncate">{artist.name}</span>
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="font-semibold text-sm sm:text-base truncate">{artist.name}</span>
               {langInfo && (
-                <span title={langInfo.name} className="shrink-0">
+                <span title={langInfo.name} className="shrink-0 text-sm">
                   {langInfo.flag}
                 </span>
               )}
               {artist.katalognummer && (
-                <span className="text-xs text-muted-foreground font-mono shrink-0">
+                <span className="text-[10px] sm:text-xs text-muted-foreground font-mono shrink-0 hidden sm:inline">
                   {artist.katalognummer}
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-2 mt-1 flex-wrap">
-              <Badge variant="secondary" className="text-xs bg-primary/20 text-primary">
+            <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 sm:mt-1 flex-wrap">
+              <Badge variant="secondary" className="text-[10px] sm:text-xs bg-primary/20 text-primary px-1.5 sm:px-2">
                 {artist.genre}
               </Badge>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-[10px] sm:text-xs text-muted-foreground hidden xs:inline">
                 {artist.style}
               </span>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-[10px] sm:text-xs text-muted-foreground">
                 • {artist.albums.length} Alben • {totalSongs} Songs
               </span>
             </div>
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -194,7 +194,7 @@ export const ArtistWithSocialCard = memo(({ artist, onDelete, onRefresh }: Artis
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive hidden sm:flex"
                     onClick={(e) => {
                       e.stopPropagation();
                       onDelete(artist.id);
@@ -211,29 +211,29 @@ export const ArtistWithSocialCard = memo(({ artist, onDelete, onRefresh }: Artis
 
         {/* Expanded Content */}
         {isExpanded && (
-          <div className="border-t border-border bg-muted/20 p-4 space-y-4 animate-in slide-in-from-top-2 duration-200">
+          <div className="border-t border-border bg-muted/20 p-3 sm:p-4 space-y-3 sm:space-y-4 animate-in slide-in-from-top-2 duration-200">
             {/* Social Content Section */}
             <div>
-              <h4 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
-                <Video className="h-4 w-4" />
+              <h4 className="text-xs sm:text-sm font-medium text-muted-foreground mb-2 sm:mb-3 flex items-center gap-2">
+                <Video className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 Social Media Inhalte
                 {socialContent.length > 0 && (
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="outline" className="text-[10px] sm:text-xs">
                     {socialContent.length}
                   </Badge>
                 )}
               </h4>
 
               {isLoadingSocial ? (
-                <div className="text-sm text-muted-foreground py-4 text-center">
+                <div className="text-xs sm:text-sm text-muted-foreground py-4 text-center">
                   Lade Inhalte...
                 </div>
               ) : socialContent.length === 0 ? (
-                <div className="text-sm text-muted-foreground py-4 text-center border border-dashed border-border rounded-lg">
+                <div className="text-xs sm:text-sm text-muted-foreground py-4 text-center border border-dashed border-border rounded-lg">
                   Keine Social Media Inhalte vorhanden
                 </div>
               ) : (
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-2 sm:gap-3 grid-cols-1 xs:grid-cols-2 lg:grid-cols-3">
                   {socialContent.map((content) => {
                     const PlatformIcon = PLATFORM_ICONS[content.platform] || Video;
                     const platformColor = PLATFORM_COLORS[content.platform] || "bg-muted text-muted-foreground";
@@ -294,13 +294,13 @@ export const ArtistWithSocialCard = memo(({ artist, onDelete, onRefresh }: Artis
                         </div>
 
                         {/* Content Info */}
-                        <div className="p-3">
+                        <div className="p-2.5 sm:p-3">
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0">
-                              <p className="text-sm font-medium truncate">
+                              <p className="text-xs sm:text-sm font-medium truncate">
                                 {content.title || "Ohne Titel"}
                               </p>
-                              <p className="text-xs text-muted-foreground capitalize">
+                              <p className="text-[10px] sm:text-xs text-muted-foreground capitalize">
                                 {content.content_type} • {content.status}
                               </p>
                             </div>
