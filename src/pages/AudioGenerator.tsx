@@ -10,10 +10,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AppHeader } from "@/components/AppHeader";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { 
   Music, Disc, User, Play, Pause, Download, Loader2, 
   CheckCircle2, XCircle, Clock, Volume2, ChevronDown, ChevronRight,
-  ArrowUpDown, RefreshCw, Timer, AlertCircle
+  ArrowUpDown, RefreshCw, Timer, AlertCircle, Zap
 } from "lucide-react";
 
 interface Artist {
@@ -93,7 +94,8 @@ const AudioGenerator = () => {
   const refreshInFlightRef = useRef(false);
   
   // Global audio player
-  const { play, pause, resume, currentTrack, isPlaying } = useAudioPlayer();
+  const { play, pause, resume, currentTrack, isPlaying, addToQueue, clearQueue } = useAudioPlayer();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     loadData();
@@ -416,8 +418,23 @@ const AudioGenerator = () => {
     setGenerating(false);
     setSelectedSongs(new Set());
     
+    // Add all songs to queue after generation started
+    const songsWithUrls = songsToGenerate.filter(s => s.audio_url);
+    if (songsWithUrls.length > 0) {
+      clearQueue();
+      songsWithUrls.forEach(song => {
+        addToQueue({
+          id: song.id,
+          title: song.name,
+          artist: song.artistName,
+          album: song.albumName,
+          audioUrl: song.audio_url!,
+        });
+      });
+    }
+    
     if (errorCount === 0) {
-      toast.success(`${successCount} Songs zur Generierung gesendet!`);
+      toast.success(`${successCount} Songs werden abgerufen!`);
     } else {
       toast.warning(`${successCount} erfolgreich, ${errorCount} fehlgeschlagen`);
     }
@@ -566,9 +583,9 @@ const AudioGenerator = () => {
                 <Volume2 className="h-5 w-5 md:h-6 md:w-6 text-primary-foreground" />
               </div>
               <div className="min-w-0">
-                <h1 className="text-lg md:text-2xl font-display font-bold truncate">scoopas Audio Generator</h1>
+                <h1 className="text-lg md:text-2xl font-display font-bold truncate">scoopas Audio</h1>
                 <p className="text-xs md:text-sm text-muted-foreground hidden sm:block">
-                  Generiere echte Musik aus deinem Katalog mit scoopas.AI
+                  Rufe echte Musik aus deinem Katalog ab mit scoopas.AI
                 </p>
               </div>
             </div>
@@ -600,7 +617,7 @@ const AudioGenerator = () => {
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                              <span className="text-primary font-medium">Audio-Generierung läuft</span>
+                              <span className="text-primary font-medium">Songs werden abgerufen</span>
                             </div>
                             <span className="text-sm font-mono">{Math.round(generationProgress)}%</span>
                           </div>
@@ -646,7 +663,7 @@ const AudioGenerator = () => {
                         </div>
                       )}
 
-                      {/* Selection Summary - Mobile optimized */}
+                      {/* Selection Summary - Mobile optimized (hide on mobile, FAB replaces) */}
                       <div className="flex items-center justify-between gap-2 p-2.5 md:p-3 rounded-lg bg-muted/50">
                         <span className="text-xs md:text-sm text-muted-foreground">
                           {selectedSongs.size} <span className="hidden xs:inline">Songs </span>ausgewählt
@@ -654,15 +671,14 @@ const AudioGenerator = () => {
                         <Button 
                           onClick={generateSelected} 
                           disabled={generating || selectedSongs.size === 0}
-                          className="gradient-gold text-xs md:text-sm h-8 md:h-9 px-3 md:px-4"
+                          className="gradient-gold text-xs md:text-sm h-8 md:h-9 px-3 md:px-4 hidden sm:flex"
                         >
                           {generating ? (
                             <Loader2 className="h-3.5 w-3.5 md:h-4 md:w-4 animate-spin mr-1.5 md:mr-2" />
                           ) : (
-                            <Volume2 className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" />
+                            <Zap className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" />
                           )}
-                          <span className="hidden sm:inline">Generieren</span>
-                          <span className="sm:hidden">Start</span>
+                          Abrufen
                         </Button>
                       </div>
 
@@ -768,11 +784,11 @@ const AudioGenerator = () => {
                 {/* Library Tab */}
                 <TabsContent value="library" className="mt-0 space-y-3 pr-4">
                   {librarySongs.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
                       <Volume2 className="h-12 w-12 text-muted-foreground mb-4" />
-                      <h3 className="font-medium text-lg">Noch keine Songs generiert</h3>
+                      <h3 className="font-medium text-lg">Noch keine Songs abgerufen</h3>
                       <p className="text-sm text-muted-foreground mt-1">
-                        Wähle Songs aus und generiere sie mit scoopas
+                        Wähle Songs aus und rufe sie mit scoopas ab
                       </p>
                     </div>
                   ) : (
@@ -781,7 +797,7 @@ const AudioGenerator = () => {
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 md:p-3 rounded-lg bg-muted/50">
                         <div className="flex items-center gap-1.5 md:gap-2 flex-1 min-w-0">
                           <ArrowUpDown className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground flex-shrink-0" />
-                          <span className="text-xs md:text-sm text-muted-foreground hidden sm:inline">Sortieren:</span>
+                          <span className="text-xs md:text-sm text-muted-foreground hidden sm:inline">Sortierung:</span>
                           <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
                             <SelectTrigger className="w-24 md:w-32 h-7 md:h-8 text-xs md:text-sm">
                               <SelectValue />
@@ -928,6 +944,20 @@ const AudioGenerator = () => {
           </div>
         </div>
       </main>
+
+      {/* Mobile Floating Action Button */}
+      {isMobile && selectedSongs.size > 0 && !generating && (
+        <button
+          onClick={generateSelected}
+          className="fixed bottom-20 right-4 z-40 h-14 w-14 rounded-full gradient-gold shadow-lg flex items-center justify-center glow-gold animate-in zoom-in-50 duration-200"
+          aria-label="Songs abrufen"
+        >
+          <Zap className="h-6 w-6 text-primary-foreground" />
+          <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-background text-primary text-xs font-bold flex items-center justify-center border border-primary">
+            {selectedSongs.size}
+          </span>
+        </button>
+      )}
     </div>
   );
 };
