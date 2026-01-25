@@ -346,11 +346,11 @@ const Generator = () => {
 
       <main className="flex-1 min-h-0 overflow-hidden">
         <div className="container h-full py-2 md:py-4 px-3 md:px-6">
-          <div className="flex flex-col lg:grid lg:grid-cols-[420px_1fr] gap-4 md:gap-6 h-full min-h-0">
-            {/* Mobile: Collapsible controls, Desktop: Fixed sidebar */}
+          <div className="flex flex-col lg:grid lg:grid-cols-[360px_1fr] gap-3 md:gap-6 h-full min-h-0">
+            {/* Mobile: Compact controls, Desktop: Fixed sidebar */}
             <div className="lg:h-full lg:overflow-hidden shrink-0">
-              <ScrollArea className="h-full max-h-[40vh] lg:max-h-full">
-                <aside className="space-y-3 md:space-y-4 pb-4 pr-2 md:pr-4">
+              <ScrollArea className="h-full max-h-[35vh] lg:max-h-full">
+                <aside className="space-y-2 md:space-y-4 pb-4 pr-2 md:pr-4">
                   <GeneratorControls
                     artistCount={artistCount}
                     albumCount={albumCount}
