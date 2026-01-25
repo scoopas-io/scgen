@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AppHeader } from "@/components/AppHeader";
+import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { 
   Music, Disc, User, Play, Pause, Download, Loader2, 
   CheckCircle2, XCircle, Clock, Volume2, ChevronDown, ChevronRight,
@@ -84,14 +85,15 @@ const AudioGenerator = () => {
     errorCount: 0,
   });
   const [generationProgress, setGenerationProgress] = useState(0);
-  const [currentlyPlaying, setCurrentlyPlaying] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>("date");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [stats, setStats] = useState({ artists: 0, albums: 0, songs: 0 });
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const pollIntervalRef = useRef<number | null>(null);
   const refreshInFlightRef = useRef(false);
+  
+  // Global audio player
+  const { play, pause, resume, currentTrack, isPlaying } = useAudioPlayer();
 
   useEffect(() => {
     loadData();
@@ -139,14 +141,19 @@ const AudioGenerator = () => {
           }));
 
           if (updatedSong.generation_status === 'completed' && updatedSong.audio_url) {
+            // Find the song details to get artist name
+            const songWithDetails = songs.find(s => s.id === updatedSong.id);
             toast.success(`Song "${updatedSong.name}" ist fertig!`, {
               action: {
                 label: "Abspielen",
                 onClick: () => {
-                  if (audioRef.current) audioRef.current.pause();
-                  audioRef.current = new Audio(updatedSong.audio_url!);
-                  audioRef.current.play();
-                  setCurrentlyPlaying(updatedSong.id);
+                  play({
+                    id: updatedSong.id,
+                    title: updatedSong.name,
+                    artist: songWithDetails?.artistName || 'Unbekannt',
+                    album: songWithDetails?.albumName,
+                    audioUrl: updatedSong.audio_url!,
+                  });
                 },
               },
             });
@@ -417,19 +424,27 @@ const AudioGenerator = () => {
     loadData();
   };
 
-  const playAudio = (songId: string, audioUrl: string) => {
-    if (currentlyPlaying === songId) {
-      audioRef.current?.pause();
-      setCurrentlyPlaying(null);
-    } else {
-      if (audioRef.current) {
-        audioRef.current.pause();
+  const playAudio = (song: SongWithDetails) => {
+    if (!song.audio_url) return;
+    
+    // Toggle pause/resume if same track
+    if (currentTrack?.id === song.id) {
+      if (isPlaying) {
+        pause();
+      } else {
+        resume();
       }
-      audioRef.current = new Audio(audioUrl);
-      audioRef.current.play();
-      audioRef.current.onended = () => setCurrentlyPlaying(null);
-      setCurrentlyPlaying(songId);
+      return;
     }
+    
+    // Play new track
+    play({
+      id: song.id,
+      title: song.name,
+      artist: song.artistName,
+      album: song.albumName,
+      audioUrl: song.audio_url,
+    });
   };
 
   const downloadAudio = (audioUrl: string, songName: string) => {
@@ -718,10 +733,10 @@ const AudioGenerator = () => {
                                               <Button 
                                                 size="icon" 
                                                 variant="ghost" 
-                                                className="h-6 w-6"
-                                                onClick={() => playAudio(song.id, song.audio_url!)}
+                                                className={`h-6 w-6 ${currentTrack?.id === song.id ? 'text-primary' : ''}`}
+                                                onClick={() => playAudio(song)}
                                               >
-                                                {currentlyPlaying === song.id ? (
+                                                {currentTrack?.id === song.id && isPlaying ? (
                                                   <Pause className="h-3 w-3" />
                                                 ) : (
                                                   <Play className="h-3 w-3" />
@@ -864,16 +879,16 @@ const AudioGenerator = () => {
                                                 <Button 
                                                   size="icon" 
                                                   variant="ghost" 
-                                                  className="h-7 w-7"
-                                                  onClick={() => playAudio(song.id, song.audio_url!)}
+                                                  className={`h-7 w-7 ${currentTrack?.id === song.id ? 'text-primary' : ''}`}
+                                                  onClick={() => playAudio(song)}
                                                 >
-                                                  {currentlyPlaying === song.id ? (
+                                                  {currentTrack?.id === song.id && isPlaying ? (
                                                     <Pause className="h-3.5 w-3.5" />
                                                   ) : (
                                                     <Play className="h-3.5 w-3.5" />
                                                   )}
                                                 </Button>
-                                                <Button 
+                                                <Button
                                                   size="icon" 
                                                   variant="ghost" 
                                                   className="h-7 w-7"
