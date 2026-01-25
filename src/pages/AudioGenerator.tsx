@@ -557,29 +557,31 @@ const AudioGenerator = () => {
     <div className="h-screen flex flex-col overflow-hidden">
       <AppHeader stats={stats} />
 
-      <main className="flex-1 min-h-0 overflow-hidden">
-        <div className="container h-full py-6">
+      <main className="flex-1 min-h-0 overflow-hidden pb-16 md:pb-0">
+        <div className="container h-full py-4 md:py-6 px-3 md:px-6">
           <div className="h-full flex flex-col">
-            {/* Page Header */}
-            <div className="flex items-center gap-4 mb-6">
-              <div className="h-12 w-12 rounded-full gradient-gold flex items-center justify-center">
-                <Volume2 className="h-6 w-6 text-primary-foreground" />
+            {/* Page Header - Responsive */}
+            <div className="flex items-center gap-3 md:gap-4 mb-4 md:mb-6">
+              <div className="h-10 w-10 md:h-12 md:w-12 rounded-full gradient-gold flex items-center justify-center flex-shrink-0">
+                <Volume2 className="h-5 w-5 md:h-6 md:w-6 text-primary-foreground" />
               </div>
-              <div>
-                <h1 className="text-2xl font-display font-bold">scoopas Audio Generator</h1>
-                <p className="text-sm text-muted-foreground">
+              <div className="min-w-0">
+                <h1 className="text-lg md:text-2xl font-display font-bold truncate">scoopas Audio Generator</h1>
+                <p className="text-xs md:text-sm text-muted-foreground hidden sm:block">
                   Generiere echte Musik aus deinem Katalog mit scoopas.AI
                 </p>
               </div>
             </div>
 
             <Tabs defaultValue="select" className="flex-1 flex flex-col min-h-0">
-              <TabsList className="w-full max-w-md grid grid-cols-2 mb-4">
-                <TabsTrigger value="select" className="flex items-center gap-2">
-                  <Music className="h-4 w-4" /> Songs auswählen
+              <TabsList className="w-full grid grid-cols-2 mb-3 md:mb-4 h-10 md:h-11">
+                <TabsTrigger value="select" className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm px-2 md:px-4">
+                  <Music className="h-3.5 w-3.5 md:h-4 md:w-4" /> 
+                  <span className="truncate">Auswählen</span>
                 </TabsTrigger>
-                <TabsTrigger value="library" className="flex items-center gap-2">
-                  <Volume2 className="h-4 w-4" /> Audio Bibliothek ({generatedSongs.length})
+                <TabsTrigger value="library" className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm px-2 md:px-4">
+                  <Volume2 className="h-3.5 w-3.5 md:h-4 md:w-4" /> 
+                  <span className="truncate">Bibliothek ({generatedSongs.length})</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -615,27 +617,27 @@ const AudioGenerator = () => {
                             </div>
                           )}
                           
-                          <div className="grid grid-cols-3 gap-2 text-xs">
-                            <div className="flex items-center gap-1.5 p-2 rounded bg-background/50">
-                              <Timer className="h-3.5 w-3.5 text-muted-foreground" />
-                              <span>
+                          <div className="grid grid-cols-3 gap-1.5 md:gap-2 text-[10px] md:text-xs">
+                            <div className="flex items-center gap-1 md:gap-1.5 p-1.5 md:p-2 rounded bg-background/50">
+                              <Timer className="h-3 w-3 md:h-3.5 md:w-3.5 text-muted-foreground flex-shrink-0" />
+                              <span className="truncate">
                                 {generationState.completed}/{generationState.total}
                               </span>
                             </div>
-                            <div className="flex items-center gap-1.5 p-2 rounded bg-green-500/10">
-                              <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
-                              <span className="text-green-600">{generationState.successCount} OK</span>
+                            <div className="flex items-center gap-1 md:gap-1.5 p-1.5 md:p-2 rounded bg-green-500/10">
+                              <CheckCircle2 className="h-3 w-3 md:h-3.5 md:w-3.5 text-green-500 flex-shrink-0" />
+                              <span className="text-green-600 truncate">{generationState.successCount} OK</span>
                             </div>
                             {generationState.errorCount > 0 && (
-                              <div className="flex items-center gap-1.5 p-2 rounded bg-red-500/10">
-                                <AlertCircle className="h-3.5 w-3.5 text-red-500" />
-                                <span className="text-red-600">{generationState.errorCount} Fehler</span>
+                              <div className="flex items-center gap-1 md:gap-1.5 p-1.5 md:p-2 rounded bg-red-500/10">
+                                <AlertCircle className="h-3 w-3 md:h-3.5 md:w-3.5 text-red-500 flex-shrink-0" />
+                                <span className="text-red-600 truncate">{generationState.errorCount} Err</span>
                               </div>
                             )}
                             {generationState.errorCount === 0 && (
-                              <div className="flex items-center gap-1.5 p-2 rounded bg-background/50">
-                                <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                                <span>
+                              <div className="flex items-center gap-1 md:gap-1.5 p-1.5 md:p-2 rounded bg-background/50">
+                                <Clock className="h-3 w-3 md:h-3.5 md:w-3.5 text-muted-foreground flex-shrink-0" />
+                                <span className="truncate">
                                   ~{Math.ceil((generationState.total - generationState.completed) * 1.5)}s
                                 </span>
                               </div>
@@ -644,102 +646,107 @@ const AudioGenerator = () => {
                         </div>
                       )}
 
-                      {/* Selection Summary */}
-                      <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                        <span className="text-sm text-muted-foreground">
-                          {selectedSongs.size} Songs ausgewählt
+                      {/* Selection Summary - Mobile optimized */}
+                      <div className="flex items-center justify-between gap-2 p-2.5 md:p-3 rounded-lg bg-muted/50">
+                        <span className="text-xs md:text-sm text-muted-foreground">
+                          {selectedSongs.size} <span className="hidden xs:inline">Songs </span>ausgewählt
                         </span>
                         <Button 
                           onClick={generateSelected} 
                           disabled={generating || selectedSongs.size === 0}
-                          className="gradient-gold"
+                          className="gradient-gold text-xs md:text-sm h-8 md:h-9 px-3 md:px-4"
                         >
                           {generating ? (
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            <Loader2 className="h-3.5 w-3.5 md:h-4 md:w-4 animate-spin mr-1.5 md:mr-2" />
                           ) : (
-                            <Volume2 className="h-4 w-4 mr-2" />
+                            <Volume2 className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" />
                           )}
-                          Generieren
+                          <span className="hidden sm:inline">Generieren</span>
+                          <span className="sm:hidden">Start</span>
                         </Button>
                       </div>
 
-                      {/* Artist Tree */}
-                      <div className="space-y-2">
+                      {/* Artist Tree - Mobile optimized */}
+                      <div className="space-y-1.5 md:space-y-2">
                         {artists.map(artist => (
                           <div key={artist.id} className="border rounded-lg overflow-hidden">
                             <div 
-                              className="flex items-center gap-3 p-3 bg-muted/30 cursor-pointer hover:bg-muted/50"
+                              className="flex items-center gap-2 md:gap-3 p-2.5 md:p-3 bg-muted/30 cursor-pointer hover:bg-muted/50 active:bg-muted/60"
                               onClick={() => toggleArtist(artist.id)}
                             >
                               {expandedArtists.has(artist.id) ? (
-                                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                               ) : (
-                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                               )}
-                              <User className="h-4 w-4 text-primary" />
-                              <span className="font-medium">{artist.name}</span>
-                              <Badge variant="outline" className="text-xs">{artist.genre}</Badge>
-                              <div className="ml-auto">
-                                <Button 
-                                  size="sm" 
-                                  variant="ghost" 
-                                  onClick={(e) => { e.stopPropagation(); selectAllFromArtist(artist.id); }}
-                                >
-                                  Alle auswählen
-                                </Button>
-                              </div>
+                              <User className="h-4 w-4 text-primary flex-shrink-0" />
+                              <span className="font-medium text-sm md:text-base truncate flex-1 min-w-0">{artist.name}</span>
+                              <Badge variant="outline" className="text-[10px] md:text-xs flex-shrink-0 hidden sm:flex">{artist.genre}</Badge>
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="h-7 md:h-8 text-[10px] md:text-xs px-2 md:px-3 flex-shrink-0"
+                                onClick={(e) => { e.stopPropagation(); selectAllFromArtist(artist.id); }}
+                              >
+                                <span className="hidden md:inline">Alle auswählen</span>
+                                <span className="md:hidden">Alle</span>
+                              </Button>
                             </div>
 
                             {expandedArtists.has(artist.id) && (
-                              <div className="pl-6 pb-2">
+                              <div className="pl-4 md:pl-6 pb-2">
                                 {getArtistAlbums(artist.id).map(album => (
-                                  <div key={album.id} className="mt-2">
+                                  <div key={album.id} className="mt-1.5 md:mt-2">
                                     <div 
-                                      className="flex items-center gap-2 p-2 cursor-pointer hover:bg-muted/30 rounded"
+                                      className="flex items-center gap-2 p-2 cursor-pointer hover:bg-muted/30 active:bg-muted/40 rounded"
                                       onClick={() => toggleAlbum(album.id)}
                                     >
                                       {expandedAlbums.has(album.id) ? (
-                                        <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                                        <ChevronDown className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                                       ) : (
-                                        <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                                        <ChevronRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                                       )}
-                                      <Disc className="h-3 w-3 text-primary" />
-                                      <span className="text-sm">{album.name}</span>
+                                      <Disc className="h-3 w-3 text-primary flex-shrink-0" />
+                                      <span className="text-xs md:text-sm truncate flex-1 min-w-0">{album.name}</span>
                                       <Button 
                                         size="sm" 
                                         variant="ghost" 
-                                        className="h-6 text-xs ml-auto"
+                                        className="h-6 text-[10px] md:text-xs ml-auto px-2 flex-shrink-0"
                                         onClick={(e) => { e.stopPropagation(); selectAllFromAlbum(album.id); }}
                                       >
-                                        Album auswählen
+                                        <span className="hidden md:inline">Album auswählen</span>
+                                        <span className="md:hidden">Album</span>
                                       </Button>
                                     </div>
 
                                     {expandedAlbums.has(album.id) && (
-                                      <div className="pl-6 space-y-1 mt-1">
+                                      <div className="pl-4 md:pl-6 space-y-0.5 md:space-y-1 mt-1">
                                         {getAlbumSongs(album.id).map(song => (
                                           <div 
                                             key={song.id} 
-                                            className="flex items-center gap-3 p-2 rounded hover:bg-muted/30"
+                                            className="flex items-center gap-2 md:gap-3 p-1.5 md:p-2 rounded hover:bg-muted/30 active:bg-muted/40"
                                           >
                                             <Checkbox 
                                               checked={selectedSongs.has(song.id)}
                                               onCheckedChange={() => toggleSong(song.id)}
+                                              className="h-4 w-4 md:h-5 md:w-5"
                                             />
-                                            <Music className="h-3 w-3 text-muted-foreground" />
-                                            <span className="text-sm flex-1">{song.name}</span>
-                                            {getStatusBadge(song.generation_status)}
+                                            <Music className="h-3 w-3 text-muted-foreground flex-shrink-0 hidden sm:block" />
+                                            <span className="text-xs md:text-sm flex-1 truncate min-w-0">{song.name}</span>
+                                            <div className="hidden sm:block flex-shrink-0">
+                                              {getStatusBadge(song.generation_status)}
+                                            </div>
                                             {song.audio_url && (
                                               <Button 
                                                 size="icon" 
                                                 variant="ghost" 
-                                                className={`h-6 w-6 ${currentTrack?.id === song.id ? 'text-primary' : ''}`}
+                                                className={`h-7 w-7 md:h-6 md:w-6 flex-shrink-0 ${currentTrack?.id === song.id ? 'text-primary' : ''}`}
                                                 onClick={() => playAudio(song)}
                                               >
                                                 {currentTrack?.id === song.id && isPlaying ? (
-                                                  <Pause className="h-3 w-3" />
+                                                  <Pause className="h-3.5 w-3.5 md:h-3 md:w-3" />
                                                 ) : (
-                                                  <Play className="h-3 w-3" />
+                                                  <Play className="h-3.5 w-3.5 md:h-3 md:w-3" />
                                                 )}
                                               </Button>
                                             )}
@@ -770,13 +777,13 @@ const AudioGenerator = () => {
                     </div>
                   ) : (
                     <>
-                      {/* Sort Controls */}
-                      <div className="flex items-center justify-between gap-2 p-3 rounded-lg bg-muted/50">
-                        <div className="flex items-center gap-2">
-                          <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm text-muted-foreground">Sortieren:</span>
+                      {/* Sort Controls - Mobile optimized */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 md:p-3 rounded-lg bg-muted/50">
+                        <div className="flex items-center gap-1.5 md:gap-2 flex-1 min-w-0">
+                          <ArrowUpDown className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground flex-shrink-0" />
+                          <span className="text-xs md:text-sm text-muted-foreground hidden sm:inline">Sortieren:</span>
                           <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-                            <SelectTrigger className="w-32 h-8">
+                            <SelectTrigger className="w-24 md:w-32 h-7 md:h-8 text-xs md:text-sm">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -790,9 +797,10 @@ const AudioGenerator = () => {
                             variant="ghost" 
                             size="sm"
                             onClick={toggleSortDirection}
-                            className="h-8 px-2"
+                            className="h-7 md:h-8 px-2 text-xs md:text-sm"
                           >
-                            {sortDirection === "asc" ? "↑ A-Z" : "↓ Z-A"}
+                            {sortDirection === "asc" ? "↑" : "↓"}
+                            <span className="hidden sm:inline ml-1">{sortDirection === "asc" ? "A-Z" : "Z-A"}</span>
                           </Button>
                         </div>
                         <Button 
@@ -800,19 +808,20 @@ const AudioGenerator = () => {
                           size="sm"
                           onClick={handleRefresh}
                           disabled={isRefreshing}
-                          className="h-8"
+                          className="h-7 md:h-8 text-xs md:text-sm w-full sm:w-auto"
                         >
-                          <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-                          Aktualisieren
+                          <RefreshCw className={`h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                          <span className="sm:hidden">Aktualisieren</span>
+                          <span className="hidden sm:inline">Aktualisieren</span>
                         </Button>
                       </div>
 
-                      {/* Grouped Song List by Artist and Album */}
-                      <div className="space-y-3">
+                      {/* Grouped Song List by Artist and Album - Mobile optimized */}
+                      <div className="space-y-1.5 md:space-y-3">
                         {groupedLibrarySongs.map(({ artist, albums }) => (
                           <div key={artist.id} className="border rounded-lg overflow-hidden">
                             <div 
-                              className="flex items-center gap-3 p-3 bg-muted/30 cursor-pointer hover:bg-muted/50"
+                              className="flex items-center gap-2 md:gap-3 p-2.5 md:p-3 bg-muted/30 cursor-pointer hover:bg-muted/50 active:bg-muted/60"
                               onClick={() => {
                                 const newExpanded = new Set(expandedLibraryArtists);
                                 if (newExpanded.has(artist.id)) {
@@ -824,24 +833,24 @@ const AudioGenerator = () => {
                               }}
                             >
                               {expandedLibraryArtists.has(artist.id) ? (
-                                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                               ) : (
-                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                               )}
-                              <User className="h-4 w-4 text-primary" />
-                              <span className="font-medium">{artist.name}</span>
-                              <Badge variant="outline" className="text-xs">{artist.genre}</Badge>
-                              <span className="ml-auto text-xs text-muted-foreground">
-                                {Object.values(albums).reduce((acc, a) => acc + a.songs.length, 0)} Songs
+                              <User className="h-4 w-4 text-primary flex-shrink-0" />
+                              <span className="font-medium text-sm md:text-base truncate flex-1 min-w-0">{artist.name}</span>
+                              <Badge variant="outline" className="text-[10px] md:text-xs hidden sm:flex flex-shrink-0">{artist.genre}</Badge>
+                              <span className="text-[10px] md:text-xs text-muted-foreground flex-shrink-0">
+                                {Object.values(albums).reduce((acc, a) => acc + a.songs.length, 0)} <span className="hidden sm:inline">Songs</span>
                               </span>
                             </div>
 
                             {expandedLibraryArtists.has(artist.id) && (
-                              <div className="pl-4 pb-2">
+                              <div className="pl-3 md:pl-4 pb-2">
                                 {Object.values(albums).map(({ album, songs: albumSongs }) => (
-                                  <div key={album.id} className="mt-2">
+                                  <div key={album.id} className="mt-1.5 md:mt-2">
                                     <div 
-                                      className="flex items-center gap-2 p-2 cursor-pointer hover:bg-muted/30 rounded"
+                                      className="flex items-center gap-2 p-2 cursor-pointer hover:bg-muted/30 active:bg-muted/40 rounded"
                                       onClick={() => {
                                         const newExpanded = new Set(expandedLibraryAlbums);
                                         if (newExpanded.has(album.id)) {
@@ -853,48 +862,50 @@ const AudioGenerator = () => {
                                       }}
                                     >
                                       {expandedLibraryAlbums.has(album.id) ? (
-                                        <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                                        <ChevronDown className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                                       ) : (
-                                        <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                                        <ChevronRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                                       )}
-                                      <Disc className="h-3 w-3 text-primary" />
-                                      <span className="text-sm">{album.name}</span>
-                                      <span className="ml-auto text-xs text-muted-foreground">
-                                        {albumSongs.length} Songs
+                                      <Disc className="h-3 w-3 text-primary flex-shrink-0" />
+                                      <span className="text-xs md:text-sm truncate flex-1 min-w-0">{album.name}</span>
+                                      <span className="text-[10px] md:text-xs text-muted-foreground flex-shrink-0">
+                                        {albumSongs.length} <span className="hidden sm:inline">Songs</span>
                                       </span>
                                     </div>
 
                                     {expandedLibraryAlbums.has(album.id) && (
-                                      <div className="pl-6 space-y-1 mt-1">
+                                      <div className="pl-4 md:pl-6 space-y-0.5 md:space-y-1 mt-1">
                                         {albumSongs.map(song => (
                                           <div 
                                             key={song.id} 
-                                            className="flex items-center gap-3 p-2 rounded hover:bg-muted/30"
+                                            className="flex items-center gap-2 md:gap-3 p-1.5 md:p-2 rounded hover:bg-muted/30 active:bg-muted/40"
                                           >
-                                            <Music className="h-3 w-3 text-muted-foreground" />
-                                            <span className="text-sm flex-1">{song.name}</span>
-                                            {getStatusBadge(song.generation_status)}
+                                            <Music className="h-3 w-3 text-muted-foreground flex-shrink-0 hidden sm:block" />
+                                            <span className="text-xs md:text-sm flex-1 truncate min-w-0">{song.name}</span>
+                                            <div className="hidden sm:block flex-shrink-0">
+                                              {getStatusBadge(song.generation_status)}
+                                            </div>
                                             {song.audio_url && (
-                                              <div className="flex items-center gap-1">
+                                              <div className="flex items-center gap-0.5 md:gap-1 flex-shrink-0">
                                                 <Button 
                                                   size="icon" 
                                                   variant="ghost" 
-                                                  className={`h-7 w-7 ${currentTrack?.id === song.id ? 'text-primary' : ''}`}
+                                                  className={`h-8 w-8 md:h-7 md:w-7 ${currentTrack?.id === song.id ? 'text-primary' : ''}`}
                                                   onClick={() => playAudio(song)}
                                                 >
                                                   {currentTrack?.id === song.id && isPlaying ? (
-                                                    <Pause className="h-3.5 w-3.5" />
+                                                    <Pause className="h-4 w-4 md:h-3.5 md:w-3.5" />
                                                   ) : (
-                                                    <Play className="h-3.5 w-3.5" />
+                                                    <Play className="h-4 w-4 md:h-3.5 md:w-3.5" />
                                                   )}
                                                 </Button>
                                                 <Button
                                                   size="icon" 
                                                   variant="ghost" 
-                                                  className="h-7 w-7"
+                                                  className="h-8 w-8 md:h-7 md:w-7"
                                                   onClick={() => downloadAudio(song.audio_url!, song.name)}
                                                 >
-                                                  <Download className="h-3.5 w-3.5" />
+                                                  <Download className="h-4 w-4 md:h-3.5 md:w-3.5" />
                                                 </Button>
                                               </div>
                                             )}
