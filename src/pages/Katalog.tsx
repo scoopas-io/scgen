@@ -80,7 +80,7 @@ const Katalog = () => {
   }, []);
 
   // Play audio using global player
-  const handlePlayAudio = useCallback((audioUrl: string, songName: string, artistName: string, albumName?: string) => {
+  const handlePlayAudio = useCallback((audioUrl: string, songName: string, artistName: string, albumName?: string, artistImageUrl?: string) => {
     // If same track is playing, toggle pause/resume
     if (currentTrack?.audioUrl === audioUrl) {
       if (isPlaying) {
@@ -96,6 +96,7 @@ const Katalog = () => {
       id: audioUrl,
       title: songName,
       artist: artistName,
+      artistImageUrl: artistImageUrl,
       album: albumName,
       audioUrl: audioUrl,
     });

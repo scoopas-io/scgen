@@ -631,308 +631,318 @@ const SocialTools = () => {
       <ContentPreviewDialog />
 
       <main className="flex-1 min-h-0 overflow-hidden">
-        <div className="container h-full py-6">
+        <div className="container h-full py-3 md:py-6 px-3 md:px-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-            <TabsList className="grid w-full max-w-md grid-cols-3">
-              <TabsTrigger value="generator" className="gap-2">
-                <Sparkles className="h-4 w-4" />
-                Generator
+            <TabsList className="grid w-full max-w-md grid-cols-3 h-9 md:h-10">
+              <TabsTrigger value="generator" className="gap-1.5 text-xs md:text-sm">
+                <Sparkles className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                <span className="hidden xs:inline">Generator</span>
+                <span className="xs:hidden">Gen</span>
               </TabsTrigger>
-              <TabsTrigger value="calendar" className="gap-2">
-                <CalendarDays className="h-4 w-4" />
-                Kalender
+              <TabsTrigger value="calendar" className="gap-1.5 text-xs md:text-sm">
+                <CalendarDays className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                <span className="hidden xs:inline">Kalender</span>
+                <span className="xs:hidden">Kal</span>
               </TabsTrigger>
-              <TabsTrigger value="connections" className="gap-2">
-                <Link2 className="h-4 w-4" />
-                Verbindungen
+              <TabsTrigger value="connections" className="gap-1.5 text-xs md:text-sm">
+                <Link2 className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                <span className="hidden xs:inline">Verbindungen</span>
+                <span className="xs:hidden">Verb</span>
               </TabsTrigger>
             </TabsList>
 
             {/* Generator Tab */}
-            <TabsContent value="generator" className="flex-1 min-h-0 mt-6 overflow-hidden">
-              <div className="grid lg:grid-cols-[400px_1fr] gap-6 h-full min-h-0">
+            <TabsContent value="generator" className="flex-1 min-h-0 mt-3 md:mt-6 overflow-hidden">
+              <div className="flex flex-col lg:grid lg:grid-cols-[360px_1fr] gap-4 md:gap-6 h-full min-h-0">
                 {/* Generator Panel */}
-                <ScrollArea className="h-full pr-4">
-                  <div className="space-y-6 pb-4">
-                    <div>
-                      <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
-                        <Sparkles className="h-5 w-5 text-primary" />
-                        Social Content Generator
-                      </h2>
-                      <p className="text-sm text-muted-foreground">
-                        Generiere Social Media Content basierend auf deinen Künstlerprofilen.
-                      </p>
-                    </div>
-
-                    {/* Artist Selection */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Künstler auswählen</label>
-                      <Select value={selectedArtistId} onValueChange={setSelectedArtistId}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Künstler wählen..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {artists.map(artist => (
-                            <SelectItem key={artist.id} value={artist.id}>
-                              <div className="flex items-center gap-2">
-                                {artist.profile_image_url ? (
-                                  <img 
-                                    src={artist.profile_image_url} 
-                                    alt={artist.name}
-                                    className="h-6 w-6 rounded-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
-                                    <User className="h-3 w-3 text-primary" />
-                                  </div>
-                                )}
-                                <span>{artist.name}</span>
-                                <span className="text-xs text-muted-foreground">({artist.genre})</span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Selected Artist Preview */}
-                    {selectedArtist && (
-                      <Card className="bg-muted/50">
-                        <CardContent className="p-4">
-                          <div className="flex items-start gap-3">
-                            {selectedArtist.profile_image_url ? (
-                              <img 
-                                src={selectedArtist.profile_image_url} 
-                                alt={selectedArtist.name}
-                                className="h-16 w-16 rounded-lg object-cover"
-                              />
-                            ) : (
-                              <div className="h-16 w-16 rounded-lg bg-primary/10 flex items-center justify-center">
-                                <User className="h-8 w-8 text-primary" />
-                              </div>
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <h3 className="font-medium">{selectedArtist.name}</h3>
-                              <p className="text-xs text-muted-foreground">{selectedArtist.genre} • {selectedArtist.style}</p>
-                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                                {selectedArtist.personality}
-                              </p>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
-
-                    {/* Platform Selection */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Plattform</label>
-                      <div className="grid grid-cols-3 gap-2">
-                        {PLATFORMS.map(platform => {
-                          const Icon = platform.icon;
-                          const isConnected = platformConnections.some(c => c.platform === platform.id);
-                          return (
-                            <Button
-                              key={platform.id}
-                              variant={selectedPlatform === platform.id ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => setSelectedPlatform(platform.id)}
-                              className="gap-1.5 relative"
-                            >
-                              <Icon className={cn("h-4 w-4", selectedPlatform !== platform.id && platform.color)} />
-                              <span className="text-xs">{platform.name}</span>
-                              {isConnected && (
-                                <span className="absolute -top-1 -right-1 h-2 w-2 bg-green-500 rounded-full" />
-                              )}
-                            </Button>
-                          );
-                        })}
+                <div className="lg:h-full lg:overflow-hidden shrink-0">
+                  <ScrollArea className="h-full max-h-[45vh] lg:max-h-full">
+                    <div className="space-y-4 md:space-y-6 pb-4 pr-2 md:pr-4">
+                      <div className="hidden md:block">
+                        <h2 className="text-base md:text-lg font-semibold mb-2 flex items-center gap-2">
+                          <Sparkles className="h-4 w-4 md:h-5 md:w-5 text-primary" />
+                          Social Content Generator
+                        </h2>
+                        <p className="text-xs md:text-sm text-muted-foreground">
+                          Generiere Social Media Content basierend auf deinen Künstlerprofilen.
+                        </p>
                       </div>
-                    </div>
 
-                    {/* Content Type Selection */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Content-Typ</label>
-                      <div className="grid grid-cols-2 gap-2">
-                        {CONTENT_TYPES.map(type => {
-                          const Icon = type.icon;
-                          return (
-                            <Button
-                              key={type.id}
-                              variant={selectedContentType === type.id ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => setSelectedContentType(type.id)}
-                              className="gap-1.5"
-                            >
-                              <Icon className="h-4 w-4" />
-                              <span className="text-xs">{type.name}</span>
-                            </Button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Custom Prompt */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Zusätzlicher Prompt (optional)</label>
-                      <Textarea
-                        placeholder="z.B. 'Neues Album Ankündigung', 'Behind the Scenes', 'Tour Dates'..."
-                        value={customPrompt}
-                        onChange={(e) => setCustomPrompt(e.target.value)}
-                        rows={3}
-                      />
-                    </div>
-
-                    {/* Scheduling */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
-                        Planen (optional)
-                      </label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <Input
-                          type="date"
-                          value={scheduledDate}
-                          onChange={(e) => setScheduledDate(e.target.value)}
-                          min={format(new Date(), "yyyy-MM-dd")}
-                        />
-                        <Input
-                          type="time"
-                          value={scheduledTime}
-                          onChange={(e) => setScheduledTime(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Generate Button & Status */}
-                    <div className="space-y-3">
-                      <Button
-                        variant="gold"
-                        size="lg"
-                        className="w-full"
-                        onClick={generateContent}
-                        disabled={!selectedArtist || isGenerating}
-                      >
-                        {isGenerating ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            Generiere...
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="h-4 w-4" />
-                            {scheduledDate ? "Generieren & Planen" : "Content generieren"}
-                          </>
-                        )}
-                      </Button>
-                      
-                      {/* Generation Status with Progress Bar */}
-                      {isGenerating && (
-                        <Card className="border-primary/30 bg-primary/5">
-                          <CardContent className="p-4">
-                            <div className="space-y-4">
-                              <div className="flex items-center justify-between">
+                      {/* Artist Selection */}
+                      <div className="space-y-2">
+                        <label className="text-xs md:text-sm font-medium">Künstler auswählen</label>
+                        <Select value={selectedArtistId} onValueChange={setSelectedArtistId}>
+                          <SelectTrigger className="h-9 md:h-10">
+                            <SelectValue placeholder="Künstler wählen..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {artists.map(artist => (
+                              <SelectItem key={artist.id} value={artist.id}>
                                 <div className="flex items-center gap-2">
-                                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                                  <span className="text-sm font-medium text-primary">
-                                    {PHASE_LABELS[generationPhase]}
-                                  </span>
-                                </div>
-                                {estimatedRemaining !== null && estimatedRemaining > 0 && (
-                                  <span className="text-xs text-muted-foreground">
-                                    ~{formatTime(estimatedRemaining)} verbleibend
-                                  </span>
-                                )}
-                              </div>
-                              
-                              {/* Progress Bar */}
-                              <div className="space-y-2">
-                                <Progress value={generationProgress} className="h-2" />
-                                <div className="flex justify-between text-xs text-muted-foreground">
-                                  <span>{Math.round(generationProgress)}%</span>
-                                  {generationStartTime && (
-                                    <span className="flex items-center gap-1">
-                                      <Clock className="h-3 w-3" />
-                                      {formatTime((Date.now() - generationStartTime) / 1000)}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              
-                              {/* Phase Progress Indicators */}
-                              <div className="flex items-center gap-2">
-                                {(["text", "image", "video", "saving", "complete"] as GenerationPhase[]).map((phase, i) => {
-                                  const phases: GenerationPhase[] = ["text", "image", "video", "saving", "complete"];
-                                  const currentIndex = phases.indexOf(generationPhase);
-                                  const phaseIndex = phases.indexOf(phase);
-                                  const isCompleted = phaseIndex < currentIndex;
-                                  const isCurrent = phase === generationPhase;
-                                  
-                                  // Skip irrelevant phases
-                                  if (phase === "image" && selectedContentType === "reel") return null;
-                                  if (phase === "video" && selectedContentType !== "reel") return null;
-                                  if (phase === "image" && selectedContentType === "text") return null;
-                                  if (phase === "video" && selectedContentType === "text") return null;
-                                  
-                                  return (
-                                    <div key={phase} className="flex items-center gap-1">
-                                      <div className={cn(
-                                        "h-2.5 w-2.5 rounded-full transition-colors",
-                                        isCompleted ? "bg-green-500" : 
-                                        isCurrent ? "bg-primary animate-pulse" : 
-                                        "bg-muted-foreground/30"
-                                      )} />
-                                      {i < phases.length - 1 && phase !== "complete" && (
-                                        <div className={cn(
-                                          "h-0.5 w-6 transition-colors",
-                                          isCompleted ? "bg-green-500" : "bg-muted-foreground/30"
-                                        )} />
-                                      )}
+                                  {artist.profile_image_url ? (
+                                    <img 
+                                      src={artist.profile_image_url} 
+                                      alt={artist.name}
+                                      className="h-5 w-5 md:h-6 md:w-6 rounded-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="h-5 w-5 md:h-6 md:w-6 rounded-full bg-primary/10 flex items-center justify-center">
+                                      <User className="h-2.5 w-2.5 md:h-3 md:w-3 text-primary" />
                                     </div>
-                                  );
-                                })}
+                                  )}
+                                  <span className="text-sm">{artist.name}</span>
+                                  <span className="text-xs text-muted-foreground hidden sm:inline">({artist.genre})</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Selected Artist Preview - Compact on mobile */}
+                      {selectedArtist && (
+                        <Card className="bg-muted/50">
+                          <CardContent className="p-3 md:p-4">
+                            <div className="flex items-start gap-2 md:gap-3">
+                              {selectedArtist.profile_image_url ? (
+                                <img 
+                                  src={selectedArtist.profile_image_url} 
+                                  alt={selectedArtist.name}
+                                  className="h-12 w-12 md:h-16 md:w-16 rounded-lg object-cover shrink-0"
+                                />
+                              ) : (
+                                <div className="h-12 w-12 md:h-16 md:w-16 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                                  <User className="h-6 w-6 md:h-8 md:w-8 text-primary" />
+                                </div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-medium text-sm md:text-base truncate">{selectedArtist.name}</h3>
+                                <p className="text-[10px] md:text-xs text-muted-foreground truncate">{selectedArtist.genre} • {selectedArtist.style}</p>
+                                <p className="text-[10px] md:text-xs text-muted-foreground mt-1 line-clamp-2 hidden sm:block">
+                                  {selectedArtist.personality}
+                                </p>
                               </div>
-                              
-                              <p className="text-xs text-muted-foreground">
-                                {generationPhase === "text" && "KI erstellt Caption und Hashtags..."}
-                                {generationPhase === "image" && "KI generiert ein passendes Bild..."}
-                                {generationPhase === "video" && "KI generiert ein Video (kann bis zu 30 Sekunden dauern)..."}
-                                {generationPhase === "saving" && "Speichere Content in der Bibliothek..."}
-                                {generationPhase === "complete" && "Content wurde erfolgreich erstellt!"}
-                              </p>
                             </div>
                           </CardContent>
                         </Card>
                       )}
+
+                      {/* Platform Selection */}
+                      <div className="space-y-2">
+                        <label className="text-xs md:text-sm font-medium">Plattform</label>
+                        <div className="grid grid-cols-3 gap-1.5 md:gap-2">
+                          {PLATFORMS.map(platform => {
+                            const Icon = platform.icon;
+                            const isConnected = platformConnections.some(c => c.platform === platform.id);
+                            return (
+                              <Button
+                                key={platform.id}
+                                variant={selectedPlatform === platform.id ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setSelectedPlatform(platform.id)}
+                                className="gap-1 md:gap-1.5 relative h-8 md:h-9 px-2 md:px-3"
+                              >
+                                <Icon className={cn("h-3.5 w-3.5 md:h-4 md:w-4 shrink-0", selectedPlatform !== platform.id && platform.color)} />
+                                <span className="text-[10px] md:text-xs truncate">{platform.name}</span>
+                                {isConnected && (
+                                  <span className="absolute -top-1 -right-1 h-2 w-2 bg-green-500 rounded-full" />
+                                )}
+                              </Button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Content Type Selection */}
+                      <div className="space-y-2">
+                        <label className="text-xs md:text-sm font-medium">Content-Typ</label>
+                        <div className="grid grid-cols-4 md:grid-cols-2 gap-1.5 md:gap-2">
+                          {CONTENT_TYPES.map(type => {
+                            const Icon = type.icon;
+                            return (
+                              <Button
+                                key={type.id}
+                                variant={selectedContentType === type.id ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setSelectedContentType(type.id)}
+                                className="gap-1 md:gap-1.5 h-8 md:h-9 px-2 md:px-3"
+                              >
+                                <Icon className="h-3.5 w-3.5 md:h-4 md:w-4 shrink-0" />
+                                <span className="text-[10px] md:text-xs hidden xs:inline">{type.name}</span>
+                              </Button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Custom Prompt */}
+                      <div className="space-y-2">
+                        <label className="text-xs md:text-sm font-medium">Prompt (optional)</label>
+                        <Textarea
+                          placeholder="z.B. 'Neues Album', 'Behind the Scenes'..."
+                          value={customPrompt}
+                          onChange={(e) => setCustomPrompt(e.target.value)}
+                          rows={2}
+                          className="text-sm resize-none"
+                        />
+                      </div>
+
+                      {/* Scheduling */}
+                      <div className="space-y-2">
+                        <label className="text-xs md:text-sm font-medium flex items-center gap-2">
+                          <Calendar className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                          Planen (optional)
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Input
+                            type="date"
+                            value={scheduledDate}
+                            onChange={(e) => setScheduledDate(e.target.value)}
+                            min={format(new Date(), "yyyy-MM-dd")}
+                            className="h-9 text-sm"
+                          />
+                          <Input
+                            type="time"
+                            value={scheduledTime}
+                            className="h-9 text-sm"
+                            onChange={(e) => setScheduledTime(e.target.value)}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Generate Button & Status */}
+                      <div className="space-y-2 md:space-y-3">
+                        <Button
+                          variant="gold"
+                          size="lg"
+                          className="w-full h-10 md:h-11 text-sm md:text-base"
+                          onClick={generateContent}
+                          disabled={!selectedArtist || isGenerating}
+                        >
+                          {isGenerating ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <span className="truncate">Generiere...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="h-4 w-4 shrink-0" />
+                              <span className="truncate">
+                                {scheduledDate ? "Generieren & Planen" : "Content generieren"}
+                              </span>
+                            </>
+                          )}
+                        </Button>
+                        
+                        {/* Generation Status with Progress Bar */}
+                        {isGenerating && (
+                          <Card className="border-primary/30 bg-primary/5">
+                            <CardContent className="p-3 md:p-4">
+                              <div className="space-y-3 md:space-y-4">
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <Loader2 className="h-3.5 w-3.5 md:h-4 md:w-4 animate-spin text-primary shrink-0" />
+                                    <span className="text-xs md:text-sm font-medium text-primary truncate">
+                                      {PHASE_LABELS[generationPhase]}
+                                    </span>
+                                  </div>
+                                  {estimatedRemaining !== null && estimatedRemaining > 0 && (
+                                    <span className="text-[10px] md:text-xs text-muted-foreground shrink-0">
+                                      ~{formatTime(estimatedRemaining)}
+                                    </span>
+                                  )}
+                                </div>
+                                
+                                {/* Progress Bar */}
+                                <div className="space-y-1.5">
+                                  <Progress value={generationProgress} className="h-1.5 md:h-2" />
+                                  <div className="flex justify-between text-[10px] md:text-xs text-muted-foreground">
+                                    <span>{Math.round(generationProgress)}%</span>
+                                    {generationStartTime && (
+                                      <span className="flex items-center gap-1">
+                                        <Clock className="h-2.5 w-2.5 md:h-3 md:w-3" />
+                                        {formatTime((Date.now() - generationStartTime) / 1000)}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                {/* Phase Progress Indicators - hidden on mobile */}
+                                <div className="hidden sm:flex items-center gap-2">
+                                  {(["text", "image", "video", "saving", "complete"] as GenerationPhase[]).map((phase, i) => {
+                                    const phases: GenerationPhase[] = ["text", "image", "video", "saving", "complete"];
+                                    const currentIndex = phases.indexOf(generationPhase);
+                                    const phaseIndex = phases.indexOf(phase);
+                                    const isCompleted = phaseIndex < currentIndex;
+                                    const isCurrent = phase === generationPhase;
+                                    
+                                    // Skip irrelevant phases
+                                    if (phase === "image" && selectedContentType === "reel") return null;
+                                    if (phase === "video" && selectedContentType !== "reel") return null;
+                                    if (phase === "image" && selectedContentType === "text") return null;
+                                    if (phase === "video" && selectedContentType === "text") return null;
+                                    
+                                    return (
+                                      <div key={phase} className="flex items-center gap-1">
+                                        <div className={cn(
+                                          "h-2 w-2 md:h-2.5 md:w-2.5 rounded-full transition-colors",
+                                          isCompleted ? "bg-green-500" : 
+                                          isCurrent ? "bg-primary animate-pulse" : 
+                                          "bg-muted-foreground/30"
+                                        )} />
+                                        {i < phases.length - 1 && phase !== "complete" && (
+                                          <div className={cn(
+                                            "h-0.5 w-4 md:w-6 transition-colors",
+                                            isCompleted ? "bg-green-500" : "bg-muted-foreground/30"
+                                          )} />
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                                
+                                <p className="text-[10px] md:text-xs text-muted-foreground">
+                                  {generationPhase === "text" && "KI erstellt Caption..."}
+                                  {generationPhase === "image" && "KI generiert Bild..."}
+                                  {generationPhase === "video" && "Video wird generiert..."}
+                                  {generationPhase === "saving" && "Speichere..."}
+                                  {generationPhase === "complete" && "Fertig!"}
+                                </p>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </ScrollArea>
+                  </ScrollArea>
+                </div>
 
                 {/* Content Library */}
-                <div className="flex flex-col h-full min-h-0 overflow-hidden">
-                  <div className="flex items-center justify-between mb-4 shrink-0">
-                    <h2 className="text-lg font-semibold flex items-center gap-2">
-                      <Share2 className="h-5 w-5 text-primary" />
-                      Content Bibliothek ({generatedContent.length})
+                <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                  <div className="flex items-center justify-between mb-3 md:mb-4 shrink-0">
+                    <h2 className="text-sm md:text-lg font-semibold flex items-center gap-2">
+                      <Share2 className="h-4 w-4 md:h-5 md:w-5 text-primary shrink-0" />
+                      <span className="truncate">Bibliothek ({generatedContent.length})</span>
                     </h2>
-                    <Button variant="outline" size="sm" onClick={loadGeneratedContent}>
-                      <RefreshCw className="h-4 w-4" />
-                      Aktualisieren
+                    <Button variant="outline" size="sm" onClick={loadGeneratedContent} className="h-8 md:h-9 px-2 md:px-3">
+                      <RefreshCw className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                      <span className="hidden sm:inline ml-1.5">Aktualisieren</span>
                     </Button>
                   </div>
 
                   <ScrollArea className="flex-1 min-h-0">
                     {generatedContent.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-12 text-center">
-                        <div className="h-16 w-16 rounded-xl bg-secondary/50 flex items-center justify-center mb-4">
-                          <Share2 className="h-8 w-8 text-muted-foreground" />
+                      <div className="flex flex-col items-center justify-center py-8 md:py-12 text-center">
+                        <div className="h-12 w-12 md:h-16 md:w-16 rounded-xl bg-secondary/50 flex items-center justify-center mb-3 md:mb-4">
+                          <Share2 className="h-6 w-6 md:h-8 md:w-8 text-muted-foreground" />
                         </div>
-                        <h3 className="text-lg font-semibold mb-1">Noch kein Content</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Wähle einen Künstler und generiere deinen ersten Social Media Content.
+                        <h3 className="text-base md:text-lg font-semibold mb-1">Noch kein Content</h3>
+                        <p className="text-xs md:text-sm text-muted-foreground px-4">
+                          Wähle einen Künstler und generiere Content.
                         </p>
                       </div>
                     ) : (
-                      <div className="grid gap-4 pr-4 pb-4">
+                      <div className="grid gap-3 md:gap-4 pr-2 md:pr-4 pb-20 md:pb-4">
                         {generatedContent.map(content => {
                           const artist = getArtistForContent(content.artist_id);
                           const platform = getPlatformInfo(content.platform);
@@ -1035,9 +1045,9 @@ const SocialTools = () => {
                                 </div>
                               </CardHeader>
                               <CardContent className="p-4 pt-2">
-                                <div className="flex gap-4">
+                                <div className="flex gap-2 md:gap-4">
                                   {(content.image_url || content.video_url) && (
-                                    <div className="relative w-32 h-32 shrink-0">
+                                    <div className="relative w-20 h-20 md:w-32 md:h-32 shrink-0">
                                       {content.video_url ? (
                                         <video
                                           src={content.video_url}
@@ -1053,10 +1063,10 @@ const SocialTools = () => {
                                         />
                                       )}
                                       {content.content_type === "reel" && !content.video_url && (
-                                        <div className="absolute inset-0 rounded-lg flex flex-col items-center justify-center gap-1 bg-background/70 backdrop-blur-sm">
-                                          <ImageIcon className="h-7 w-7 text-foreground" />
-                                          <span className="text-[11px] font-medium text-foreground">
-                                            Cover (kein Video)
+                                        <div className="absolute inset-0 rounded-lg flex flex-col items-center justify-center gap-0.5 md:gap-1 bg-background/70 backdrop-blur-sm">
+                                          <ImageIcon className="h-5 w-5 md:h-7 md:w-7 text-foreground" />
+                                          <span className="text-[9px] md:text-[11px] font-medium text-foreground">
+                                            Cover
                                           </span>
                                         </div>
                                       )}
@@ -1111,25 +1121,27 @@ const SocialTools = () => {
             </TabsContent>
 
             {/* Calendar Tab */}
-            <TabsContent value="calendar" className="flex-1 min-h-0 mt-6 overflow-hidden">
+            <TabsContent value="calendar" className="flex-1 min-h-0 mt-3 md:mt-6 overflow-hidden">
               <div className="h-full flex flex-col min-h-0 overflow-hidden">
-                <div className="flex items-center justify-between mb-4 shrink-0">
-                  <h2 className="text-lg font-semibold flex items-center gap-2">
-                    <CalendarDays className="h-5 w-5 text-primary" />
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 md:mb-4 shrink-0">
+                  <h2 className="text-sm md:text-lg font-semibold flex items-center gap-2">
+                    <CalendarDays className="h-4 w-4 md:h-5 md:w-5 text-primary shrink-0" />
                     Content Kalender
                   </h2>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 md:gap-2">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setCalendarWeekStart(addDays(calendarWeekStart, -7))}
+                      className="h-7 md:h-9 px-2 md:px-3 text-xs md:text-sm"
                     >
-                      ← Vorherige
+                      ←
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setCalendarWeekStart(startOfWeek(new Date(), { locale: de }))}
+                      className="h-7 md:h-9 px-2 md:px-3 text-xs md:text-sm"
                     >
                       Heute
                     </Button>
@@ -1137,52 +1149,53 @@ const SocialTools = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => setCalendarWeekStart(addDays(calendarWeekStart, 7))}
+                      className="h-7 md:h-9 px-2 md:px-3 text-xs md:text-sm"
                     >
-                      Nächste →
+                      →
                     </Button>
                   </div>
                 </div>
 
                 {/* Stats */}
-                <div className="grid grid-cols-3 gap-4 mb-4 shrink-0">
+                <div className="grid grid-cols-3 gap-2 md:gap-4 mb-3 md:mb-4 shrink-0">
                   <Card>
-                    <CardContent className="p-4 flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-yellow-500/10 flex items-center justify-center">
-                        <Clock className="h-5 w-5 text-yellow-500" />
+                    <CardContent className="p-2 md:p-4 flex items-center gap-2 md:gap-3">
+                      <div className="h-8 w-8 md:h-10 md:w-10 rounded-lg bg-yellow-500/10 flex items-center justify-center shrink-0">
+                        <Clock className="h-4 w-4 md:h-5 md:w-5 text-yellow-500" />
                       </div>
-                      <div>
-                        <p className="text-2xl font-bold">{scheduledContent.length}</p>
-                        <p className="text-xs text-muted-foreground">Geplant</p>
+                      <div className="min-w-0">
+                        <p className="text-lg md:text-2xl font-bold">{scheduledContent.length}</p>
+                        <p className="text-[10px] md:text-xs text-muted-foreground truncate">Geplant</p>
                       </div>
                     </CardContent>
                   </Card>
                   <Card>
-                    <CardContent className="p-4 flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-                        <CheckCircle2 className="h-5 w-5 text-green-500" />
+                    <CardContent className="p-2 md:p-4 flex items-center gap-2 md:gap-3">
+                      <div className="h-8 w-8 md:h-10 md:w-10 rounded-lg bg-green-500/10 flex items-center justify-center shrink-0">
+                        <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-green-500" />
                       </div>
-                      <div>
-                        <p className="text-2xl font-bold">{publishedContent.length}</p>
-                        <p className="text-xs text-muted-foreground">Veröffentlicht</p>
+                      <div className="min-w-0">
+                        <p className="text-lg md:text-2xl font-bold">{publishedContent.length}</p>
+                        <p className="text-[10px] md:text-xs text-muted-foreground truncate">Veröffentlicht</p>
                       </div>
                     </CardContent>
                   </Card>
                   <Card>
-                    <CardContent className="p-4 flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <Share2 className="h-5 w-5 text-primary" />
+                    <CardContent className="p-2 md:p-4 flex items-center gap-2 md:gap-3">
+                      <div className="h-8 w-8 md:h-10 md:w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <Share2 className="h-4 w-4 md:h-5 md:w-5 text-primary" />
                       </div>
-                      <div>
-                        <p className="text-2xl font-bold">{generatedContent.length}</p>
-                        <p className="text-xs text-muted-foreground">Gesamt</p>
+                      <div className="min-w-0">
+                        <p className="text-lg md:text-2xl font-bold">{generatedContent.length}</p>
+                        <p className="text-[10px] md:text-xs text-muted-foreground truncate">Gesamt</p>
                       </div>
                     </CardContent>
                   </Card>
                 </div>
 
-                {/* Calendar Grid */}
+                {/* Calendar Grid - Horizontal scroll on mobile */}
                 <ScrollArea className="flex-1 min-h-0">
-                  <div className="grid grid-cols-7 gap-2 pr-4">
+                  <div className="grid grid-cols-7 gap-1 md:gap-2 pr-2 md:pr-4 pb-20 md:pb-4 min-w-[500px] md:min-w-0">
                     {calendarDays.map((day, i) => {
                       const dayContent = getContentForDay(day);
                       const isToday = isSameDay(day, new Date());
@@ -1191,23 +1204,23 @@ const SocialTools = () => {
                         <div
                           key={i}
                           className={cn(
-                            "min-h-[200px] p-2 rounded-lg border",
+                            "min-h-[120px] md:min-h-[200px] p-1.5 md:p-2 rounded-lg border",
                             isToday ? "border-primary bg-primary/5" : "border-border"
                           )}
                         >
-                          <div className="text-center mb-2">
-                            <p className="text-xs text-muted-foreground">
+                          <div className="text-center mb-1.5 md:mb-2">
+                            <p className="text-[10px] md:text-xs text-muted-foreground">
                               {format(day, "EEE", { locale: de })}
                             </p>
                             <p className={cn(
-                              "text-lg font-semibold",
+                              "text-sm md:text-lg font-semibold",
                               isToday && "text-primary"
                             )}>
                               {format(day, "d")}
                             </p>
                           </div>
                           <div className="space-y-1">
-                            {dayContent.map(content => {
+                            {dayContent.slice(0, 3).map(content => {
                               const platform = getPlatformInfo(content.platform);
                               const PlatformIcon = platform?.icon || Share2;
                               
@@ -1215,23 +1228,28 @@ const SocialTools = () => {
                                 <div
                                   key={content.id}
                                   className={cn(
-                                    "p-2 rounded text-xs cursor-pointer hover:opacity-80 transition-opacity",
+                                    "p-1 md:p-2 rounded text-[10px] md:text-xs cursor-pointer hover:opacity-80 transition-opacity",
                                     platform?.bgColor
                                   )}
                                   title={content.title || content.caption}
                                 >
-                                  <div className="flex items-center gap-1">
-                                    <PlatformIcon className={cn("h-3 w-3", platform?.color)} />
+                                  <div className="flex items-center gap-0.5 md:gap-1">
+                                    <PlatformIcon className={cn("h-2.5 w-2.5 md:h-3 md:w-3 shrink-0", platform?.color)} />
                                     <span className="truncate flex-1">{content.title || "Content"}</span>
                                   </div>
                                   {content.scheduled_at && (
-                                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                                    <p className="text-[9px] md:text-[10px] text-muted-foreground mt-0.5">
                                       {format(parseISO(content.scheduled_at), "HH:mm")}
                                     </p>
                                   )}
                                 </div>
                               );
                             })}
+                            {dayContent.length > 3 && (
+                              <p className="text-[9px] md:text-[10px] text-muted-foreground text-center">
+                                +{dayContent.length - 3}
+                              </p>
+                            )}
                           </div>
                         </div>
                       );

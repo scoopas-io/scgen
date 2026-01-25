@@ -41,17 +41,20 @@ export const HeaderMiniPlayer: React.FC = () => {
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
+  // Prefer artist image, then cover, then fallback to icon
+  const displayImage = currentTrack.artistImageUrl || currentTrack.coverUrl;
+
   return (
     <button
       onClick={openPanel}
       className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors border border-border/50 group"
     >
-      {/* Album art / icon */}
-      <div className="relative w-8 h-8 rounded bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
-        {currentTrack.coverUrl ? (
+      {/* Artist/Album art / icon */}
+      <div className="relative w-8 h-8 rounded-full bg-muted flex items-center justify-center overflow-hidden flex-shrink-0 ring-2 ring-border">
+        {displayImage ? (
           <img 
-            src={currentTrack.coverUrl} 
-            alt={currentTrack.title}
+            src={displayImage} 
+            alt={currentTrack.artist}
             className="w-full h-full object-cover"
           />
         ) : (
@@ -138,11 +141,11 @@ const MiniPlayer: React.FC = () => {
           onClick={togglePanel}
           className="flex items-center gap-2 md:gap-3 flex-1 min-w-0 text-left"
         >
-          <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden">
-            {currentTrack.coverUrl ? (
+          <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden ring-2 ring-border">
+            {currentTrack.artistImageUrl || currentTrack.coverUrl ? (
               <img 
-                src={currentTrack.coverUrl} 
-                alt={currentTrack.album || currentTrack.title}
+                src={currentTrack.artistImageUrl || currentTrack.coverUrl} 
+                alt={currentTrack.artist}
                 className="w-full h-full object-cover"
               />
             ) : (
@@ -243,12 +246,12 @@ const SidePanel: React.FC = () => {
 
         <ScrollArea className="flex-1">
           <div className="p-4 md:p-6 space-y-6 md:space-y-8">
-            {/* Album Art */}
-            <div className="aspect-square w-full max-w-[280px] md:max-w-xs mx-auto rounded-2xl bg-muted overflow-hidden shadow-2xl">
-              {currentTrack?.coverUrl ? (
+            {/* Artist/Album Art */}
+            <div className="aspect-square w-full max-w-[280px] md:max-w-xs mx-auto rounded-2xl bg-muted overflow-hidden shadow-2xl ring-4 ring-border/50">
+              {currentTrack?.artistImageUrl || currentTrack?.coverUrl ? (
                 <img 
-                  src={currentTrack.coverUrl} 
-                  alt={currentTrack?.album || currentTrack?.title}
+                  src={currentTrack.artistImageUrl || currentTrack.coverUrl} 
+                  alt={currentTrack?.artist || currentTrack?.title}
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -371,8 +374,16 @@ const SidePanel: React.FC = () => {
                       key={`${track.id}-${index}`}
                       className="flex items-center gap-3 p-2 rounded-lg bg-muted/50"
                     >
-                      <div className="w-8 h-8 rounded bg-muted flex items-center justify-center flex-shrink-0">
-                        <Music className="w-4 h-4 text-muted-foreground" />
+                      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden ring-1 ring-border">
+                        {track.artistImageUrl || track.coverUrl ? (
+                          <img 
+                            src={track.artistImageUrl || track.coverUrl} 
+                            alt={track.artist}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <Music className="w-4 h-4 text-muted-foreground" />
+                        )}
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm truncate">{track.title}</p>

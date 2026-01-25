@@ -47,6 +47,7 @@ interface Song {
 interface SongWithDetails extends Song {
   artistName: string;
   artistId: string;
+  artistImageUrl?: string;
   albumName: string;
   genre: string;
   style: string;
@@ -153,6 +154,7 @@ const AudioGenerator = () => {
                     id: updatedSong.id,
                     title: updatedSong.name,
                     artist: songWithDetails?.artistName || 'Unbekannt',
+                    artistImageUrl: songWithDetails?.artistImageUrl,
                     album: songWithDetails?.albumName,
                     audioUrl: updatedSong.audio_url!,
                   });
@@ -183,6 +185,7 @@ const AudioGenerator = () => {
         ...song,
         artistId: artist?.id || "",
         artistName: artist?.name || "Unknown",
+        artistImageUrl: (artist as any)?.profile_image_url,
         albumName: album?.name || "Unknown",
         genre: artist?.genre || "",
         style: artist?.style || "",
@@ -216,7 +219,7 @@ const AudioGenerator = () => {
     try {
       const { data: artistsData } = await supabase
         .from("artists")
-        .select("id, name, genre, style, voice_prompt, personality")
+        .select("id, name, genre, style, voice_prompt, personality, profile_image_url")
         .order("name");
 
       const { data: albumsData } = await supabase
@@ -427,6 +430,7 @@ const AudioGenerator = () => {
           id: song.id,
           title: song.name,
           artist: song.artistName,
+          artistImageUrl: song.artistImageUrl,
           album: song.albumName,
           audioUrl: song.audio_url!,
         });
@@ -459,6 +463,7 @@ const AudioGenerator = () => {
       id: song.id,
       title: song.name,
       artist: song.artistName,
+      artistImageUrl: song.artistImageUrl,
       album: song.albumName,
       audioUrl: song.audio_url,
     });

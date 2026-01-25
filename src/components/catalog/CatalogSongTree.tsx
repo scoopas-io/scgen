@@ -102,17 +102,19 @@ SongRow.displayName = "SongRow";
 interface AlbumRowProps {
   album: Album;
   artistName: string;
+  artistImageUrl?: string;
   isExpanded: boolean;
   onToggle: () => void;
   currentTrackUrl: string | null;
   isPlaying: boolean;
-  onPlayAudio: (url: string, songName: string, artistName: string, albumName?: string) => void;
+  onPlayAudio: (url: string, songName: string, artistName: string, albumName?: string, artistImageUrl?: string) => void;
   onSelectSong: (song: Song, albumName: string) => void;
 }
 
 const AlbumRow = memo(({ 
   album, 
   artistName,
+  artistImageUrl,
   isExpanded, 
   onToggle, 
   currentTrackUrl, 
@@ -155,7 +157,7 @@ const AlbumRow = memo(({
               albumName={album.name}
               isCurrentTrack={currentTrackUrl === song.audio_url}
               isPlaying={isPlaying}
-              onPlay={() => song.audio_url && onPlayAudio(song.audio_url, song.name, artistName, album.name)}
+              onPlay={() => song.audio_url && onPlayAudio(song.audio_url, song.name, artistName, album.name, artistImageUrl)}
               onSelect={() => onSelectSong(song, album.name)}
             />
           ))}
@@ -175,7 +177,7 @@ interface ArtistTreeRowProps {
   onToggleAlbum: (albumId: string) => void;
   currentTrackUrl: string | null;
   isPlaying: boolean;
-  onPlayAudio: (url: string, songName: string, artistName: string, albumName?: string) => void;
+  onPlayAudio: (url: string, songName: string, artistName: string, albumName?: string, artistImageUrl?: string) => void;
   onSelectSong: (song: Song, artistName: string, albumName: string) => void;
 }
 
@@ -244,6 +246,7 @@ export const ArtistTreeRow = memo(({
               key={album.id}
               album={album}
               artistName={artist.name}
+              artistImageUrl={artist.profile_image_url}
               isExpanded={expandedAlbums.has(album.id)}
               onToggle={() => onToggleAlbum(album.id)}
               currentTrackUrl={currentTrackUrl}
