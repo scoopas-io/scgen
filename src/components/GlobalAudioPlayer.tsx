@@ -123,7 +123,7 @@ const MiniPlayer: React.FC = () => {
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-xl border-t border-border">
+    <div className="fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-xl border-t border-border safe-area-bottom">
       {/* Progress bar */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-muted">
         <div 
@@ -132,10 +132,13 @@ const MiniPlayer: React.FC = () => {
         />
       </div>
       
-      <div className="flex items-center gap-4 px-4 py-3">
+      <div className="flex items-center gap-2 md:gap-4 px-3 md:px-4 py-2 md:py-3">
         {/* Track info */}
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden">
+        <button 
+          onClick={togglePanel}
+          className="flex items-center gap-2 md:gap-3 flex-1 min-w-0 text-left"
+        >
+          <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden">
             {currentTrack.coverUrl ? (
               <img 
                 src={currentTrack.coverUrl} 
@@ -143,18 +146,19 @@ const MiniPlayer: React.FC = () => {
                 className="w-full h-full object-cover"
               />
             ) : (
-              <Music className="w-5 h-5 text-muted-foreground" />
+              <Music className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground" />
             )}
           </div>
           <div className="min-w-0 flex-1">
             <p className="font-medium text-sm truncate">{currentTrack.title}</p>
             <p className="text-xs text-muted-foreground truncate">{currentTrack.artist}</p>
           </div>
-        </div>
+        </button>
 
         {/* Controls */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground tabular-nums w-10 text-right">
+        <div className="flex items-center gap-1 md:gap-2">
+          {/* Time - hidden on mobile */}
+          <span className="hidden sm:block text-xs text-muted-foreground tabular-nums w-10 text-right">
             {formatTime(currentTime)}
           </span>
           
@@ -171,7 +175,8 @@ const MiniPlayer: React.FC = () => {
             )}
           </Button>
           
-          <span className="text-xs text-muted-foreground tabular-nums w-10">
+          {/* Duration - hidden on mobile */}
+          <span className="hidden sm:block text-xs text-muted-foreground tabular-nums w-10">
             {formatTime(duration)}
           </span>
         </div>
@@ -180,7 +185,7 @@ const MiniPlayer: React.FC = () => {
         <Button
           variant="ghost"
           size="icon"
-          className="h-10 w-10"
+          className="h-9 w-9 md:h-10 md:w-10"
           onClick={togglePanel}
         >
           <ChevronRight className={cn(
@@ -192,7 +197,6 @@ const MiniPlayer: React.FC = () => {
     </div>
   );
 };
-
 // Full side panel
 const SidePanel: React.FC = () => {
   const {
@@ -223,12 +227,12 @@ const SidePanel: React.FC = () => {
     <>
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-background/60 backdrop-blur-sm z-40"
+        className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40"
         onClick={closePanel}
       />
       
-      {/* Panel */}
-      <div className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-card border-l border-border z-50 animate-slide-in-right flex flex-col">
+      {/* Panel - fullscreen on mobile */}
+      <div className="fixed inset-0 md:inset-auto md:top-0 md:right-0 md:bottom-0 md:w-full md:max-w-md bg-card md:border-l border-border z-50 animate-slide-in-right flex flex-col safe-area-inset">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border">
           <h2 className="font-semibold text-lg">Now Playing</h2>
@@ -238,9 +242,9 @@ const SidePanel: React.FC = () => {
         </div>
 
         <ScrollArea className="flex-1">
-          <div className="p-6 space-y-8">
+          <div className="p-4 md:p-6 space-y-6 md:space-y-8">
             {/* Album Art */}
-            <div className="aspect-square w-full max-w-xs mx-auto rounded-2xl bg-muted overflow-hidden shadow-2xl">
+            <div className="aspect-square w-full max-w-[280px] md:max-w-xs mx-auto rounded-2xl bg-muted overflow-hidden shadow-2xl">
               {currentTrack?.coverUrl ? (
                 <img 
                   src={currentTrack.coverUrl} 
