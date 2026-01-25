@@ -72,23 +72,23 @@ export function LanguageSelector({ selectedLanguages, onLanguagesChange }: Langu
   };
 
   return (
-    <div className="space-y-3 p-4 rounded-lg border border-border bg-card/50 backdrop-blur-sm">
+    <div className="space-y-2 md:space-y-3 p-3 md:p-4 rounded-lg border border-border bg-card/50 backdrop-blur-sm">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
-          <Globe className="h-3.5 w-3.5 text-primary" />
-          <h3 className="text-sm font-medium text-foreground">Sprachen</h3>
+          <Globe className="h-3 w-3 md:h-3.5 md:w-3.5 text-primary shrink-0" />
+          <h3 className="text-xs md:text-sm font-medium text-foreground">Sprachen</h3>
         </div>
         <div className="flex gap-1">
-          <Button variant="ghost" size="sm" onClick={clearAll} className="text-xs h-7 px-2">
+          <Button variant="ghost" size="sm" onClick={clearAll} className="text-[10px] md:text-xs h-6 md:h-7 px-1.5 md:px-2">
             Keine
           </Button>
-          <Button variant="ghost" size="sm" onClick={selectAll} className="text-xs h-7 px-2">
+          <Button variant="ghost" size="sm" onClick={selectAll} className="text-[10px] md:text-xs h-6 md:h-7 px-1.5 md:px-2">
             Alle
           </Button>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap gap-1 md:gap-1.5">
         {displayedLanguages.map((lang) => {
           const isSelected = selectedLanguages.includes(lang.code);
           return (
@@ -96,16 +96,16 @@ export function LanguageSelector({ selectedLanguages, onLanguagesChange }: Langu
               key={lang.code}
               onClick={() => toggleLanguage(lang.code)}
               className={cn(
-                "px-2 py-1 rounded-full text-xs font-medium transition-all",
-                "border flex items-center gap-1",
+                "px-1.5 md:px-2 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs font-medium transition-all",
+                "border flex items-center gap-0.5 md:gap-1 active:scale-95",
                 isSelected
                   ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-secondary/50 text-secondary-foreground border-border hover:border-primary/50"
+                  : "bg-secondary/50 text-secondary-foreground border-border hover:border-primary/50 active:bg-secondary"
               )}
             >
-              {isSelected && <Check className="h-2.5 w-2.5" />}
+              {isSelected && <Check className="h-2 w-2 md:h-2.5 md:w-2.5" />}
               <span>{lang.flag}</span>
-              <span>{lang.name}</span>
+              <span className="hidden xs:inline">{lang.name}</span>
             </button>
           );
         })}
@@ -116,22 +116,18 @@ export function LanguageSelector({ selectedLanguages, onLanguagesChange }: Langu
           variant="ghost"
           size="sm"
           onClick={() => setExpanded(!expanded)}
-          className="w-full text-xs text-muted-foreground h-7"
+          className="w-full text-[10px] md:text-xs text-muted-foreground h-6 md:h-7"
         >
           {expanded ? "Weniger" : `+${LANGUAGES.length - 10} mehr`}
         </Button>
       )}
 
-      {selectedLanguages.length > 0 && (
-        <p className="text-xs text-muted-foreground">
-          {selectedLanguages.length} Sprache{selectedLanguages.length > 1 ? "n" : ""} ausgewählt
-        </p>
-      )}
-      {selectedLanguages.length === 0 && (
-        <p className="text-xs text-muted-foreground">
-          Keine Auswahl = Deutsch als Standard
-        </p>
-      )}
+      <p className="text-[10px] md:text-xs text-muted-foreground">
+        {selectedLanguages.length > 0 
+          ? `${selectedLanguages.length} Sprache${selectedLanguages.length > 1 ? "n" : ""} ausgewählt`
+          : "Keine Auswahl = Deutsch"
+        }
+      </p>
     </div>
   );
 }

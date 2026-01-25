@@ -345,106 +345,116 @@ const Generator = () => {
       <AppHeader stats={stats} />
 
       <main className="flex-1 min-h-0 overflow-hidden">
-        <div className="container h-full py-4">
-          <div className="grid lg:grid-cols-[420px_1fr] gap-6 h-full min-h-0">
-            <ScrollArea className="h-full pr-4">
-              <aside className="space-y-4 pb-4">
-                <GeneratorControls
-                  artistCount={artistCount}
-                  albumCount={albumCount}
-                  songCount={songCount}
-                  onArtistCountChange={setArtistCount}
-                  onAlbumCountChange={setAlbumCount}
-                  onSongCountChange={setSongCount}
-                />
+        <div className="container h-full py-2 md:py-4 px-3 md:px-6">
+          <div className="flex flex-col lg:grid lg:grid-cols-[420px_1fr] gap-4 md:gap-6 h-full min-h-0">
+            {/* Mobile: Collapsible controls, Desktop: Fixed sidebar */}
+            <div className="lg:h-full lg:overflow-hidden shrink-0">
+              <ScrollArea className="h-full max-h-[40vh] lg:max-h-full">
+                <aside className="space-y-3 md:space-y-4 pb-4 pr-2 md:pr-4">
+                  <GeneratorControls
+                    artistCount={artistCount}
+                    albumCount={albumCount}
+                    songCount={songCount}
+                    onArtistCountChange={setArtistCount}
+                    onAlbumCountChange={setAlbumCount}
+                    onSongCountChange={setSongCount}
+                  />
                 
-                <GenreFilter
-                  selectedGenres={selectedGenres}
-                  onGenresChange={setSelectedGenres}
-                />
+                  {/* Genre & Language collapsed on mobile by default */}
+                  <GenreFilter
+                    selectedGenres={selectedGenres}
+                    onGenresChange={setSelectedGenres}
+                  />
                 
-                <LanguageSelector
-                  selectedLanguages={selectedLanguages}
-                  onLanguagesChange={setSelectedLanguages}
-                />
+                  <LanguageSelector
+                    selectedLanguages={selectedLanguages}
+                    onLanguagesChange={setSelectedLanguages}
+                  />
 
-                <div className="space-y-2">
-                  <Button
-                    variant="gold"
-                    size="lg"
-                    className="w-full"
-                    onClick={generateArtists}
-                    disabled={isLoading}
-                  >
-                    <ScoopasIcon size={18} />
-                    {isLoading 
-                      ? isBulkMode 
-                        ? `Batch ${generationState.currentBatch}/${generationState.totalBatches}...` 
-                        : "Erstelle..." 
-                      : isBulkMode 
-                        ? `${artistCount} Künstler erstellen (${totalBatches} Batches)` 
-                        : "Künstler erstellen"
-                    }
-                  </Button>
+                  <div className="space-y-2">
+                    <Button
+                      variant="gold"
+                      size="lg"
+                      className="w-full text-sm md:text-base h-10 md:h-11"
+                      onClick={generateArtists}
+                      disabled={isLoading}
+                    >
+                      <ScoopasIcon size={18} className="shrink-0" />
+                      <span className="truncate">
+                        {isLoading 
+                          ? isBulkMode 
+                            ? `Batch ${generationState.currentBatch}/${generationState.totalBatches}...` 
+                            : "Erstelle..." 
+                          : isBulkMode 
+                            ? `${artistCount} Künstler (${totalBatches} Batches)` 
+                            : "Künstler erstellen"
+                        }
+                      </span>
+                    </Button>
                   
-                  {isBulkMode && !isLoading && (
-                    <p className="text-xs text-muted-foreground text-center">
-                      Bulk-Modus: {BATCH_SIZE} pro Batch, automatische Pausen
-                    </p>
-                  )}
-                </div>
-                
-                <Button
-                  variant="outline"
-                  size="default"
-                  className="w-full"
-                  onClick={() => setShowHistory(!showHistory)}
-                >
-                  <History className="h-4 w-4" />
-                  {showHistory ? "Neue Ergebnisse" : `Datenbank (${stats.artists})`}
-                </Button>
-
-                {stats.songs > 0 && (
-                  <div className="p-3 rounded-lg border border-border bg-card/50 space-y-2">
-                    <div className="flex items-center gap-2 text-xs font-medium text-foreground">
-                      <Download className="h-3.5 w-3.5 text-primary" />
-                      <span>Katalog exportieren</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={handleExportCSV}
-                        disabled={isExporting}
-                      >
-                        <FileSpreadsheet className="h-3.5 w-3.5" />
-                        CSV
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={handleExportJSON}
-                        disabled={isExporting}
-                      >
-                        <FileJson className="h-3.5 w-3.5" />
-                        JSON
-                      </Button>
-                    </div>
+                    {isBulkMode && !isLoading && (
+                      <p className="text-[10px] md:text-xs text-muted-foreground text-center">
+                        Bulk-Modus: {BATCH_SIZE} pro Batch
+                      </p>
+                    )}
                   </div>
-                )}
-              </aside>
-            </ScrollArea>
+                
+                  <Button
+                    variant="outline"
+                    size="default"
+                    className="w-full text-sm h-9 md:h-10"
+                    onClick={() => setShowHistory(!showHistory)}
+                  >
+                    <History className="h-4 w-4 shrink-0" />
+                    <span className="truncate">
+                      {showHistory ? "Neue Ergebnisse" : `Datenbank (${stats.artists})`}
+                    </span>
+                  </Button>
 
-            <ScrollArea className="h-full">
-              <section className="space-y-3 pr-4 pb-4">
+                  {stats.songs > 0 && (
+                    <div className="p-2.5 md:p-3 rounded-lg border border-border bg-card/50 space-y-2">
+                      <div className="flex items-center gap-2 text-xs font-medium text-foreground">
+                        <Download className="h-3.5 w-3.5 text-primary shrink-0" />
+                        <span>Katalog exportieren</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={handleExportCSV}
+                          disabled={isExporting}
+                          className="h-8 text-xs"
+                        >
+                          <FileSpreadsheet className="h-3.5 w-3.5" />
+                          CSV
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={handleExportJSON}
+                          disabled={isExporting}
+                          className="h-8 text-xs"
+                        >
+                          <FileJson className="h-3.5 w-3.5" />
+                          JSON
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </aside>
+              </ScrollArea>
+            </div>
+
+            <ScrollArea className="flex-1 min-h-0">
+              <section className="space-y-2 md:space-y-3 pr-2 md:pr-4 pb-20 md:pb-4">
                 {showHistory ? (
-                  <div className="space-y-3">
+                  <div className="space-y-2 md:space-y-3">
                     <div className="flex items-center justify-between sticky top-0 bg-background/95 backdrop-blur py-2 -mt-2 z-10">
-                      <h2 className="text-lg font-display font-semibold text-foreground flex items-center gap-2">
-                        <Database className="h-4 w-4 text-primary" />
-                        Gespeicherte Künstler ({savedArtists.length})
+                      <h2 className="text-sm md:text-lg font-display font-semibold text-foreground flex items-center gap-2">
+                        <Database className="h-4 w-4 text-primary shrink-0" />
+                        <span className="truncate">Gespeichert ({savedArtists.length})</span>
                       </h2>
-                      <Button variant="ghost" size="icon" onClick={() => setShowHistory(false)}>
+                      <Button variant="ghost" size="icon" onClick={() => setShowHistory(false)} className="h-8 w-8">
                         <X className="h-4 w-4" />
                       </Button>
                     </div>
@@ -460,14 +470,14 @@ const Generator = () => {
                         />
                       ))
                     ) : (
-                      <div className="flex flex-col items-center justify-center py-12 text-center">
-                        <div className="h-16 w-16 rounded-xl bg-secondary/50 flex items-center justify-center mb-4">
-                          <Database className="h-8 w-8 text-muted-foreground" />
+                      <div className="flex flex-col items-center justify-center py-8 md:py-12 text-center">
+                        <div className="h-12 w-12 md:h-16 md:w-16 rounded-xl bg-secondary/50 flex items-center justify-center mb-3 md:mb-4">
+                          <Database className="h-6 w-6 md:h-8 md:w-8 text-muted-foreground" />
                         </div>
-                        <h3 className="text-lg font-display font-semibold text-foreground mb-1">
+                        <h3 className="text-base md:text-lg font-display font-semibold text-foreground mb-1">
                           Keine gespeicherten Künstler
                         </h3>
-                        <p className="text-sm text-muted-foreground max-w-sm">
+                        <p className="text-xs md:text-sm text-muted-foreground max-w-sm px-4">
                           Generiere Künstler, um sie in der Datenbank zu speichern.
                         </p>
                       </div>
@@ -486,10 +496,10 @@ const Generator = () => {
                     startTime={generationState.startTime}
                   />
                 ) : artists.length > 0 ? (
-                  <div className="space-y-3">
+                  <div className="space-y-2 md:space-y-3">
                     <div className="flex items-center justify-between sticky top-0 bg-background/95 backdrop-blur py-2 -mt-2 z-10">
-                      <h2 className="text-lg font-display font-semibold text-foreground flex items-center gap-2">
-                        <Zap className="h-4 w-4 text-primary" />
+                      <h2 className="text-sm md:text-lg font-display font-semibold text-foreground flex items-center gap-2">
+                        <Zap className="h-4 w-4 text-primary shrink-0" />
                         Neue Künstler ({artists.length})
                       </h2>
                     </div>
@@ -503,16 +513,17 @@ const Generator = () => {
                     ))}
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mb-6">
-                      <ScoopasIcon size={40} />
+                  <div className="flex flex-col items-center justify-center py-8 md:py-12 text-center">
+                    <div className="h-16 w-16 md:h-20 md:w-20 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mb-4 md:mb-6">
+                      <ScoopasIcon size={32} className="md:hidden" />
+                      <ScoopasIcon size={40} className="hidden md:block" />
                     </div>
-                    <h3 className="text-xl font-display font-semibold text-foreground mb-2">
+                    <h3 className="text-lg md:text-xl font-display font-semibold text-foreground mb-2">
                       scoopas Musikkatalog
                     </h3>
-                    <p className="text-sm text-muted-foreground max-w-md">
+                    <p className="text-xs md:text-sm text-muted-foreground max-w-md px-4">
                       Erstelle vollständige Künstlerprofile mit Albums, Songs und
-                      professionellen Metadaten für deinen Musikkatalog.
+                      professionellen Metadaten.
                     </p>
                   </div>
                 )}
@@ -522,14 +533,14 @@ const Generator = () => {
         </div>
       </main>
 
-      <footer className="shrink-0 border-t border-border py-3">
+      <footer className="shrink-0 border-t border-border py-2 md:py-3 hidden md:block">
         <div className="container">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <div className="flex items-center gap-1.5">
               <ScoopasIcon size={14} />
               <span>scoopas Musikkatalog</span>
             </div>
-            <span>Powered by scoopas</span>
+            <span className="hidden sm:inline">Powered by scoopas</span>
           </div>
         </div>
       </footer>
