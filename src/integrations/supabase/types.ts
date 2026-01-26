@@ -49,50 +49,89 @@ export type Database = {
       artists: {
         Row: {
           created_at: string
+          default_bpm_max: number | null
+          default_bpm_min: number | null
           genre: string
           id: string
+          instrumental_only: boolean | null
           katalognummer: string | null
           label: string | null
           language: string | null
+          mood_tags: string[] | null
           name: string
+          negative_tags: string[] | null
+          persona_active: boolean | null
+          persona_description: string | null
+          persona_name: string | null
           personality: string
+          preferred_keys: string[] | null
           profile_image_url: string | null
           rechteinhaber_master: string | null
           rechteinhaber_publishing: string | null
           style: string
+          style_tags: string[] | null
           verlag: string | null
+          vocal_gender: string | null
+          vocal_range: string | null
+          vocal_texture: string | null
           voice_prompt: string
         }
         Insert: {
           created_at?: string
+          default_bpm_max?: number | null
+          default_bpm_min?: number | null
           genre: string
           id?: string
+          instrumental_only?: boolean | null
           katalognummer?: string | null
           label?: string | null
           language?: string | null
+          mood_tags?: string[] | null
           name: string
+          negative_tags?: string[] | null
+          persona_active?: boolean | null
+          persona_description?: string | null
+          persona_name?: string | null
           personality: string
+          preferred_keys?: string[] | null
           profile_image_url?: string | null
           rechteinhaber_master?: string | null
           rechteinhaber_publishing?: string | null
           style: string
+          style_tags?: string[] | null
           verlag?: string | null
+          vocal_gender?: string | null
+          vocal_range?: string | null
+          vocal_texture?: string | null
           voice_prompt: string
         }
         Update: {
           created_at?: string
+          default_bpm_max?: number | null
+          default_bpm_min?: number | null
           genre?: string
           id?: string
+          instrumental_only?: boolean | null
           katalognummer?: string | null
           label?: string | null
           language?: string | null
+          mood_tags?: string[] | null
           name?: string
+          negative_tags?: string[] | null
+          persona_active?: boolean | null
+          persona_description?: string | null
+          persona_name?: string | null
           personality?: string
+          preferred_keys?: string[] | null
           profile_image_url?: string | null
           rechteinhaber_master?: string | null
           rechteinhaber_publishing?: string | null
           style?: string
+          style_tags?: string[] | null
           verlag?: string | null
+          vocal_gender?: string | null
+          vocal_range?: string | null
+          vocal_texture?: string | null
           voice_prompt?: string
         }
         Relationships: []

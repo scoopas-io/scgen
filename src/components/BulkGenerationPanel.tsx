@@ -35,6 +35,17 @@ interface Song {
   voicePrompt: string;
   personality: string;
   language?: string;
+  // Persona fields
+  vocalGender?: string | null;
+  vocalTexture?: string | null;
+  vocalRange?: string | null;
+  styleTags?: string[];
+  moodTags?: string[];
+  negativeTags?: string[];
+  defaultBpmMin?: number | null;
+  defaultBpmMax?: number | null;
+  preferredKeys?: string[];
+  instrumentalOnly?: boolean;
 }
 
 interface FailedSong extends Song {
@@ -219,8 +230,19 @@ const BulkGenerationPanel = forwardRef<BulkGenerationPanelRef, BulkGenerationPan
             bpm: song.bpm,
             tonart: song.tonart,
             artistName: song.artistName,
-            instrumental: isInstrumentalGenre(song.genre),
+            instrumental: song.instrumentalOnly ?? isInstrumentalGenre(song.genre),
             language: song.language,
+            // Persona fields
+            vocalGender: song.vocalGender,
+            vocalTexture: song.vocalTexture,
+            vocalRange: song.vocalRange,
+            styleTags: song.styleTags,
+            moodTags: song.moodTags,
+            negativeTags: song.negativeTags,
+            defaultBpmMin: song.defaultBpmMin,
+            defaultBpmMax: song.defaultBpmMax,
+            preferredKeys: song.preferredKeys,
+            instrumentalOnly: song.instrumentalOnly,
           }),
         }
       );

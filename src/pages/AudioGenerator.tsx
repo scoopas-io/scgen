@@ -14,11 +14,12 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useAudioGeneratorCache } from "@/hooks/useAudioGeneratorCache";
 import { BulkGenerationPanel } from "@/components/BulkGenerationPanel";
 import { DataLoadingProgress } from "@/components/DataLoadingProgress";
+import { PersonaEditorDialog } from "@/components/PersonaEditorDialog";
 import { isInstrumentalGenre } from "@/lib/genreConfig";
 import { 
   Music, Disc, User, Play, Pause, Download, Loader2, 
   CheckCircle2, XCircle, Clock, Volume2, ChevronDown, ChevronRight,
-  ArrowUpDown, RefreshCw, Timer, AlertCircle, Zap, Database
+  ArrowUpDown, RefreshCw, Timer, AlertCircle, Zap, Database, Sparkles
 } from "lucide-react";
 
 interface Artist {
@@ -29,6 +30,20 @@ interface Artist {
   voice_prompt: string;
   personality: string;
   language?: string;
+  // Persona fields
+  vocal_gender?: string | null;
+  vocal_texture?: string | null;
+  vocal_range?: string | null;
+  style_tags?: string[];
+  mood_tags?: string[];
+  negative_tags?: string[];
+  default_bpm_min?: number | null;
+  default_bpm_max?: number | null;
+  preferred_keys?: string[];
+  instrumental_only?: boolean;
+  persona_name?: string | null;
+  persona_description?: string | null;
+  persona_active?: boolean;
 }
 
 interface Album {
@@ -59,6 +74,17 @@ interface SongWithDetails extends Song {
   voicePrompt: string;
   personality: string;
   language?: string;
+  // Persona fields for generation
+  vocalGender?: string | null;
+  vocalTexture?: string | null;
+  vocalRange?: string | null;
+  styleTags?: string[];
+  moodTags?: string[];
+  negativeTags?: string[];
+  defaultBpmMin?: number | null;
+  defaultBpmMax?: number | null;
+  preferredKeys?: string[];
+  instrumentalOnly?: boolean;
 }
 
 type SortOption = "name" | "artist" | "genre" | "date";
@@ -120,6 +146,7 @@ const AudioGenerator = () => {
   const [isBackgroundRefresh, setIsBackgroundRefresh] = useState(false);
   const [cacheAge, setCacheAge] = useState<number | null>(null);
   const [stats, setStats] = useState({ artists: 0, albums: 0, songs: 0 });
+  const [personaEditorArtist, setPersonaEditorArtist] = useState<Artist | null>(null);
   const pollIntervalRef = useRef<number | null>(null);
   const refreshInFlightRef = useRef(false);
   
@@ -246,6 +273,10 @@ const AudioGenerator = () => {
     return (songsData || []).map((song) => {
       const album = albumsData?.find((a) => a.id === song.album_id);
       const artist = artistsData?.find((a) => a.id === album?.artist_id);
+      
+      // Only include persona data if persona is active
+      const personaActive = artist?.persona_active !== false;
+      
       return {
         ...song,
         artistId: artist?.id || "",
@@ -257,6 +288,17 @@ const AudioGenerator = () => {
         voicePrompt: artist?.voice_prompt || "",
         personality: artist?.personality || "",
         language: artist?.language || "de",
+        // Persona fields (only if active)
+        vocalGender: personaActive ? artist?.vocal_gender : null,
+        vocalTexture: personaActive ? artist?.vocal_texture : null,
+        vocalRange: personaActive ? artist?.vocal_range : null,
+        styleTags: personaActive ? artist?.style_tags : undefined,
+        moodTags: personaActive ? artist?.mood_tags : undefined,
+        negativeTags: personaActive ? artist?.negative_tags : undefined,
+        defaultBpmMin: personaActive ? artist?.default_bpm_min : null,
+        defaultBpmMax: personaActive ? artist?.default_bpm_max : null,
+        preferredKeys: personaActive ? artist?.preferred_keys : undefined,
+        instrumentalOnly: personaActive ? artist?.instrumental_only : undefined,
       };
     });
   };
@@ -343,7 +385,7 @@ const AudioGenerator = () => {
       
       const artistsData = await fetchAllWithProgress<any>(
         "artists", 
-        "id, name, genre, style, voice_prompt, personality, profile_image_url, language", 
+        "id, name, genre, style, voice_prompt, personality, profile_image_url, language, vocal_gender, vocal_texture, vocal_range, style_tags, mood_tags, negative_tags, default_bpm_min, default_bpm_max, preferred_keys, instrumental_only, persona_name, persona_description, persona_active", 
         "name",
         stats.artists,
         isBackground ? () => {} : (loaded) => setLoadingProgress(prev => ({ 
@@ -927,6 +969,16 @@ const AudioGenerator = () => {
                               <User className="h-4 w-4 text-primary flex-shrink-0" />
                               <span className="font-medium text-sm md:text-base truncate flex-1 min-w-0">{artist.name}</span>
                               <Badge variant="outline" className="text-[10px] md:text-xs flex-shrink-0 hidden sm:flex">{artist.genre}</Badge>
+                              {/* Persona Editor Button */}
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="h-7 md:h-8 w-7 md:w-8 p-0 flex-shrink-0"
+                                onClick={(e) => { e.stopPropagation(); setPersonaEditorArtist(artist); }}
+                                title="Persona bearbeiten"
+                              >
+                                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                              </Button>
                               <Button 
                                 size="sm" 
                                 variant="ghost" 
@@ -1187,6 +1239,14 @@ const AudioGenerator = () => {
           </span>
         </button>
       )}
+
+      {/* Persona Editor Dialog */}
+      <PersonaEditorDialog
+        open={!!personaEditorArtist}
+        onOpenChange={(open) => !open && setPersonaEditorArtist(null)}
+        artist={personaEditorArtist}
+        onSave={() => loadData(true)}
+      />
     </div>
   );
 };
