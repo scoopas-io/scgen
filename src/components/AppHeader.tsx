@@ -34,7 +34,7 @@ export const AppHeader = ({ stats }: AppHeaderProps) => {
           {/* Logo */}
           <div className="flex items-center gap-2 md:gap-3 min-w-0">
             <Link to="/" className="flex flex-col min-w-0">
-              <h1 className="text-xl md:text-3xl lg:text-4xl font-display font-bold tracking-tight truncate">
+              <h1 className="text-lg md:text-2xl lg:text-3xl font-display font-bold tracking-tight truncate">
                 <span className="text-foreground">sc<span className="text-primary">oo</span>pas</span>
               </h1>
               <span className="text-[9px] md:text-[10px] font-sans tracking-[0.25em] text-muted-foreground uppercase text-center -mt-0.5">
