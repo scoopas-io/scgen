@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { AppHeader } from "@/components/AppHeader";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { BulkGenerationPanel } from "@/components/BulkGenerationPanel";
 import { 
   Music, Disc, User, Play, Pause, Download, Loader2, 
   CheckCircle2, XCircle, Clock, Volume2, ChevronDown, ChevronRight,
@@ -625,6 +626,17 @@ const AudioGenerator = () => {
                     </div>
                   ) : (
                     <>
+                      {/* Bulk Generation Panel */}
+                      <BulkGenerationPanel
+                        songs={songs}
+                        onSongUpdate={(songId, updates) => {
+                          setSongs(prev => prev.map(s => 
+                            s.id === songId ? { ...s, ...updates } : s
+                          ));
+                        }}
+                        onComplete={() => loadData()}
+                      />
+
                       {/* Generation Progress */}
                       {generating && (
                         <div className="p-4 rounded-lg border border-primary/30 bg-primary/5 space-y-3">
