@@ -61,6 +61,7 @@ export const useAudioPlayer = () => {
 
 export const AudioPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const queueRef = useRef<Track[]>([]);
   
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -71,6 +72,11 @@ export const AudioPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [isMuted, setIsMuted] = useState(false);
   const [queue, setQueue] = useState<Track[]>([]);
   const [history, setHistory] = useState<Track[]>([]);
+
+  // Keep queueRef in sync with queue state
+  useEffect(() => {
+    queueRef.current = queue;
+  }, [queue]);
 
   // Initialize audio element
   useEffect(() => {
@@ -89,8 +95,18 @@ export const AudioPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     
     const handleEnded = () => {
       setIsPlaying(false);
-      if (queue.length > 0) {
-        playNext();
+      // Use ref to get current queue state
+      if (queueRef.current.length > 0) {
+        const [nextTrack, ...rest] = queueRef.current;
+        setQueue(rest);
+        // Play next track
+        if (audioRef.current) {
+          setCurrentTrack(nextTrack);
+          audioRef.current.src = nextTrack.audioUrl;
+          audioRef.current.play()
+            .then(() => setIsPlaying(true))
+            .catch(console.error);
+        }
       }
     };
     
