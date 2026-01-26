@@ -398,7 +398,7 @@ export default function Home() {
                 </Link>
               </div>
               <ScrollArea className="w-full -mx-4">
-                <div className="flex gap-4 pb-2 px-4">
+                <div className="flex gap-4 py-1 pb-2 px-4">
                   {topArtists.map((artist) => (
                     <Link
                       key={artist.id}
@@ -570,7 +570,7 @@ export default function Home() {
                 Kürzlich gespielt
               </h2>
               <ScrollArea className="w-full -mx-4">
-                <div className="flex gap-3 pb-2 px-4">
+                <div className="flex gap-3 py-1 pb-2 px-4">
                   {recentlyPlayed.map((track, idx) => {
                     const isCurrentlyPlaying = currentTrack?.id === track.id && isPlaying;
                     return (
