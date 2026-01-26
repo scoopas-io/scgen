@@ -35,7 +35,7 @@ export const AppHeader = ({ stats }: AppHeaderProps) => {
             <Link to="/" className="flex items-center gap-2 md:gap-3 min-w-0">
               <h1 className="text-base md:text-xl lg:text-2xl font-display font-bold tracking-tight truncate">
                 <span className="text-foreground">scoopas</span>{" "}
-                <span className="text-gradient-gold hidden xs:inline">Musikkatalog</span>
+                <span className="text-gradient-primary hidden xs:inline">Musikkatalog</span>
               </h1>
             </Link>
           </div>

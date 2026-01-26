@@ -62,10 +62,10 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
-        gold: {
-          DEFAULT: "hsl(38 92% 50%)",
-          light: "hsl(45 93% 58%)",
-          dark: "hsl(32 100% 40%)",
+        magenta: {
+          DEFAULT: "hsl(320 90% 55%)",
+          light: "hsl(320 90% 65%)",
+          dark: "hsl(340 85% 45%)",
         },
       },
       borderRadius: {
