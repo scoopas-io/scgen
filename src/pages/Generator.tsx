@@ -345,111 +345,107 @@ const Generator = () => {
       <AppHeader stats={stats} />
 
       <main className="flex-1 min-h-0 overflow-hidden">
-        <div className="container h-full py-2 md:py-4 px-3 md:px-6">
-          <div className="flex flex-col lg:grid lg:grid-cols-[360px_1fr] gap-3 md:gap-6 h-full min-h-0">
-            {/* Mobile: Compact controls, Desktop: Fixed sidebar */}
-            <div className="lg:h-full lg:overflow-hidden shrink-0">
-              <ScrollArea className="h-full max-h-[35vh] lg:max-h-full">
-                <aside className="space-y-2 md:space-y-4 pb-4 pr-2 md:pr-4">
-                  <GeneratorControls
-                    artistCount={artistCount}
-                    albumCount={albumCount}
-                    songCount={songCount}
-                    onArtistCountChange={setArtistCount}
-                    onAlbumCountChange={setAlbumCount}
-                    onSongCountChange={setSongCount}
-                  />
-                
-                  {/* Genre & Language collapsed on mobile by default */}
-                  <GenreFilter
-                    selectedGenres={selectedGenres}
-                    onGenresChange={setSelectedGenres}
-                  />
-                
-                  <LanguageSelector
-                    selectedLanguages={selectedLanguages}
-                    onLanguagesChange={setSelectedLanguages}
-                  />
+        <ScrollArea className="h-full">
+          <div className="container py-3 md:py-4 px-3 md:px-6 pb-20 md:pb-4">
+            <div className="flex flex-col lg:grid lg:grid-cols-[360px_1fr] gap-4 md:gap-6">
+              {/* Controls - flows naturally on mobile */}
+              <aside className="space-y-3 md:space-y-4">
+                <GeneratorControls
+                  artistCount={artistCount}
+                  albumCount={albumCount}
+                  songCount={songCount}
+                  onArtistCountChange={setArtistCount}
+                  onAlbumCountChange={setAlbumCount}
+                  onSongCountChange={setSongCount}
+                />
+              
+                <GenreFilter
+                  selectedGenres={selectedGenres}
+                  onGenresChange={setSelectedGenres}
+                />
+              
+                <LanguageSelector
+                  selectedLanguages={selectedLanguages}
+                  onLanguagesChange={setSelectedLanguages}
+                />
 
-                  <div className="space-y-2">
-                    <Button
-                      variant="gold"
-                      size="lg"
-                      className="w-full text-sm md:text-base h-10 md:h-11"
-                      onClick={generateArtists}
-                      disabled={isLoading}
-                    >
-                      <ScoopasIcon size={18} className="shrink-0" />
-                      <span className="truncate">
-                        {isLoading 
-                          ? isBulkMode 
-                            ? `Batch ${generationState.currentBatch}/${generationState.totalBatches}...` 
-                            : "Erstelle..." 
-                          : isBulkMode 
-                            ? `${artistCount} Künstler (${totalBatches} Batches)` 
-                            : "Künstler erstellen"
-                        }
-                      </span>
-                    </Button>
-                  
-                    {isBulkMode && !isLoading && (
-                      <p className="text-[10px] md:text-xs text-muted-foreground text-center">
-                        Bulk-Modus: {BATCH_SIZE} pro Batch
-                      </p>
-                    )}
-                  </div>
-                
+                <div className="space-y-2">
                   <Button
-                    variant="outline"
-                    size="default"
-                    className="w-full text-sm h-9 md:h-10"
-                    onClick={() => setShowHistory(!showHistory)}
+                    variant="gold"
+                    size="lg"
+                    className="w-full text-sm md:text-base h-10 md:h-11"
+                    onClick={generateArtists}
+                    disabled={isLoading}
                   >
-                    <History className="h-4 w-4 shrink-0" />
+                    <ScoopasIcon size={18} className="shrink-0" />
                     <span className="truncate">
-                      {showHistory ? "Neue Ergebnisse" : `Datenbank (${stats.artists})`}
+                      {isLoading 
+                        ? isBulkMode 
+                          ? `Batch ${generationState.currentBatch}/${generationState.totalBatches}...` 
+                          : "Erstelle..." 
+                        : isBulkMode 
+                          ? `${artistCount} Künstler (${totalBatches} Batches)` 
+                          : "Künstler erstellen"
+                      }
                     </span>
                   </Button>
-
-                  {stats.songs > 0 && (
-                    <div className="p-2.5 md:p-3 rounded-lg border border-border bg-card/50 space-y-2">
-                      <div className="flex items-center gap-2 text-xs font-medium text-foreground">
-                        <Download className="h-3.5 w-3.5 text-primary shrink-0" />
-                        <span>Katalog exportieren</span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={handleExportCSV}
-                          disabled={isExporting}
-                          className="h-8 text-xs"
-                        >
-                          <FileSpreadsheet className="h-3.5 w-3.5" />
-                          CSV
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={handleExportJSON}
-                          disabled={isExporting}
-                          className="h-8 text-xs"
-                        >
-                          <FileJson className="h-3.5 w-3.5" />
-                          JSON
-                        </Button>
-                      </div>
-                    </div>
+                
+                  {isBulkMode && !isLoading && (
+                    <p className="text-[10px] md:text-xs text-muted-foreground text-center">
+                      Bulk-Modus: {BATCH_SIZE} pro Batch
+                    </p>
                   )}
-                </aside>
-              </ScrollArea>
-            </div>
+                </div>
+              
+                <Button
+                  variant="outline"
+                  size="default"
+                  className="w-full text-sm h-9 md:h-10"
+                  onClick={() => setShowHistory(!showHistory)}
+                >
+                  <History className="h-4 w-4 shrink-0" />
+                  <span className="truncate">
+                    {showHistory ? "Neue Ergebnisse" : `Datenbank (${stats.artists})`}
+                  </span>
+                </Button>
 
-            <ScrollArea className="flex-1 min-h-0">
-              <section className="space-y-2 md:space-y-3 pr-2 md:pr-4 pb-20 md:pb-4">
+                {stats.songs > 0 && (
+                  <div className="p-2.5 md:p-3 rounded-lg border border-border bg-card/50 space-y-2">
+                    <div className="flex items-center gap-2 text-xs font-medium text-foreground">
+                      <Download className="h-3.5 w-3.5 text-primary shrink-0" />
+                      <span>Katalog exportieren</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleExportCSV}
+                        disabled={isExporting}
+                        className="h-8 text-xs"
+                      >
+                        <FileSpreadsheet className="h-3.5 w-3.5" />
+                        CSV
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleExportJSON}
+                        disabled={isExporting}
+                        className="h-8 text-xs"
+                      >
+                        <FileJson className="h-3.5 w-3.5" />
+                        JSON
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </aside>
+
+              {/* Results Section */}
+              <section className="space-y-2 md:space-y-3">
                 {showHistory ? (
                   <div className="space-y-2 md:space-y-3">
-                    <div className="flex items-center justify-between sticky top-0 bg-background/95 backdrop-blur py-2 -mt-2 z-10">
+                    <div className="flex items-center justify-between">
                       <h2 className="text-sm md:text-lg font-display font-semibold text-foreground flex items-center gap-2">
                         <Database className="h-4 w-4 text-primary shrink-0" />
                         <span className="truncate">Gespeichert ({savedArtists.length})</span>
@@ -497,7 +493,7 @@ const Generator = () => {
                   />
                 ) : artists.length > 0 ? (
                   <div className="space-y-2 md:space-y-3">
-                    <div className="flex items-center justify-between sticky top-0 bg-background/95 backdrop-blur py-2 -mt-2 z-10">
+                    <div className="flex items-center justify-between">
                       <h2 className="text-sm md:text-lg font-display font-semibold text-foreground flex items-center gap-2">
                         <Zap className="h-4 w-4 text-primary shrink-0" />
                         Neue Künstler ({artists.length})
@@ -528,9 +524,9 @@ const Generator = () => {
                   </div>
                 )}
               </section>
-            </ScrollArea>
+            </div>
           </div>
-        </div>
+        </ScrollArea>
       </main>
 
       <footer className="shrink-0 border-t border-border py-2 md:py-3 hidden md:block">
