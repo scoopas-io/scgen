@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Lock, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function PasswordGate({ children }: { children: React.ReactNode }) {
@@ -29,13 +29,22 @@ export function PasswordGate({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-sm space-y-8">
-        {/* Logo/Brand */}
-        <div className="text-center space-y-2">
-          <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-            <Lock className="h-8 w-8 text-primary" />
+      {/* Subtle background glow */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl" />
+      </div>
+      
+      <div className="relative w-full max-w-sm space-y-8">
+        {/* Logo/Brand - matching header style */}
+        <div className="text-center space-y-6">
+          <div className="flex flex-col items-center">
+            <h1 className="text-4xl md:text-5xl font-display font-bold tracking-tight">
+              <span className="text-foreground">sc<span className="text-primary">oo</span>pas</span>
+            </h1>
+            <span className="text-[10px] md:text-xs font-sans font-bold tracking-[0.25em] text-muted-foreground uppercase -mt-1">
+              Musikkatalog
+            </span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">Scoopas</h1>
           <p className="text-sm text-muted-foreground">
             Bitte Passwort eingeben, um fortzufahren
           </p>
@@ -53,7 +62,7 @@ export function PasswordGate({ children }: { children: React.ReactNode }) {
                 setError(false);
               }}
               className={cn(
-                "pr-10 h-12 text-center text-lg tracking-widest",
+                "pr-10 h-12 text-center text-lg tracking-widest bg-card border-border/50",
                 isShaking && "animate-shake",
                 error && "border-destructive focus-visible:ring-destructive"
               )}
@@ -78,7 +87,7 @@ export function PasswordGate({ children }: { children: React.ReactNode }) {
             </p>
           )}
 
-          <Button type="submit" className="w-full h-12" disabled={!password}>
+          <Button type="submit" className="w-full h-12 font-semibold" disabled={!password}>
             Anmelden
           </Button>
         </form>
