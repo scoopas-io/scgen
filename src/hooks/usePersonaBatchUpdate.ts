@@ -437,8 +437,8 @@ export function usePersonaBatchUpdate() {
             updateData.persona_active = true;
           }
 
-          // Only update if we have meaningful data
-          if (Object.keys(updateData).length > 1) {
+          // Only update if we have any data to update
+          if (Object.keys(updateData).length >= 1) {
             const { error: updateError } = await supabase
               .from("artists")
               .update(updateData)
