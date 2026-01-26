@@ -70,23 +70,154 @@ export function PersonaEditorDialog({ open, onOpenChange, artist, onSave }: Pers
   const [newStyleTag, setNewStyleTag] = useState("");
   const [newNegativeTag, setNewNegativeTag] = useState("");
 
+  // Extract mood keywords from personality text
+  const extractMoodFromPersonality = (personality: string): string[] => {
+    const moodKeywords: Record<string, string[]> = {
+      melancholic: ["melancholisch", "traurig", "sad", "melancholic", "schwermütig", "nachdenklich"],
+      energetic: ["energisch", "dynamisch", "energetic", "kraftvoll", "lebendig", "vital"],
+      romantic: ["romantisch", "romantic", "liebevoll", "zärtlich", "verträumt"],
+      aggressive: ["aggressiv", "aggressive", "wütend", "rebellisch", "hart"],
+      dreamy: ["verträumt", "dreamy", "träumerisch", "ethereal", "schwebend"],
+      dark: ["dunkel", "dark", "düster", "finster", "mysteriös"],
+      uplifting: ["aufbauend", "uplifting", "positiv", "hoffnungsvoll", "optimistisch"],
+      rebellious: ["rebellisch", "rebellious", "aufrührerisch", "unangepasst"],
+      introspective: ["introspektiv", "introspective", "nachdenklich", "tiefgründig"],
+      party: ["party", "feier", "ausgelassen", "festlich"],
+      chill: ["chill", "entspannt", "relaxed", "gelassen", "ruhig"],
+      epic: ["episch", "epic", "grandios", "monumental"],
+      intimate: ["intim", "intimate", "persönlich", "nah"],
+    };
+    
+    const lowerPersonality = personality.toLowerCase();
+    const foundMoods: string[] = [];
+    
+    for (const [mood, keywords] of Object.entries(moodKeywords)) {
+      if (keywords.some(kw => lowerPersonality.includes(kw))) {
+        foundMoods.push(mood);
+      }
+    }
+    
+    return foundMoods.slice(0, 3); // Max 3 moods
+  };
+
+  // Extract vocal characteristics from voice_prompt
+  const extractVocalInfo = (voicePrompt: string): { gender: string; texture: string; range: string } => {
+    const lower = voicePrompt.toLowerCase();
+    
+    // Gender detection
+    let gender = "";
+    if (lower.includes("male") || lower.includes("männlich") || lower.includes("man") || lower.includes("mann")) {
+      gender = "m";
+    } else if (lower.includes("female") || lower.includes("weiblich") || lower.includes("woman") || lower.includes("frau")) {
+      gender = "f";
+    }
+    
+    // Texture detection
+    let texture = "";
+    const textureMap: Record<string, string[]> = {
+      raspy: ["raspy", "rau", "heiser", "kratzig"],
+      smooth: ["smooth", "glatt", "weich", "sanft"],
+      powerful: ["powerful", "kraftvoll", "stark", "mächtig"],
+      breathy: ["breathy", "hauchig", "luftig"],
+      soulful: ["soulful", "seelenvoll", "gefühlvoll"],
+      gritty: ["gritty", "roh", "kernig"],
+      velvet: ["velvet", "samt", "samtig"],
+      nasal: ["nasal", "näselnd"],
+      operatic: ["operatic", "opernhaft", "klassisch"],
+    };
+    
+    for (const [tex, keywords] of Object.entries(textureMap)) {
+      if (keywords.some(kw => lower.includes(kw))) {
+        texture = tex;
+        break;
+      }
+    }
+    
+    // Range detection
+    let range = "";
+    const rangeMap: Record<string, string[]> = {
+      soprano: ["soprano", "sopran"],
+      alto: ["alto", "alt"],
+      "mezzo-soprano": ["mezzo", "mezzosopran"],
+      tenor: ["tenor"],
+      baritone: ["baritone", "bariton"],
+      bass: ["bass", "basso"],
+    };
+    
+    for (const [rng, keywords] of Object.entries(rangeMap)) {
+      if (keywords.some(kw => lower.includes(kw))) {
+        range = rng;
+        break;
+      }
+    }
+    
+    return { gender, texture, range };
+  };
+
+  // Extract style tags from genre, style, and voice_prompt
+  const extractStyleTags = (genre: string, style: string, voicePrompt: string): string[] => {
+    const tags: string[] = [];
+    
+    // Add style as tag if not generic
+    if (style && style.length > 2) {
+      tags.push(style);
+    }
+    
+    // Extract additional style hints from voice_prompt
+    const styleHints = voicePrompt.match(/\b(acoustic|electronic|orchestral|minimalist|experimental|vintage|modern|retro|progressive|alternative|indie|mainstream)\b/gi);
+    if (styleHints) {
+      tags.push(...styleHints.map(s => s.toLowerCase()));
+    }
+    
+    return [...new Set(tags)].slice(0, 5);
+  };
+
   useEffect(() => {
     if (artist) {
-      setFormData({
-        persona_name: artist.persona_name || artist.name,
-        persona_description: artist.persona_description || "",
-        persona_active: artist.persona_active ?? true,
-        vocal_gender: artist.vocal_gender || "",
-        vocal_texture: artist.vocal_texture || "",
-        vocal_range: artist.vocal_range || "",
-        style_tags: artist.style_tags || [],
-        mood_tags: artist.mood_tags || [],
-        negative_tags: artist.negative_tags || [],
-        default_bpm_min: artist.default_bpm_min || null,
-        default_bpm_max: artist.default_bpm_max || null,
-        preferred_keys: artist.preferred_keys || [],
-        instrumental_only: artist.instrumental_only || false,
-      });
+      // Check if persona fields are mostly empty (first-time setup)
+      const isFirstSetup = !artist.vocal_gender && !artist.vocal_texture && 
+        (!artist.style_tags || artist.style_tags.length === 0) &&
+        (!artist.mood_tags || artist.mood_tags.length === 0);
+      
+      if (isFirstSetup) {
+        // Auto-derive from existing artist metadata
+        const vocalInfo = extractVocalInfo(artist.voice_prompt);
+        const derivedMoods = extractMoodFromPersonality(artist.personality);
+        const derivedStyles = extractStyleTags(artist.genre, artist.style, artist.voice_prompt);
+        
+        setFormData({
+          persona_name: artist.name,
+          persona_description: artist.personality, // Use personality as description
+          persona_active: true,
+          vocal_gender: vocalInfo.gender,
+          vocal_texture: vocalInfo.texture,
+          vocal_range: vocalInfo.range,
+          style_tags: derivedStyles,
+          mood_tags: derivedMoods,
+          negative_tags: [],
+          default_bpm_min: null,
+          default_bpm_max: null,
+          preferred_keys: [],
+          instrumental_only: artist.instrumental_only || false,
+        });
+      } else {
+        // Use existing persona data
+        setFormData({
+          persona_name: artist.persona_name || artist.name,
+          persona_description: artist.persona_description || artist.personality,
+          persona_active: artist.persona_active ?? true,
+          vocal_gender: artist.vocal_gender || "",
+          vocal_texture: artist.vocal_texture || "",
+          vocal_range: artist.vocal_range || "",
+          style_tags: artist.style_tags || [],
+          mood_tags: artist.mood_tags || [],
+          negative_tags: artist.negative_tags || [],
+          default_bpm_min: artist.default_bpm_min || null,
+          default_bpm_max: artist.default_bpm_max || null,
+          preferred_keys: artist.preferred_keys || [],
+          instrumental_only: artist.instrumental_only || false,
+        });
+      }
     }
   }, [artist]);
 
