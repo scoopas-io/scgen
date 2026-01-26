@@ -15,6 +15,7 @@ import { useAudioGeneratorCache } from "@/hooks/useAudioGeneratorCache";
 import { BulkGenerationPanel } from "@/components/BulkGenerationPanel";
 import { DataLoadingProgress } from "@/components/DataLoadingProgress";
 import { PersonaEditorDialog } from "@/components/PersonaEditorDialog";
+import { PersonaBatchUpdateButton } from "@/components/PersonaBatchUpdateButton";
 import { isInstrumentalGenre } from "@/lib/genreConfig";
 import { 
   Music, Disc, User, Play, Pause, Download, Loader2, 
@@ -871,7 +872,11 @@ const AudioGenerator = () => {
                     <DataLoadingProgress progress={loadingProgress} stats={stats} />
                   ) : (
                     <>
-                      {/* Bulk Generation Panel */}
+                      {/* Persona Batch Update + Bulk Generation Panel */}
+                      <div className="flex items-center gap-3 mb-4">
+                        <PersonaBatchUpdateButton onComplete={() => loadData(true)} />
+                      </div>
+                      
                       <BulkGenerationPanel
                         songs={songs}
                         onSongUpdate={(songId, updates) => {
