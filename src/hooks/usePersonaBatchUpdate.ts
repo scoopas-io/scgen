@@ -373,28 +373,42 @@ export function usePersonaBatchUpdate() {
           // Derive BPM, keys, and style/mood from song metadata
           const derived = deriveFromSongMetadata(artistSongs, artistAlbumNames);
 
-          // Merge extracted and derived data
-          const updateData: Record<string, any> = {
-            persona_active: true,
-          };
+          // Merge extracted and derived data - ONLY update fields that are empty
+          const updateData: Record<string, any> = {};
 
-          if (extracted.vocalGender) updateData.vocal_gender = extracted.vocalGender;
-          if (extracted.vocalTexture) updateData.vocal_texture = extracted.vocalTexture;
-          if (extracted.vocalRange) updateData.vocal_range = extracted.vocalRange;
-          if (extracted.instrumentalOnly) updateData.instrumental_only = true;
+          // Only set vocal info if not already present
+          if (!artist.vocal_gender && extracted.vocalGender) updateData.vocal_gender = extracted.vocalGender;
+          if (!artist.vocal_texture && extracted.vocalTexture) updateData.vocal_texture = extracted.vocalTexture;
+          if (!artist.vocal_range && extracted.vocalRange) updateData.vocal_range = extracted.vocalRange;
+          if (!artist.instrumental_only && extracted.instrumentalOnly) updateData.instrumental_only = true;
           
-          // Combine style tags from text extraction AND song metadata
-          const combinedStyleTags = [...new Set([...extracted.styleTags, ...derived.derivedStyleTags])].slice(0, 6);
-          if (combinedStyleTags.length > 0) updateData.style_tags = combinedStyleTags;
+          // Combine style tags from text extraction AND song metadata - only if empty
+          if (!artist.style_tags || artist.style_tags.length === 0) {
+            const combinedStyleTags = [...new Set([...extracted.styleTags, ...derived.derivedStyleTags])].slice(0, 6);
+            if (combinedStyleTags.length > 0) updateData.style_tags = combinedStyleTags;
+          }
           
-          // Combine mood tags from text extraction AND song metadata
-          const combinedMoodTags = [...new Set([...extracted.moodTags, ...derived.derivedMoodTags])].slice(0, 5);
-          if (combinedMoodTags.length > 0) updateData.mood_tags = combinedMoodTags;
+          // Combine mood tags from text extraction AND song metadata - only if empty
+          if (!artist.mood_tags || artist.mood_tags.length === 0) {
+            const combinedMoodTags = [...new Set([...extracted.moodTags, ...derived.derivedMoodTags])].slice(0, 5);
+            if (combinedMoodTags.length > 0) updateData.mood_tags = combinedMoodTags;
+          }
           
-          // Use derived BPM if available
-          if (derived.bpmMin) updateData.default_bpm_min = derived.bpmMin;
-          if (derived.bpmMax) updateData.default_bpm_max = derived.bpmMax;
-          if (derived.preferredKeys.length > 0) updateData.preferred_keys = derived.preferredKeys;
+          // ALWAYS update BPM and Keys from song metadata if available and not already set
+          if ((!artist.default_bpm_min || !artist.default_bpm_max) && derived.bpmMin && derived.bpmMax) {
+            updateData.default_bpm_min = derived.bpmMin;
+            updateData.default_bpm_max = derived.bpmMax;
+          }
+          
+          // ALWAYS update preferred keys from song metadata if available and not already set
+          if ((!artist.preferred_keys || artist.preferred_keys.length === 0) && derived.preferredKeys.length > 0) {
+            updateData.preferred_keys = derived.preferredKeys;
+          }
+          
+          // Ensure persona_active is set
+          if (!artist.persona_active) {
+            updateData.persona_active = true;
+          }
 
           // Only update if we have meaningful data
           if (Object.keys(updateData).length > 1) {
