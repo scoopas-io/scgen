@@ -157,6 +157,9 @@ const AudioGenerator = () => {
                     artistImageUrl: songWithDetails?.artistImageUrl,
                     album: songWithDetails?.albumName,
                     audioUrl: updatedSong.audio_url!,
+                    songId: updatedSong.id,
+                    artistId: songWithDetails?.artistId,
+                    albumId: updatedSong.album_id,
                   });
                 },
               },
@@ -433,6 +436,9 @@ const AudioGenerator = () => {
           artistImageUrl: song.artistImageUrl,
           album: song.albumName,
           audioUrl: song.audio_url!,
+          songId: song.id,
+          artistId: song.artistId,
+          albumId: song.album_id,
         });
       });
     }
@@ -458,7 +464,7 @@ const AudioGenerator = () => {
       return;
     }
     
-    // Play new track
+    // Play new track with IDs for editing
     play({
       id: song.id,
       title: song.name,
@@ -466,6 +472,9 @@ const AudioGenerator = () => {
       artistImageUrl: song.artistImageUrl,
       album: song.albumName,
       audioUrl: song.audio_url,
+      songId: song.id,
+      artistId: song.artistId,
+      albumId: song.album_id,
     });
   };
 

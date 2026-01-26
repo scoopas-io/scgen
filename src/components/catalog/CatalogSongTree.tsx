@@ -101,18 +101,31 @@ SongRow.displayName = "SongRow";
 
 interface AlbumRowProps {
   album: Album;
+  artistId: string;
   artistName: string;
   artistImageUrl?: string;
   isExpanded: boolean;
   onToggle: () => void;
   currentTrackUrl: string | null;
   isPlaying: boolean;
-  onPlayAudio: (url: string, songName: string, artistName: string, albumName?: string, artistImageUrl?: string) => void;
+  onPlayAudio: (params: PlayAudioParams) => void;
   onSelectSong: (song: Song, albumName: string) => void;
+}
+
+interface PlayAudioParams {
+  url: string;
+  songId: string;
+  songName: string;
+  artistId: string;
+  artistName: string;
+  albumId: string;
+  albumName: string;
+  artistImageUrl?: string;
 }
 
 const AlbumRow = memo(({ 
   album, 
+  artistId,
   artistName,
   artistImageUrl,
   isExpanded, 
@@ -157,7 +170,16 @@ const AlbumRow = memo(({
               albumName={album.name}
               isCurrentTrack={currentTrackUrl === song.audio_url}
               isPlaying={isPlaying}
-              onPlay={() => song.audio_url && onPlayAudio(song.audio_url, song.name, artistName, album.name, artistImageUrl)}
+              onPlay={() => song.audio_url && onPlayAudio({
+                url: song.audio_url,
+                songId: song.id,
+                songName: song.name,
+                artistId: artistId,
+                artistName: artistName,
+                albumId: album.id,
+                albumName: album.name,
+                artistImageUrl: artistImageUrl,
+              })}
               onSelect={() => onSelectSong(song, album.name)}
             />
           ))}
@@ -177,9 +199,11 @@ interface ArtistTreeRowProps {
   onToggleAlbum: (albumId: string) => void;
   currentTrackUrl: string | null;
   isPlaying: boolean;
-  onPlayAudio: (url: string, songName: string, artistName: string, albumName?: string, artistImageUrl?: string) => void;
+  onPlayAudio: (params: PlayAudioParams) => void;
   onSelectSong: (song: Song, artistName: string, albumName: string) => void;
 }
+
+export type { PlayAudioParams };
 
 export const ArtistTreeRow = memo(({ 
   artist, 
@@ -245,6 +269,7 @@ export const ArtistTreeRow = memo(({
             <AlbumRow
               key={album.id}
               album={album}
+              artistId={artist.id}
               artistName={artist.name}
               artistImageUrl={artist.profile_image_url}
               isExpanded={expandedAlbums.has(album.id)}
