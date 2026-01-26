@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAudioPlayer, Track } from "@/contexts/AudioPlayerContext";
 import { toast } from "sonner";
+import { isInstrumentalGenre } from "@/lib/genreConfig";
 
 interface Song {
   id: string;
@@ -183,6 +184,7 @@ export const ArtistAlbumsSection = memo(({
             bpm: song.bpm,
             tonart: song.tonart,
             artistName,
+            instrumental: isInstrumentalGenre(genre),
           }),
         }
       );

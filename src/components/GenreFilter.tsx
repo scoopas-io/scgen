@@ -1,29 +1,8 @@
 import { useState } from "react";
-import { Check } from "lucide-react";
+import { Check, Music2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
-const GENRES = [
-  // Mainstream
-  "Pop", "Rock", "Hip-Hop", "Rap", "R&B", "Jazz", "Blues", "Country", "Folk",
-  // Electronic & Dance
-  "Electronic", "House", "Deep House", "Techno", "Trance", "Drum & Bass", 
-  "Dubstep", "Trap", "Lo-Fi", "Ambient", "Synthwave", "DJ Mix (Instrumental)",
-  // Classical & Traditional
-  "Classical", "Opera", "Orchestral",
-  // Alternative & Rock
-  "Reggae", "Ska", "Punk", "Metal", "Indie", "Alternative", "Grunge", "Post-Rock",
-  // Soul & Funk
-  "Soul", "Funk", "Disco", "Neo-Soul", "Motown",
-  // World & Cultural
-  "Latin", "Bossa Nova", "Salsa", "World Music", "Afrobeat", "Dancehall",
-  // Asian Pop
-  "K-Pop", "J-Pop",
-  // German
-  "Schlager", "Volksmusik",
-  // Niche & Experimental
-  "Experimental", "Chillwave", "Vaporwave", "Industrial", "Drill"
-];
+import { GENRE_CONFIG, isInstrumentalGenre } from "@/lib/genreConfig";
 
 interface GenreFilterProps {
   selectedGenres: string[];
@@ -42,9 +21,14 @@ export function GenreFilter({ selectedGenres, onGenresChange }: GenreFilterProps
   };
 
   const clearAll = () => onGenresChange([]);
-  const selectAll = () => onGenresChange([...GENRES]);
+  const selectAll = () => onGenresChange(GENRE_CONFIG.map(g => g.name));
+  const selectInstrumental = () => onGenresChange(GENRE_CONFIG.filter(g => g.instrumental).map(g => g.name));
+  const selectVocal = () => onGenresChange(GENRE_CONFIG.filter(g => !g.instrumental).map(g => g.name));
 
-  const displayedGenres = expanded ? GENRES : GENRES.slice(0, 12);
+  const displayedGenres = expanded ? GENRE_CONFIG : GENRE_CONFIG.slice(0, 12);
+
+  const selectedInstrumentalCount = selectedGenres.filter(g => isInstrumentalGenre(g)).length;
+  const selectedVocalCount = selectedGenres.length - selectedInstrumentalCount;
 
   return (
     <div className="space-y-2 md:space-y-3 p-3 md:p-4 rounded-lg border border-border bg-card/50 backdrop-blur-sm">
@@ -59,14 +43,35 @@ export function GenreFilter({ selectedGenres, onGenresChange }: GenreFilterProps
           </Button>
         </div>
       </div>
+
+      {/* Quick Filter Buttons */}
+      <div className="flex gap-1.5 flex-wrap">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={selectInstrumental}
+          className="text-[10px] md:text-xs h-6 md:h-7 px-2 gap-1"
+        >
+          <Music2 className="h-3 w-3" />
+          Nur Instrumental
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={selectVocal}
+          className="text-[10px] md:text-xs h-6 md:h-7 px-2"
+        >
+          Nur Vocal
+        </Button>
+      </div>
       
       <div className="flex flex-wrap gap-1 md:gap-1.5">
-        {displayedGenres.map((genre) => {
-          const isSelected = selectedGenres.includes(genre);
+        {displayedGenres.map((genreConfig) => {
+          const isSelected = selectedGenres.includes(genreConfig.name);
           return (
             <button
-              key={genre}
-              onClick={() => toggleGenre(genre)}
+              key={genreConfig.name}
+              onClick={() => toggleGenre(genreConfig.name)}
               className={cn(
                 "px-1.5 md:px-2 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs font-medium transition-all",
                 "border flex items-center gap-0.5 md:gap-1 active:scale-95",
@@ -76,29 +81,43 @@ export function GenreFilter({ selectedGenres, onGenresChange }: GenreFilterProps
               )}
             >
               {isSelected && <Check className="h-2 w-2 md:h-2.5 md:w-2.5" />}
-              {genre}
+              {genreConfig.name}
+              {genreConfig.instrumental && (
+                <Music2 className="h-2 w-2 md:h-2.5 md:w-2.5 opacity-60" />
+              )}
             </button>
           );
         })}
       </div>
 
-      {GENRES.length > 12 && (
+      {GENRE_CONFIG.length > 12 && (
         <Button
           variant="ghost"
           size="sm"
           onClick={() => setExpanded(!expanded)}
           className="w-full text-[10px] md:text-xs text-muted-foreground h-6 md:h-7"
         >
-          {expanded ? "Weniger" : `+${GENRES.length - 12} mehr`}
+          {expanded ? "Weniger" : `+${GENRE_CONFIG.length - 12} mehr`}
         </Button>
       )}
 
-      <p className="text-[10px] md:text-xs text-muted-foreground">
-        {selectedGenres.length > 0 
-          ? `${selectedGenres.length} Genre${selectedGenres.length > 1 ? "s" : ""} ausgewählt`
-          : "Keine Auswahl = alle Genres"
-        }
-      </p>
+      <div className="flex items-center justify-between text-[10px] md:text-xs text-muted-foreground">
+        <span>
+          {selectedGenres.length > 0 
+            ? `${selectedGenres.length} Genre${selectedGenres.length > 1 ? "s" : ""} ausgewählt`
+            : "Keine Auswahl = alle Genres"
+          }
+        </span>
+        {selectedGenres.length > 0 && (
+          <span className="flex items-center gap-1">
+            <Music2 className="h-3 w-3" />
+            {selectedInstrumentalCount} instrumental, {selectedVocalCount} vocal
+          </span>
+        )}
+      </div>
     </div>
   );
 }
+
+// Re-export for convenience
+export { isInstrumentalGenre, GENRES } from "@/lib/genreConfig";
