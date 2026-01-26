@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { isInstrumentalGenre } from "@/lib/genreConfig";
 import { 
   Play, Pause, Square, Zap, Clock, CheckCircle2, XCircle, 
   AlertCircle, Timer, Music, Settings2, ChevronDown, ChevronUp
@@ -96,6 +97,7 @@ export function BulkGenerationPanel({ songs, onSongUpdate, onComplete }: BulkGen
             bpm: song.bpm,
             tonart: song.tonart,
             artistName: song.artistName,
+            instrumental: isInstrumentalGenre(song.genre),
           }),
         }
       );

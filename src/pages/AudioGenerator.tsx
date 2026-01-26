@@ -12,6 +12,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { BulkGenerationPanel } from "@/components/BulkGenerationPanel";
+import { isInstrumentalGenre } from "@/lib/genreConfig";
 import { 
   Music, Disc, User, Play, Pause, Download, Loader2, 
   CheckCircle2, XCircle, Clock, Volume2, ChevronDown, ChevronRight,
@@ -387,6 +388,7 @@ const AudioGenerator = () => {
               bpm: song.bpm,
               tonart: song.tonart,
               artistName: song.artistName,
+              instrumental: isInstrumentalGenre(song.genre),
             }),
           }
         );

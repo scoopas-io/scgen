@@ -16,7 +16,15 @@ interface GenerateSongRequest {
   bpm: number | null;
   tonart: string | null;
   artistName: string;
+  instrumental?: boolean;
 }
+
+// Genres that should be generated as instrumental-only
+const INSTRUMENTAL_GENRES = [
+  "electronic", "house", "deep house", "techno", "trance", "drum & bass",
+  "dubstep", "lo-fi", "ambient", "synthwave", "dj mix", "classical",
+  "orchestral", "post-rock", "experimental", "chillwave", "vaporwave", "industrial"
+];
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -36,9 +44,15 @@ serve(async (req) => {
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    const { songId, title, genre, style, voicePrompt, personality, bpm, tonart, artistName }: GenerateSongRequest = await req.json();
+    const { songId, title, genre, style, voicePrompt, personality, bpm, tonart, artistName, instrumental }: GenerateSongRequest = await req.json();
 
     console.log(`Starting Suno generation for: ${title} by ${artistName}`);
+
+    // Determine if instrumental based on genre or explicit flag
+    const isInstrumental = instrumental ?? INSTRUMENTAL_GENRES.some(
+      g => genre.toLowerCase().includes(g) || g.includes(genre.toLowerCase())
+    );
+    console.log(`Genre: ${genre}, Instrumental: ${isInstrumental}`);
 
     // Update song status to generating
     await supabase
@@ -47,7 +61,7 @@ serve(async (req) => {
       .eq("id", songId);
 
     // Build style tags for Suno - includes genre, style, voice characteristics
-    const styleTags = buildStyleTags(genre, style, voicePrompt, personality, bpm, tonart);
+    const styleTags = buildStyleTags(genre, style, voicePrompt, personality, bpm, tonart, isInstrumental);
 
     console.log("Style tags:", styleTags);
 
@@ -74,9 +88,11 @@ serve(async (req) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            prompt: `A ${genre} song called "${title}" in ${style} style`,
+            prompt: isInstrumental 
+              ? `An instrumental ${genre} track called "${title}" in ${style} style`
+              : `A ${genre} song called "${title}" in ${style} style`,
             customMode: false,
-            instrumental: false,
+            instrumental: isInstrumental,
             model: "V5",
             title: title,
             callbackUrl: callbackUrl,
@@ -200,7 +216,8 @@ function buildStyleTags(
   voicePrompt: string,
   personality: string,
   bpm: number | null,
-  tonart: string | null
+  tonart: string | null,
+  isInstrumental: boolean = false
 ): string {
   const tags: string[] = [];
   
@@ -208,11 +225,15 @@ function buildStyleTags(
   if (genre) tags.push(genre);
   if (style) tags.push(style);
   
-  // Extract key voice characteristics (e.g., "male voice", "female vocals", "raspy")
-  if (voicePrompt) {
-    // Extract short voice descriptors for style tags
-    const voiceKeywords = extractVoiceKeywords(voicePrompt);
-    if (voiceKeywords) tags.push(voiceKeywords);
+  // Add instrumental tag if applicable
+  if (isInstrumental) {
+    tags.push("instrumental");
+  } else {
+    // Extract key voice characteristics only for vocal tracks
+    if (voicePrompt) {
+      const voiceKeywords = extractVoiceKeywords(voicePrompt);
+      if (voiceKeywords) tags.push(voiceKeywords);
+    }
   }
   
   // Add mood from personality
