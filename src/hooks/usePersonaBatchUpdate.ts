@@ -25,13 +25,18 @@ interface Artist {
 
 interface Song {
   id: string;
+  name: string;
   bpm: number | null;
   tonart: string | null;
+  laenge: string | null;
+  version: string | null;
+  bemerkungen: string | null;
   album_id: string;
 }
 
 interface Album {
   id: string;
+  name: string;
   artist_id: string;
 }
 
@@ -174,11 +179,13 @@ function extractPersonaFromText(voicePrompt: string, personality: string, genre:
   };
 }
 
-// Derive BPM range and preferred keys from song metadata
-function deriveFromSongMetadata(songs: Song[]): { 
+// Derive BPM range, preferred keys, and style hints from song metadata
+function deriveFromSongMetadata(songs: Song[], albumNames: string[]): { 
   bpmMin: number | null; 
   bpmMax: number | null; 
   preferredKeys: string[];
+  derivedStyleTags: string[];
+  derivedMoodTags: string[];
 } {
   const bpms = songs.filter(s => s.bpm && s.bpm > 0).map(s => s.bpm!);
   const keys = songs.filter(s => s.tonart).map(s => s.tonart!);
@@ -209,8 +216,45 @@ function deriveFromSongMetadata(songs: Song[]): {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)
     .map(([key]) => key);
+
+  // Extract style and mood hints from song names, album names, and notes
+  const derivedStyleTags: string[] = [];
+  const derivedMoodTags: string[] = [];
   
-  return { bpmMin, bpmMax, preferredKeys };
+  const allText = [
+    ...songs.map(s => s.name),
+    ...songs.filter(s => s.bemerkungen).map(s => s.bemerkungen!),
+    ...songs.filter(s => s.version && s.version !== "Original").map(s => s.version!),
+    ...albumNames,
+  ].join(" ").toLowerCase();
+  
+  // Style hints from metadata
+  const metadataStylePatterns: Record<string, string[]> = {
+    acoustic: ["acoustic", "akustik", "unplugged"],
+    electronic: ["electronic", "elektronisch", "synth", "digital"],
+    orchestral: ["orchestral", "orchestra", "symphonic", "klassisch"],
+    minimalist: ["minimal", "minimalist", "sparse"],
+    experimental: ["experimental", "avant", "abstract"],
+    vintage: ["vintage", "retro", "classic", "oldschool"],
+    live: ["live", "concert", "session"],
+    remix: ["remix", "rework", "edit"],
+    instrumental: ["instrumental", "inst.", "no vocals"],
+  };
+  
+  for (const [style, keywords] of Object.entries(metadataStylePatterns)) {
+    if (keywords.some(kw => allText.includes(kw))) {
+      derivedStyleTags.push(style);
+    }
+  }
+  
+  // Mood hints from song/album names
+  for (const [mood, keywords] of Object.entries(MOOD_PATTERNS)) {
+    if (keywords.some(kw => allText.includes(kw))) {
+      derivedMoodTags.push(mood);
+    }
+  }
+  
+  return { bpmMin, bpmMax, preferredKeys, derivedStyleTags, derivedMoodTags };
 }
 
 // Check if artist needs persona update
@@ -269,20 +313,20 @@ export function usePersonaBatchUpdate() {
       }));
 
       // Load all albums and songs for analysis
-      const { data: albums } = await supabase.from("albums").select("id, artist_id");
-      const { data: songs } = await supabase.from("songs").select("id, bpm, tonart, album_id");
+      const { data: albums } = await supabase.from("albums").select("id, name, artist_id");
+      const { data: songs } = await supabase.from("songs").select("id, name, bpm, tonart, laenge, version, bemerkungen, album_id");
 
-      const albumsByArtist = new Map<string, string[]>();
+      const albumsByArtist = new Map<string, Album[]>();
       for (const album of albums || []) {
         const existing = albumsByArtist.get(album.artist_id) || [];
-        existing.push(album.id);
+        existing.push(album as Album);
         albumsByArtist.set(album.artist_id, existing);
       }
 
       const songsByAlbum = new Map<string, Song[]>();
       for (const song of songs || []) {
         const existing = songsByAlbum.get(song.album_id) || [];
-        existing.push(song);
+        existing.push(song as Song);
         songsByAlbum.set(song.album_id, existing);
       }
 
@@ -312,16 +356,17 @@ export function usePersonaBatchUpdate() {
             artist.style || ""
           );
 
-          // Get songs for this artist
-          const artistAlbumIds = albumsByArtist.get(artist.id) || [];
+          // Get albums and songs for this artist
+          const artistAlbums = albumsByArtist.get(artist.id) || [];
+          const artistAlbumNames = artistAlbums.map(a => a.name);
           const artistSongs: Song[] = [];
-          for (const albumId of artistAlbumIds) {
-            const albumSongs = songsByAlbum.get(albumId) || [];
+          for (const album of artistAlbums) {
+            const albumSongs = songsByAlbum.get(album.id) || [];
             artistSongs.push(...albumSongs);
           }
 
-          // Derive BPM and keys from song metadata
-          const derived = deriveFromSongMetadata(artistSongs);
+          // Derive BPM, keys, and style/mood from song metadata
+          const derived = deriveFromSongMetadata(artistSongs, artistAlbumNames);
 
           // Merge extracted and derived data
           const updateData: Record<string, any> = {
@@ -331,9 +376,15 @@ export function usePersonaBatchUpdate() {
           if (extracted.vocalGender) updateData.vocal_gender = extracted.vocalGender;
           if (extracted.vocalTexture) updateData.vocal_texture = extracted.vocalTexture;
           if (extracted.vocalRange) updateData.vocal_range = extracted.vocalRange;
-          if (extracted.styleTags.length > 0) updateData.style_tags = extracted.styleTags;
-          if (extracted.moodTags.length > 0) updateData.mood_tags = extracted.moodTags;
           if (extracted.instrumentalOnly) updateData.instrumental_only = true;
+          
+          // Combine style tags from text extraction AND song metadata
+          const combinedStyleTags = [...new Set([...extracted.styleTags, ...derived.derivedStyleTags])].slice(0, 6);
+          if (combinedStyleTags.length > 0) updateData.style_tags = combinedStyleTags;
+          
+          // Combine mood tags from text extraction AND song metadata
+          const combinedMoodTags = [...new Set([...extracted.moodTags, ...derived.derivedMoodTags])].slice(0, 5);
+          if (combinedMoodTags.length > 0) updateData.mood_tags = combinedMoodTags;
           
           // Use derived BPM if available
           if (derived.bpmMin) updateData.default_bpm_min = derived.bpmMin;
