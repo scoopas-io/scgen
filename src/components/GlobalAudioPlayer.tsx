@@ -253,125 +253,129 @@ const SidePanel: React.FC = () => {
     <>
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50"
+        className="fixed inset-0 bg-black/60 backdrop-blur-md z-50"
         onClick={closePanel}
       />
       
       {/* Panel */}
-      <div className="fixed inset-0 md:inset-auto md:top-0 md:right-0 md:bottom-0 md:w-full md:max-w-md bg-card md:border-l border-border z-50 animate-slide-in-right flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border shrink-0">
-          <h2 className="font-display font-semibold text-lg">Aktueller Track</h2>
-          <Button variant="ghost" size="icon" onClick={closePanel}>
-            <X className="h-5 w-5" />
+      <div className="fixed inset-0 md:inset-auto md:top-0 md:right-0 md:bottom-0 md:w-full md:max-w-sm bg-gradient-to-b from-card via-card to-background md:border-l border-border/50 z-50 animate-slide-in-right flex flex-col shadow-2xl">
+        {/* Header with gradient */}
+        <div className="flex items-center justify-between px-5 py-4 shrink-0 bg-gradient-to-b from-primary/5 to-transparent">
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Wird gespielt</span>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={closePanel}
+            className="h-8 w-8 rounded-full hover:bg-muted/80"
+          >
+            <X className="h-4 w-4" />
           </Button>
         </div>
 
         <ScrollArea className="flex-1 min-h-0">
-          <div className="p-4 md:p-6 space-y-6">
-            {/* Album Art */}
-            <div className="aspect-square w-full max-w-[240px] mx-auto rounded-xl bg-muted overflow-hidden shadow-xl">
-              {localTrack?.artistImageUrl || localTrack?.coverUrl ? (
-                <img 
-                  src={localTrack.artistImageUrl || localTrack.coverUrl} 
-                  alt={localTrack?.artist || localTrack?.title}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <Music className="w-16 h-16 text-muted-foreground" />
-                </div>
-              )}
+          <div className="px-5 pb-6 space-y-5">
+            {/* Album Art with glow effect */}
+            <div className="relative group">
+              <div className="absolute inset-0 bg-primary/20 rounded-2xl blur-2xl opacity-50 group-hover:opacity-70 transition-opacity" />
+              <div className="relative aspect-square w-full max-w-[280px] mx-auto rounded-2xl bg-muted/50 overflow-hidden ring-1 ring-white/10 shadow-2xl">
+                {localTrack?.artistImageUrl || localTrack?.coverUrl ? (
+                  <img 
+                    src={localTrack.artistImageUrl || localTrack.coverUrl} 
+                    alt={localTrack?.artist || localTrack?.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
+                    <Music className="w-16 h-16 text-muted-foreground/50" />
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Track Info */}
-            <div className="text-center space-y-1">
-              <h3 className="text-lg font-bold truncate">
+            <div className="text-center space-y-1.5 px-2">
+              <h3 className="text-xl font-bold truncate leading-tight">
                 {localTrack?.title || 'Kein Track'}
               </h3>
-              <p className="text-muted-foreground text-sm truncate">
+              <p className="text-muted-foreground truncate">
                 {localTrack?.artist || 'Unbekannt'}
               </p>
               {localTrack?.album && (
-                <p className="text-xs text-muted-foreground/70 truncate">
+                <p className="text-xs text-muted-foreground/60 truncate">
                   {localTrack.album}
                 </p>
               )}
-              
-              {localTrack?.songId && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setEditDialogOpen(true)}
-                  className="gap-1.5 mt-2"
-                >
-                  <Pencil className="h-3 w-3" />
-                  Bearbeiten
-                </Button>
-              )}
             </div>
 
-            {/* Progress */}
-            <div className="space-y-2">
-              <Slider
-                value={[currentTime]}
-                max={duration || 100}
-                step={1}
-                onValueChange={([value]) => seek(value)}
-                className="w-full"
-              />
-              <div className="flex justify-between text-xs text-muted-foreground tabular-nums">
+            {/* Progress with custom styling */}
+            <div className="space-y-2 px-1">
+              <div className="relative h-1 bg-muted/50 rounded-full overflow-hidden">
+                <div 
+                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-primary to-primary/80 rounded-full transition-all duration-150"
+                  style={{ width: `${progress}%` }}
+                />
+                <Slider
+                  value={[currentTime]}
+                  max={duration || 100}
+                  step={1}
+                  onValueChange={([value]) => seek(value)}
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                />
+              </div>
+              <div className="flex justify-between text-[11px] text-muted-foreground/70 tabular-nums font-medium">
                 <span>{formatTime(currentTime)}</span>
                 <span>{formatTime(duration)}</span>
               </div>
             </div>
 
-            {/* Controls */}
-            <div className="flex items-center justify-center gap-3">
+            {/* Main Controls */}
+            <div className="flex items-center justify-center gap-4 py-2">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-11 w-11"
+                className="h-12 w-12 rounded-full hover:bg-muted/80 transition-all hover:scale-105"
                 onClick={playPrevious}
               >
                 <SkipBack className="h-5 w-5" />
               </Button>
               
               <Button
-                variant="default"
                 size="icon"
-                className="h-14 w-14 rounded-full shadow-lg"
+                className="h-16 w-16 rounded-full bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25 transition-all hover:scale-105 hover:shadow-xl hover:shadow-primary/30"
                 onClick={isPlaying ? pause : resume}
               >
                 {isPlaying ? (
-                  <Pause className="h-6 w-6" />
+                  <Pause className="h-7 w-7" />
                 ) : (
-                  <Play className="h-6 w-6 ml-0.5" />
+                  <Play className="h-7 w-7 ml-1" />
                 )}
               </Button>
               
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-11 w-11"
+                className="h-12 w-12 rounded-full hover:bg-muted/80 transition-all hover:scale-105"
                 onClick={playNext}
               >
                 <SkipForward className="h-5 w-5" />
               </Button>
             </div>
 
-            {/* Volume */}
-            <div className="flex items-center gap-3">
+            {/* Secondary Controls */}
+            <div className="flex items-center gap-3 px-1">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 flex-shrink-0"
+                className="h-8 w-8 flex-shrink-0 rounded-full"
                 onClick={toggleMute}
               >
                 {isMuted || volume === 0 ? (
-                  <VolumeX className="h-4 w-4" />
+                  <VolumeX className="h-4 w-4 text-muted-foreground" />
                 ) : (
-                  <Volume2 className="h-4 w-4" />
+                  <Volume2 className="h-4 w-4 text-muted-foreground" />
                 )}
               </Button>
               <Slider
@@ -379,37 +383,47 @@ const SidePanel: React.FC = () => {
                 max={100}
                 step={1}
                 onValueChange={([value]) => setVolume(value / 100)}
-                className="w-full"
+                className="flex-1"
               />
+              {localTrack?.songId && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setEditDialogOpen(true)}
+                  className="h-8 w-8 rounded-full"
+                >
+                  <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                </Button>
+              )}
             </div>
 
             {/* Queue */}
             {queue.length > 0 && (
-              <div className="space-y-3 pt-2 border-t border-border">
+              <div className="space-y-3 pt-4 mt-2 border-t border-border/50">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <ListMusic className="h-4 w-4 text-muted-foreground" />
+                    <ListMusic className="h-4 w-4 text-primary/70" />
                     <span className="text-sm font-medium">Warteschlange</span>
-                    <span className="text-xs text-muted-foreground">
-                      ({queue.length})
+                    <span className="text-xs text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-full">
+                      {queue.length}
                     </span>
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-xs h-7"
+                    className="text-xs h-7 text-muted-foreground hover:text-foreground"
                     onClick={clearQueue}
                   >
                     Leeren
                   </Button>
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                   {queue.slice(0, 5).map((track, index) => (
                     <div 
                       key={`${track.id}-${index}`}
-                      className="flex items-center gap-2 p-2 rounded-lg bg-muted/50"
+                      className="flex items-center gap-3 p-2 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors group"
                     >
-                      <div className="w-8 h-8 rounded bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden">
+                      <div className="relative w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden ring-1 ring-white/5">
                         {track.artistImageUrl || track.coverUrl ? (
                           <img 
                             src={track.artistImageUrl || track.coverUrl} 
@@ -417,11 +431,14 @@ const SidePanel: React.FC = () => {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <Music className="w-3 h-3 text-muted-foreground" />
+                          <Music className="w-4 h-4 text-muted-foreground/50" />
                         )}
+                        <span className="absolute bottom-0.5 right-0.5 text-[9px] font-bold text-white/70 bg-black/50 px-1 rounded">
+                          {index + 1}
+                        </span>
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm truncate">{track.title}</p>
+                        <p className="text-sm font-medium truncate">{track.title}</p>
                         <p className="text-xs text-muted-foreground truncate">
                           {track.artist}
                         </p>
@@ -429,8 +446,8 @@ const SidePanel: React.FC = () => {
                     </div>
                   ))}
                   {queue.length > 5 && (
-                    <p className="text-xs text-muted-foreground text-center py-1">
-                      +{queue.length - 5} weitere
+                    <p className="text-xs text-muted-foreground/70 text-center py-2">
+                      +{queue.length - 5} weitere Tracks
                     </p>
                   )}
                 </div>
