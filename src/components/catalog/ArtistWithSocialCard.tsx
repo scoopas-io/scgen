@@ -240,106 +240,108 @@ export const ArtistWithSocialCard = memo(({ artist, onDelete, onRefresh }: Artis
         {/* Expanded Content */}
         {isExpanded && (
           <div className="border-t border-border bg-muted/20 p-3 sm:p-4 space-y-4 sm:space-y-6 animate-in slide-in-from-top-2 duration-200">
-            {/* Social Content Section */}
-            <div>
-              <h4 className="text-xs sm:text-sm font-medium text-muted-foreground mb-2 sm:mb-3 flex items-center gap-2">
-                <Video className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                Social Media Inhalte
-                {socialContent.length > 0 && (
-                  <Badge variant="outline" className="text-[10px] sm:text-xs">
-                    {socialContent.length}
-                  </Badge>
-                )}
-              </h4>
+            {/* Social Content Section - Admin Only */}
+            {isAdmin && (
+              <div>
+                <h4 className="text-xs sm:text-sm font-medium text-muted-foreground mb-2 sm:mb-3 flex items-center gap-2">
+                  <Video className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  Social Media Inhalte
+                  {socialContent.length > 0 && (
+                    <Badge variant="outline" className="text-[10px] sm:text-xs">
+                      {socialContent.length}
+                    </Badge>
+                  )}
+                </h4>
 
-              {isLoadingSocial ? (
-                <div className="text-xs sm:text-sm text-muted-foreground py-4 text-center">
-                  Lade Inhalte...
-                </div>
-              ) : socialContent.length === 0 ? (
-                <div className="text-xs sm:text-sm text-muted-foreground py-4 text-center border border-dashed border-border rounded-lg">
-                  Keine Social Media Inhalte vorhanden
-                </div>
-              ) : (
-                <div className="grid gap-2 sm:gap-3 grid-cols-1 xs:grid-cols-2 lg:grid-cols-3">
-                  {socialContent.map((content) => {
-                    const PlatformIcon = PLATFORM_ICONS[content.platform] || Video;
-                    const platformColor = PLATFORM_COLORS[content.platform] || "bg-muted text-muted-foreground";
-                    
-                    return (
-                      <div 
-                        key={content.id}
-                        className="border border-border rounded-lg overflow-hidden bg-card/50"
-                      >
-                        {/* Thumbnail */}
-                        <div className="aspect-video bg-muted relative">
-                          {content.image_url ? (
-                            <img 
-                              src={content.image_url} 
-                              alt={content.title || "Content"} 
-                              className="w-full h-full object-cover"
-                            />
-                          ) : content.video_url ? (
-                            playingVideo === content.video_url ? (
-                              <video 
-                                src={content.video_url} 
+                {isLoadingSocial ? (
+                  <div className="text-xs sm:text-sm text-muted-foreground py-4 text-center">
+                    Lade Inhalte...
+                  </div>
+                ) : socialContent.length === 0 ? (
+                  <div className="text-xs sm:text-sm text-muted-foreground py-4 text-center border border-dashed border-border rounded-lg">
+                    Keine Social Media Inhalte vorhanden
+                  </div>
+                ) : (
+                  <div className="grid gap-2 sm:gap-3 grid-cols-1 xs:grid-cols-2 lg:grid-cols-3">
+                    {socialContent.map((content) => {
+                      const PlatformIcon = PLATFORM_ICONS[content.platform] || Video;
+                      const platformColor = PLATFORM_COLORS[content.platform] || "bg-muted text-muted-foreground";
+                      
+                      return (
+                        <div 
+                          key={content.id}
+                          className="border border-border rounded-lg overflow-hidden bg-card/50"
+                        >
+                          {/* Thumbnail */}
+                          <div className="aspect-video bg-muted relative">
+                            {content.image_url ? (
+                              <img 
+                                src={content.image_url} 
+                                alt={content.title || "Content"} 
                                 className="w-full h-full object-cover"
-                                autoPlay
-                                controls
-                                onEnded={() => setPlayingVideo(null)}
                               />
+                            ) : content.video_url ? (
+                              playingVideo === content.video_url ? (
+                                <video 
+                                  src={content.video_url} 
+                                  className="w-full h-full object-cover"
+                                  autoPlay
+                                  controls
+                                  onEnded={() => setPlayingVideo(null)}
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
+                                  <Video className="h-8 w-8 text-muted-foreground" />
+                                </div>
+                              )
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
-                                <Video className="h-8 w-8 text-muted-foreground" />
+                              <div className="w-full h-full flex items-center justify-center">
+                                <ImageIcon className="h-8 w-8 text-muted-foreground" />
                               </div>
-                            )
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                            )}
+                            
+                            {/* Play Button Overlay */}
+                            {content.video_url && playingVideo !== content.video_url && (
+                              <button
+                                onClick={() => toggleVideo(content.video_url!)}
+                                className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-colors"
+                              >
+                                <div className="h-12 w-12 rounded-full bg-primary/90 flex items-center justify-center">
+                                  <Play className="h-5 w-5 text-primary-foreground ml-0.5" />
+                                </div>
+                              </button>
+                            )}
+
+                            {/* Platform Badge */}
+                            <div className={cn(
+                              "absolute top-2 right-2 px-2 py-1 rounded-full text-xs flex items-center gap-1",
+                              platformColor
+                            )}>
+                              <PlatformIcon className="h-3 w-3" />
+                              <span className="capitalize">{content.platform}</span>
                             </div>
-                          )}
-                          
-                          {/* Play Button Overlay */}
-                          {content.video_url && playingVideo !== content.video_url && (
-                            <button
-                              onClick={() => toggleVideo(content.video_url!)}
-                              className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-colors"
-                            >
-                              <div className="h-12 w-12 rounded-full bg-primary/90 flex items-center justify-center">
-                                <Play className="h-5 w-5 text-primary-foreground ml-0.5" />
-                              </div>
-                            </button>
-                          )}
-
-                          {/* Platform Badge */}
-                          <div className={cn(
-                            "absolute top-2 right-2 px-2 py-1 rounded-full text-xs flex items-center gap-1",
-                            platformColor
-                          )}>
-                            <PlatformIcon className="h-3 w-3" />
-                            <span className="capitalize">{content.platform}</span>
                           </div>
-                        </div>
 
-                        {/* Content Info */}
-                        <div className="p-2.5 sm:p-3">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0">
-                              <p className="text-xs sm:text-sm font-medium truncate">
-                                {content.title || "Ohne Titel"}
-                              </p>
-                              <p className="text-[10px] sm:text-xs text-muted-foreground capitalize">
-                                {content.content_type} • {content.status}
-                              </p>
+                          {/* Content Info */}
+                          <div className="p-2.5 sm:p-3">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <p className="text-xs sm:text-sm font-medium truncate">
+                                  {content.title || "Ohne Titel"}
+                                </p>
+                                <p className="text-[10px] sm:text-xs text-muted-foreground capitalize">
+                                  {content.content_type} • {content.status}
+                                </p>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Albums & Songs Section */}
             <ArtistAlbumsSection
