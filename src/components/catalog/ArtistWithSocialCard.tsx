@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ArtistManagementDialog } from "@/components/ArtistManagementDialog";
 import { ArtistAlbumsSection } from "@/components/catalog/ArtistAlbumsSection";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface SocialContent {
   id: string;
@@ -100,6 +101,7 @@ export const ArtistWithSocialCard = memo(({ artist, onDelete, onRefresh }: Artis
   const [isLoadingSocial, setIsLoadingSocial] = useState(false);
   const [playingVideo, setPlayingVideo] = useState<string | null>(null);
   const [managementDialogOpen, setManagementDialogOpen] = useState(false);
+  const { isAdmin } = useAuth();
 
   const langInfo = artist.language ? LANGUAGE_FLAGS[artist.language] : null;
   const totalSongs = artist.albums.reduce((acc, album) => acc + album.songs.length, 0);
@@ -194,43 +196,45 @@ export const ArtistWithSocialCard = memo(({ artist, onDelete, onRefresh }: Artis
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-primary"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setManagementDialogOpen(true);
-                  }}
-                >
-                  <Settings2 className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Verwalten</TooltipContent>
-            </Tooltip>
-            {onDelete && (
+          {/* Actions - Admin Only */}
+          {isAdmin && (
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-destructive hidden sm:flex"
+                    className="h-8 w-8 text-muted-foreground hover:text-primary"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onDelete(artist.id);
+                      setManagementDialogOpen(true);
                     }}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Settings2 className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Löschen</TooltipContent>
+                <TooltipContent>Verwalten</TooltipContent>
               </Tooltip>
-            )}
-          </div>
+              {onDelete && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive hidden sm:flex"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(artist.id);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Löschen</TooltipContent>
+                </Tooltip>
+              )}
+            </div>
+          )}
         </button>
 
         {/* Expanded Content */}

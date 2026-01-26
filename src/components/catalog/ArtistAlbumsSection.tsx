@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAudioPlayer, Track } from "@/contexts/AudioPlayerContext";
 import { toast } from "sonner";
 import { isInstrumentalGenre } from "@/lib/genreConfig";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Song {
   id: string;
@@ -77,6 +78,7 @@ export const ArtistAlbumsSection = memo(({
   personaActive,
 }: ArtistAlbumsSectionProps) => {
   const { play, pause, resume, currentTrack, isPlaying, addToQueue, clearQueue } = useAudioPlayer();
+  const { isAdmin } = useAuth();
   const [expandedAlbums, setExpandedAlbums] = useState<Set<string>>(new Set());
   const [generatingSongs, setGeneratingSongs] = useState<Set<string>>(new Set());
   const [generatingAlbums, setGeneratingAlbums] = useState<Set<string>>(new Set());
@@ -558,7 +560,7 @@ export const ArtistAlbumsSection = memo(({
                       <Play className="h-4 w-4" />
                     </Button>
                   )}
-                {!allGenerated && (
+                {!allGenerated && isAdmin && (
                   <div className="flex items-center gap-2">
                     {isAlbumBusy && albumProgress.get(album.id) && (
                       <div className="flex items-center gap-2 min-w-[100px]">
@@ -667,7 +669,7 @@ export const ArtistAlbumsSection = memo(({
                               <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                               Lädt...
                             </Badge>
-                          ) : (
+                          ) : isAdmin ? (
                             <Button
                               variant="outline"
                               size="sm"
@@ -676,7 +678,7 @@ export const ArtistAlbumsSection = memo(({
                             >
                               Abrufen
                             </Button>
-                          )}
+                          ) : null}
                         </div>
                       </div>
                     );

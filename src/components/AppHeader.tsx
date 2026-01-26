@@ -1,15 +1,22 @@
 import { Link, useLocation } from "react-router-dom";
-import { Music, Zap, Database, Volume2, Share2, Users, Disc, Menu, Home } from "lucide-react";
+import { Music, Zap, Database, Volume2, Share2, Users, Disc, Menu, Home, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScoopasIcon } from "@/components/ScoopasIcon";
 import { HeaderMiniPlayer } from "@/components/GlobalAudioPlayer";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Badge } from "@/components/ui/badge";
 import {
   Sheet,
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface AppHeaderProps {
   stats: { artists: number; albums: number; songs: number };
@@ -18,14 +25,19 @@ interface AppHeaderProps {
 export const AppHeader = ({ stats }: AppHeaderProps) => {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isAdmin, isViewer, logout, role } = useAuth();
   
-  const navItems = [
-    { path: "/", label: "Home", icon: Home },
-    { path: "/erweitern", label: "Erweitern", icon: Zap },
-    { path: "/katalog", label: "Katalog", icon: Database },
-    { path: "/audio-generator", label: "Audio", icon: Volume2 },
-    { path: "/social-tools", label: "Social", icon: Share2 },
+  // All navigation items
+  const allNavItems = [
+    { path: "/", label: "Home", icon: Home, adminOnly: false },
+    { path: "/erweitern", label: "Erweitern", icon: Zap, adminOnly: true },
+    { path: "/katalog", label: "Katalog", icon: Database, adminOnly: false },
+    { path: "/audio-generator", label: "Audio", icon: Volume2, adminOnly: true },
+    { path: "/social-tools", label: "Social", icon: Share2, adminOnly: true },
   ];
+
+  // Filter nav items based on role
+  const navItems = allNavItems.filter(item => !item.adminOnly || isAdmin);
 
   return (
     <header className="shrink-0 border-b border-border bg-background/95 backdrop-blur">
@@ -64,8 +76,19 @@ export const AppHeader = ({ stats }: AppHeaderProps) => {
             ))}
           </nav>
 
-          {/* Right side: Stats + Mini Player + Mobile Menu */}
+          {/* Right side: Role Badge + Stats + Mini Player + Logout + Mobile Menu */}
           <div className="flex items-center gap-2 md:gap-3">
+            {/* Role Badge */}
+            <Badge 
+              variant={isAdmin ? "default" : "secondary"} 
+              className={cn(
+                "text-[10px] px-2 py-0.5 hidden sm:inline-flex",
+                isAdmin && "bg-primary/20 text-primary border-primary/30"
+              )}
+            >
+              {isAdmin ? "Admin" : "Viewer"}
+            </Badge>
+
             {/* Stats - hidden on mobile */}
             <div className="hidden sm:flex items-center gap-2 md:gap-3 text-xs text-muted-foreground">
               <div className="flex items-center gap-1" title="Künstler">
@@ -85,6 +108,21 @@ export const AppHeader = ({ stats }: AppHeaderProps) => {
             {/* Header Mini Player */}
             <HeaderMiniPlayer />
 
+            {/* Logout Button */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive hidden sm:flex"
+                  onClick={logout}
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Abmelden</TooltipContent>
+            </Tooltip>
+
             {/* Mobile Menu */}
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
@@ -94,8 +132,17 @@ export const AppHeader = ({ stats }: AppHeaderProps) => {
               </SheetTrigger>
               <SheetContent side="right" className="w-[280px] p-0">
                 <div className="flex flex-col h-full">
-                  <div className="p-4 border-b border-border">
+                  <div className="p-4 border-b border-border flex items-center justify-between">
                     <h2 className="font-semibold text-lg">Navigation</h2>
+                    <Badge 
+                      variant={isAdmin ? "default" : "secondary"} 
+                      className={cn(
+                        "text-xs",
+                        isAdmin && "bg-primary/20 text-primary"
+                      )}
+                    >
+                      {isAdmin ? "Admin" : "Viewer"}
+                    </Badge>
                   </div>
                   <nav className="flex-1 p-4 space-y-1">
                     {navItems.map(({ path, label, icon: Icon }) => (
@@ -116,7 +163,7 @@ export const AppHeader = ({ stats }: AppHeaderProps) => {
                     ))}
                   </nav>
                   {/* Mobile Stats */}
-                  <div className="p-4 border-t border-border">
+                  <div className="p-4 border-t border-border space-y-3">
                     <div className="grid grid-cols-3 gap-3 text-center">
                       <div className="p-2 rounded-lg bg-muted/50">
                         <Users className="h-4 w-4 text-primary mx-auto mb-1" />
@@ -134,6 +181,18 @@ export const AppHeader = ({ stats }: AppHeaderProps) => {
                         <p className="text-xs text-muted-foreground">Songs</p>
                       </div>
                     </div>
+                    {/* Mobile Logout */}
+                    <Button 
+                      variant="outline" 
+                      className="w-full gap-2" 
+                      onClick={() => {
+                        logout();
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Abmelden
+                    </Button>
                   </div>
                 </div>
               </SheetContent>
