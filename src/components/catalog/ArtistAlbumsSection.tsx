@@ -1,5 +1,5 @@
 import { memo, useState, useCallback, useMemo } from "react";
-import { Disc, Play, Pause, Loader2, Download, ChevronRight } from "lucide-react";
+import { Disc, Play, Pause, Loader2, Download, ChevronRight, Info } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,8 @@ import { useAudioPlayer, Track } from "@/contexts/AudioPlayerContext";
 import { toast } from "sonner";
 import { isInstrumentalGenre } from "@/lib/genreConfig";
 import { useAuth } from "@/contexts/AuthContext";
+import { SongInfoDialog } from "@/components/catalog/SongInfoDialog";
+import { AlbumInfoDialog } from "@/components/catalog/AlbumInfoDialog";
 
 interface Song {
   id: string;
@@ -85,6 +87,12 @@ export const ArtistAlbumsSection = memo(({
   const [albumProgress, setAlbumProgress] = useState<Map<string, { current: number; total: number }>>(new Map());
   const [detailedSongs, setDetailedSongs] = useState<Map<string, Song>>(new Map());
   const [processingAlbumSongs, setProcessingAlbumSongs] = useState<Map<string, Set<string>>>(new Map());
+  
+  // Info dialogs state (for Viewer role)
+  const [selectedSongForInfo, setSelectedSongForInfo] = useState<Song | null>(null);
+  const [selectedAlbumForInfo, setSelectedAlbumForInfo] = useState<Album | null>(null);
+  const [songInfoOpen, setSongInfoOpen] = useState(false);
+  const [albumInfoOpen, setAlbumInfoOpen] = useState(false);
 
   const toggleAlbum = useCallback((albumId: string) => {
     setExpandedAlbums(prev => {
@@ -550,6 +558,21 @@ export const ArtistAlbumsSection = memo(({
                 </button>
 
                 <div className="flex items-center gap-1.5 shrink-0">
+                  {/* Info button for Viewer */}
+                  {!isAdmin && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-primary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedAlbumForInfo(album);
+                        setAlbumInfoOpen(true);
+                      }}
+                    >
+                      <Info className="h-4 w-4" />
+                    </Button>
+                  )}
                   {albumSongsWithAudio > 0 && (
                     <Button
                       variant="ghost"
@@ -636,6 +659,20 @@ export const ArtistAlbumsSection = memo(({
                         </div>
 
                         <div className="flex items-center gap-1 shrink-0">
+                          {/* Info button for Viewer */}
+                          {!isAdmin && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:text-primary"
+                              onClick={() => {
+                                setSelectedSongForInfo(details);
+                                setSongInfoOpen(true);
+                              }}
+                            >
+                              <Info className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
                           {hasAudio ? (
                             <>
                               <Button
@@ -690,6 +727,21 @@ export const ArtistAlbumsSection = memo(({
         })}
       </div>
       </div>
+
+      {/* Info Dialogs for Viewer */}
+      <SongInfoDialog
+        song={selectedSongForInfo}
+        albumName={selectedAlbumForInfo?.name || albums.find(a => a.songs.some(s => s.id === selectedSongForInfo?.id))?.name || ""}
+        artistName={artistName}
+        open={songInfoOpen}
+        onOpenChange={setSongInfoOpen}
+      />
+      <AlbumInfoDialog
+        album={selectedAlbumForInfo}
+        artistName={artistName}
+        open={albumInfoOpen}
+        onOpenChange={setAlbumInfoOpen}
+      />
     </div>
   );
 });
