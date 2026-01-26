@@ -27,6 +27,7 @@ interface Artist {
   style: string;
   voice_prompt: string;
   personality: string;
+  language?: string;
 }
 
 interface Album {
@@ -56,6 +57,7 @@ interface SongWithDetails extends Song {
   style: string;
   voicePrompt: string;
   personality: string;
+  language?: string;
 }
 
 type SortOption = "name" | "artist" | "genre" | "date";
@@ -223,6 +225,7 @@ const AudioGenerator = () => {
         style: artist?.style || "",
         voicePrompt: artist?.voice_prompt || "",
         personality: artist?.personality || "",
+        language: artist?.language || "de",
       };
     });
   };
@@ -301,7 +304,7 @@ const AudioGenerator = () => {
       
       const artistsData = await fetchAllWithProgress<any>(
         "artists", 
-        "id, name, genre, style, voice_prompt, personality, profile_image_url", 
+        "id, name, genre, style, voice_prompt, personality, profile_image_url, language", 
         "name",
         stats.artists,
         (loaded) => setLoadingProgress(prev => ({ 
