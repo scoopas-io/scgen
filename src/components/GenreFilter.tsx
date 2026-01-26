@@ -4,11 +4,25 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const GENRES = [
-  "Pop", "Rock", "Hip-Hop", "R&B", "Jazz", "Blues", "Country", "Folk",
-  "Electronic", "House", "Techno", "Ambient", "Classical", "Opera",
-  "Reggae", "Ska", "Punk", "Metal", "Indie", "Alternative",
-  "Soul", "Funk", "Disco", "Latin", "World Music", "Afrobeat",
-  "K-Pop", "J-Pop", "Schlager", "Volksmusik", "Experimental"
+  // Mainstream
+  "Pop", "Rock", "Hip-Hop", "Rap", "R&B", "Jazz", "Blues", "Country", "Folk",
+  // Electronic & Dance
+  "Electronic", "House", "Deep House", "Techno", "Trance", "Drum & Bass", 
+  "Dubstep", "Trap", "Lo-Fi", "Ambient", "Synthwave", "DJ Mix (Instrumental)",
+  // Classical & Traditional
+  "Classical", "Opera", "Orchestral",
+  // Alternative & Rock
+  "Reggae", "Ska", "Punk", "Metal", "Indie", "Alternative", "Grunge", "Post-Rock",
+  // Soul & Funk
+  "Soul", "Funk", "Disco", "Neo-Soul", "Motown",
+  // World & Cultural
+  "Latin", "Bossa Nova", "Salsa", "World Music", "Afrobeat", "Dancehall",
+  // Asian Pop
+  "K-Pop", "J-Pop",
+  // German
+  "Schlager", "Volksmusik",
+  // Niche & Experimental
+  "Experimental", "Chillwave", "Vaporwave", "Industrial", "Drill"
 ];
 
 interface GenreFilterProps {
