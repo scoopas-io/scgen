@@ -11,13 +11,14 @@ import { toast } from "sonner";
 import { AppHeader } from "@/components/AppHeader";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAudioGeneratorCache } from "@/hooks/useAudioGeneratorCache";
 import { BulkGenerationPanel } from "@/components/BulkGenerationPanel";
 import { DataLoadingProgress } from "@/components/DataLoadingProgress";
 import { isInstrumentalGenre } from "@/lib/genreConfig";
 import { 
   Music, Disc, User, Play, Pause, Download, Loader2, 
   CheckCircle2, XCircle, Clock, Volume2, ChevronDown, ChevronRight,
-  ArrowUpDown, RefreshCw, Timer, AlertCircle, Zap
+  ArrowUpDown, RefreshCw, Timer, AlertCircle, Zap, Database
 } from "lucide-react";
 
 interface Artist {
@@ -63,6 +64,17 @@ interface SongWithDetails extends Song {
 type SortOption = "name" | "artist" | "genre" | "date";
 type SortDirection = "asc" | "desc";
 
+// Format cache age for display
+const formatCacheAge = (ageMs: number): string => {
+  const minutes = Math.floor(ageMs / 1000 / 60);
+  if (minutes < 1) return "gerade eben";
+  if (minutes < 60) return `vor ${minutes} Min.`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `vor ${hours} Std.`;
+  const days = Math.floor(hours / 24);
+  return `vor ${days} Tag${days > 1 ? "en" : ""}`;
+};
+
 const AudioGenerator = () => {
   const [loading, setLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState({
@@ -105,6 +117,8 @@ const AudioGenerator = () => {
   const [sortBy, setSortBy] = useState<SortOption>("date");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isBackgroundRefresh, setIsBackgroundRefresh] = useState(false);
+  const [cacheAge, setCacheAge] = useState<number | null>(null);
   const [stats, setStats] = useState({ artists: 0, albums: 0, songs: 0 });
   const pollIntervalRef = useRef<number | null>(null);
   const refreshInFlightRef = useRef(false);
@@ -112,19 +126,36 @@ const AudioGenerator = () => {
   // Global audio player
   const { play, pause, resume, currentTrack, isPlaying, addToQueue, clearQueue } = useAudioPlayer();
   const isMobile = useIsMobile();
+  const { loadFromCache, saveToCache, getCacheAge } = useAudioGeneratorCache();
 
   useEffect(() => {
-    // Load stats first, then data with progress tracking
-    const init = async () => {
-      await loadStats();
-    };
-    init();
+    // Try to load from cache first for instant display
+    const cachedData = loadFromCache();
+    
+    if (cachedData && cachedData.songs.length > 0) {
+      console.log("Loading from cache...");
+      setArtists(cachedData.artists);
+      setAlbums(cachedData.albums);
+      setSongs(cachedData.songs);
+      setStats(cachedData.stats);
+      setCacheAge(getCacheAge());
+      setLoading(false);
+      
+      // Then refresh in background
+      setIsBackgroundRefresh(true);
+      loadStats().then(() => {
+        // loadData will be triggered by stats change
+      });
+    } else {
+      // No cache, load fresh
+      loadStats();
+    }
   }, []);
 
-  // Load data once stats are available
+  // Load data once stats are available (skip if already loaded from cache in background mode)
   useEffect(() => {
     if (stats.artists > 0 || stats.albums > 0 || stats.songs > 0) {
-      loadData();
+      loadData(isBackgroundRefresh);
     }
   }, [stats.artists, stats.albums, stats.songs]);
 
@@ -279,35 +310,43 @@ const AudioGenerator = () => {
     return all;
   };
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadData = async (isBackground = false) => {
+    // Don't show loading UI for background refresh
+    if (!isBackground) {
+      setLoading(true);
+    }
+    
     const startTime = Date.now();
     
-    setLoadingProgress({
-      phase: "init",
-      current: 0,
-      total: stats.artists + stats.albums + stats.songs,
-      startTime,
-      phaseStartTime: startTime,
-      artistsLoaded: 0,
-      albumsLoaded: 0,
-      songsLoaded: 0,
-    });
+    if (!isBackground) {
+      setLoadingProgress({
+        phase: "init",
+        current: 0,
+        total: stats.artists + stats.albums + stats.songs,
+        startTime,
+        phaseStartTime: startTime,
+        artistsLoaded: 0,
+        albumsLoaded: 0,
+        songsLoaded: 0,
+      });
+    }
     
     try {
       // Phase 1: Load Artists
-      setLoadingProgress(prev => ({ 
-        ...prev, 
-        phase: "artists", 
-        phaseStartTime: Date.now() 
-      }));
+      if (!isBackground) {
+        setLoadingProgress(prev => ({ 
+          ...prev, 
+          phase: "artists", 
+          phaseStartTime: Date.now() 
+        }));
+      }
       
       const artistsData = await fetchAllWithProgress<any>(
         "artists", 
         "id, name, genre, style, voice_prompt, personality, profile_image_url, language", 
         "name",
         stats.artists,
-        (loaded) => setLoadingProgress(prev => ({ 
+        isBackground ? () => {} : (loaded) => setLoadingProgress(prev => ({ 
           ...prev, 
           artistsLoaded: loaded,
           current: loaded 
@@ -316,18 +355,20 @@ const AudioGenerator = () => {
       setArtists(artistsData || []);
       
       // Phase 2: Load Albums
-      setLoadingProgress(prev => ({ 
-        ...prev, 
-        phase: "albums", 
-        phaseStartTime: Date.now() 
-      }));
+      if (!isBackground) {
+        setLoadingProgress(prev => ({ 
+          ...prev, 
+          phase: "albums", 
+          phaseStartTime: Date.now() 
+        }));
+      }
       
       const albumsData = await fetchAllWithProgress<any>(
         "albums", 
         "id, name, artist_id", 
         "name",
         stats.albums,
-        (loaded) => setLoadingProgress(prev => ({ 
+        isBackground ? () => {} : (loaded) => setLoadingProgress(prev => ({ 
           ...prev, 
           albumsLoaded: loaded,
           current: prev.artistsLoaded + loaded 
@@ -336,18 +377,20 @@ const AudioGenerator = () => {
       setAlbums(albumsData || []);
       
       // Phase 3: Load Songs
-      setLoadingProgress(prev => ({ 
-        ...prev, 
-        phase: "songs", 
-        phaseStartTime: Date.now() 
-      }));
+      if (!isBackground) {
+        setLoadingProgress(prev => ({ 
+          ...prev, 
+          phase: "songs", 
+          phaseStartTime: Date.now() 
+        }));
+      }
       
       const songsData = await fetchAllWithProgress<any>(
         "songs", 
         "id, name, album_id, bpm, tonart, audio_url, generation_status, suno_task_id, created_at", 
         "track_number",
         stats.songs,
-        (loaded) => setLoadingProgress(prev => ({ 
+        isBackground ? () => {} : (loaded) => setLoadingProgress(prev => ({ 
           ...prev, 
           songsLoaded: loaded,
           current: prev.artistsLoaded + prev.albumsLoaded + loaded 
@@ -355,20 +398,37 @@ const AudioGenerator = () => {
       );
       
       // Phase 4: Process data
-      setLoadingProgress(prev => ({ 
-        ...prev, 
-        phase: "processing", 
-        phaseStartTime: Date.now() 
-      }));
+      if (!isBackground) {
+        setLoadingProgress(prev => ({ 
+          ...prev, 
+          phase: "processing", 
+          phaseStartTime: Date.now() 
+        }));
+      }
       
-      setSongs(mapSongsWithDetails(songsData as Song[] | null | undefined, artistsData, albumsData));
+      const processedSongs = mapSongsWithDetails(songsData as Song[] | null | undefined, artistsData, albumsData);
+      setSongs(processedSongs);
       
-      setLoadingProgress(prev => ({ ...prev, phase: "done" }));
+      // Save to cache after successful load
+      saveToCache(stats, artistsData || [], albumsData || [], processedSongs);
+      setCacheAge(null); // Fresh data, no cache age to show
+      
+      if (!isBackground) {
+        setLoadingProgress(prev => ({ ...prev, phase: "done" }));
+      } else {
+        setIsBackgroundRefresh(false);
+        toast.success("Daten im Hintergrund aktualisiert", { duration: 2000 });
+      }
     } catch (error) {
       console.error("Error loading data:", error);
-      toast.error("Fehler beim Laden der Daten");
+      if (!isBackground) {
+        toast.error("Fehler beim Laden der Daten");
+      }
     } finally {
-      setLoading(false);
+      if (!isBackground) {
+        setLoading(false);
+      }
+      setIsBackgroundRefresh(false);
     }
   };
 
@@ -723,12 +783,31 @@ const AudioGenerator = () => {
               <div className="h-10 w-10 md:h-12 md:w-12 rounded-full gradient-gold flex items-center justify-center flex-shrink-0">
                 <Volume2 className="h-5 w-5 md:h-6 md:w-6 text-primary-foreground" />
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <h1 className="text-lg md:text-2xl font-display font-bold truncate">scoopas Audio</h1>
                 <p className="text-xs md:text-sm text-muted-foreground hidden sm:block">
                   Rufe echte Musik aus deinem Katalog ab mit scoopas.AI
                 </p>
               </div>
+              
+              {/* Cache Indicator */}
+              {(cacheAge !== null || isBackgroundRefresh) && (
+                <div className="flex items-center gap-2">
+                  {isBackgroundRefresh ? (
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs">
+                      <RefreshCw className="h-3 w-3 animate-spin" />
+                      <span className="hidden sm:inline">Aktualisiere...</span>
+                    </div>
+                  ) : cacheAge !== null && (
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted text-muted-foreground text-xs">
+                      <Database className="h-3 w-3" />
+                      <span className="hidden sm:inline">
+                        Cache: {formatCacheAge(cacheAge)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <Tabs defaultValue="select" className="flex-1 flex flex-col min-h-0">
