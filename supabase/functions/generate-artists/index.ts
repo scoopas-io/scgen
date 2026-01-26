@@ -140,6 +140,104 @@ const randomLength = () => {
   return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
 };
 
+// Genres that should be instrumental only
+const INSTRUMENTAL_GENRES = ["techno", "house", "ambient", "classical", "electronica", "trance", "dnb", "drum and bass", "minimal", "downtempo", "idm"];
+const isInstrumentalGenre = (genre: string): boolean => {
+  const lower = genre.toLowerCase();
+  return INSTRUMENTAL_GENRES.some(g => lower.includes(g));
+};
+
+// Extract persona data from voice prompt
+interface ExtractedPersona {
+  vocalGender: string | null;
+  vocalTexture: string | null;
+  vocalRange: string | null;
+  styleTags: string[];
+  moodTags: string[];
+}
+
+const extractPersonaFromVoicePrompt = (voicePrompt: string): ExtractedPersona => {
+  const lower = voicePrompt.toLowerCase();
+  
+  // Gender detection
+  let vocalGender: string | null = null;
+  if (lower.includes("male") || lower.includes("männlich") || lower.includes("man voice") || lower.includes("deep male")) {
+    vocalGender = "m";
+  } else if (lower.includes("female") || lower.includes("weiblich") || lower.includes("woman") || lower.includes("feminine")) {
+    vocalGender = "f";
+  }
+  
+  // Texture detection
+  let vocalTexture: string | null = null;
+  const textureMap: Record<string, string[]> = {
+    raspy: ["raspy", "rau", "heiser", "kratzig", "gravelly"],
+    smooth: ["smooth", "glatt", "weich", "sanft", "silky"],
+    powerful: ["powerful", "kraftvoll", "stark", "mächtig", "strong"],
+    breathy: ["breathy", "hauchig", "luftig", "airy"],
+    soulful: ["soulful", "seelenvoll", "gefühlvoll", "emotional"],
+    gritty: ["gritty", "roh", "kernig", "raw"],
+    velvet: ["velvet", "samt", "samtig", "velvety"],
+  };
+  
+  for (const [texture, keywords] of Object.entries(textureMap)) {
+    if (keywords.some(kw => lower.includes(kw))) {
+      vocalTexture = texture;
+      break;
+    }
+  }
+  
+  // Range detection
+  let vocalRange: string | null = null;
+  const rangeMap: Record<string, string[]> = {
+    soprano: ["soprano", "sopran", "high female"],
+    alto: ["alto", "alt", "low female"],
+    tenor: ["tenor", "high male"],
+    baritone: ["baritone", "bariton", "mid male"],
+    bass: ["bass", "basso", "deep male", "low male"],
+  };
+  
+  for (const [range, keywords] of Object.entries(rangeMap)) {
+    if (keywords.some(kw => lower.includes(kw))) {
+      vocalRange = range;
+      break;
+    }
+  }
+  
+  // Style tags extraction
+  const styleTags: string[] = [];
+  const styleHints = voicePrompt.match(/\b(acoustic|electronic|orchestral|minimalist|experimental|vintage|modern|retro|progressive|alternative|indie|lo-fi|hi-fi|analog|digital|organic|synthetic)\b/gi);
+  if (styleHints) {
+    styleTags.push(...styleHints.map(s => s.toLowerCase()));
+  }
+  
+  // Mood tags extraction
+  const moodTags: string[] = [];
+  const moodKeywords: Record<string, string[]> = {
+    melancholic: ["melancholic", "sad", "traurig", "melancholisch"],
+    energetic: ["energetic", "dynamic", "dynamisch", "energisch", "upbeat"],
+    romantic: ["romantic", "romantisch", "liebevoll"],
+    dark: ["dark", "dunkel", "düster", "gothic"],
+    uplifting: ["uplifting", "positive", "hoffnungsvoll", "bright"],
+    chill: ["chill", "relaxed", "entspannt", "calm"],
+    aggressive: ["aggressive", "aggressiv", "intense", "heavy"],
+    dreamy: ["dreamy", "ethereal", "verträumt", "atmospheric"],
+  };
+  
+  for (const [mood, keywords] of Object.entries(moodKeywords)) {
+    if (keywords.some(kw => lower.includes(kw))) {
+      moodTags.push(mood);
+    }
+  }
+  
+  return {
+    vocalGender,
+    vocalTexture,
+    vocalRange,
+    styleTags: [...new Set(styleTags)].slice(0, 3),
+    moodTags: [...new Set(moodTags)].slice(0, 3),
+  };
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -312,6 +410,9 @@ WICHTIG: Antworte NUR mit dem JSON-Array!`;
             const katalognummer = generateKatalogNr(katalogIndex++);
             const languageCode = getLanguageCode(artist.language || "");
             
+            // Extract persona data from voice_prompt
+            const extractedPersona = extractPersonaFromVoicePrompt(artist.voicePrompt || "");
+            
             const { data: insertedArtist, error: artistError } = await supabase
               .from("artists")
               .insert({
@@ -327,6 +428,20 @@ WICHTIG: Antworte NUR mit dem JSON-Array!`;
                 rechteinhaber_master: 'Eigenproduktion',
                 rechteinhaber_publishing: 'Musikverlag',
                 language: languageCode,
+                // Persona fields
+                persona_name: artist.name,
+                persona_description: artist.personality,
+                persona_active: true,
+                vocal_gender: extractedPersona.vocalGender,
+                vocal_texture: extractedPersona.vocalTexture,
+                vocal_range: extractedPersona.vocalRange,
+                style_tags: [artist.style, ...extractedPersona.styleTags].filter(Boolean).slice(0, 5),
+                mood_tags: extractedPersona.moodTags,
+                negative_tags: [],
+                default_bpm_min: null,
+                default_bpm_max: null,
+                preferred_keys: [],
+                instrumental_only: isInstrumentalGenre(artist.genre),
               })
               .select("id")
               .single();
@@ -366,6 +481,8 @@ WICHTIG: Antworte NUR mit dem JSON-Array!`;
                 if (existingSong) continue;
 
                 const songId = generateSongId(artistIdx + 1, albumIdx + 1, songIdx + 1);
+                const songBpm = randomBPM();
+                const songTonart = randomTonart();
 
                 const { error: songError } = await supabase
                   .from("songs")
@@ -379,9 +496,23 @@ WICHTIG: Antworte NUR mit dem JSON-Array!`;
                     isrc: generateISRC(),
                     iswc: generateISWC(),
                     gema_werknummer: generateGEMANr(),
-                    bpm: randomBPM(),
-                    tonart: randomTonart(),
+                    bpm: songBpm,
+                    tonart: songTonart,
                     laenge: randomLength(),
+                    version: 'Original',
+                    ki_generiert: 'Ja',
+                    verwertungsstatus: 'Aktiv',
+                    einnahmequelle: 'Streaming',
+                    vertragsart: 'Eigenproduktion',
+                    exklusivitaet: 'Exklusiv',
+                    vertragsbeginn: new Date().toISOString().split('T')[0],
+                    anteil_komponist: 100,
+                    anteil_text: 0,
+                    anteil_verlag: 0,
+                    jahresumsatz: 0,
+                    katalogwert: 0,
+                    bemerkungen: 'KI-generierter Inhalt',
+                    generation_status: 'pending',
                   });
 
                 if (!songError) savedSongs.push(songName);
@@ -588,6 +719,9 @@ Antworte NUR mit JSON-Array!`;
       const katalognummer = generateKatalogNr(katalogIndex++);
       const languageCode = getLanguageCode(artist.language || "");
       
+      // Extract persona data from voice_prompt
+      const extractedPersona = extractPersonaFromVoicePrompt(artist.voicePrompt || "");
+      
       const { data: insertedArtist, error: artistError } = await supabase
         .from("artists")
         .insert({
@@ -598,6 +732,21 @@ Antworte NUR mit JSON-Array!`;
           style: artist.style,
           katalognummer,
           language: languageCode,
+          verlag: 'Musikverlag',
+          label: 'Eigenproduktion',
+          rechteinhaber_master: 'Eigenproduktion',
+          rechteinhaber_publishing: 'Musikverlag',
+          // Persona fields
+          persona_name: artist.name,
+          persona_description: artist.personality,
+          persona_active: true,
+          vocal_gender: extractedPersona.vocalGender,
+          vocal_texture: extractedPersona.vocalTexture,
+          vocal_range: extractedPersona.vocalRange,
+          style_tags: [artist.style, ...extractedPersona.styleTags].filter(Boolean).slice(0, 5),
+          mood_tags: extractedPersona.moodTags,
+          negative_tags: [],
+          instrumental_only: isInstrumentalGenre(artist.genre),
         })
         .select("id")
         .single();
@@ -605,28 +754,59 @@ Antworte NUR mit JSON-Array!`;
       if (artistError) continue;
 
       const savedAlbums = [];
+      let albumIdx = 0;
       for (const album of artist.albums || []) {
+        const releaseDate = new Date();
+        releaseDate.setMonth(releaseDate.getMonth() - Math.floor(Math.random() * 24));
+        
         const { data: insertedAlbum } = await supabase
           .from("albums")
-          .insert({ artist_id: insertedArtist.id, name: album.name })
+          .insert({ 
+            artist_id: insertedArtist.id, 
+            name: album.name,
+            release_date: releaseDate.toISOString().split('T')[0],
+          })
           .select("id")
           .single();
 
-        if (!insertedAlbum) continue;
+        if (!insertedAlbum) { albumIdx++; continue; }
 
         const savedSongs = [];
         for (let songIdx = 0; songIdx < (album.songs || []).length; songIdx++) {
           const song = album.songs[songIdx];
           const songName = typeof song === 'string' ? song : song.name;
+          const komponist = typeof song === 'object' ? song.komponist : artist.name;
+          const textdichter = typeof song === 'object' ? song.textdichter : artist.name;
+          const songId = generateSongId(artistIdx + 1, albumIdx + 1, songIdx + 1);
 
           await supabase.from("songs").insert({
             album_id: insertedAlbum.id,
             name: songName,
             track_number: songIdx + 1,
+            song_id: songId,
+            komponist,
+            textdichter,
             isrc: generateISRC(),
+            iswc: generateISWC(),
+            gema_werknummer: generateGEMANr(),
+            bpm: randomBPM(),
+            tonart: randomTonart(),
+            laenge: randomLength(),
+            version: 'Original',
+            ki_generiert: 'Ja',
+            verwertungsstatus: 'Aktiv',
+            einnahmequelle: 'Streaming',
+            vertragsart: 'Eigenproduktion',
+            exklusivitaet: 'Exklusiv',
+            vertragsbeginn: new Date().toISOString().split('T')[0],
+            anteil_komponist: 100,
+            anteil_text: 0,
+            anteil_verlag: 0,
+            generation_status: 'pending',
           });
           savedSongs.push(songName);
         }
+        albumIdx++;
         savedAlbums.push({ id: insertedAlbum.id, name: album.name, songs: savedSongs });
       }
 
