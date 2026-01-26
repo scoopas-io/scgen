@@ -16,11 +16,34 @@ interface Song {
   id: string;
   name: string;
   track_number?: number;
-  bpm?: number;
-  tonart?: string;
+  bpm?: number | null;
+  tonart?: string | null;
   audio_url?: string | null;
   generation_status?: string | null;
   suno_task_id?: string | null;
+  // Extended metadata
+  song_id?: string | null;
+  komponist?: string | null;
+  textdichter?: string | null;
+  isrc?: string | null;
+  iswc?: string | null;
+  gema_werknummer?: string | null;
+  gema_status?: string | null;
+  laenge?: string | null;
+  version?: string | null;
+  ki_generiert?: string | null;
+  verwertungsstatus?: string | null;
+  einnahmequelle?: string | null;
+  vertragsart?: string | null;
+  exklusivitaet?: string | null;
+  vertragsbeginn?: string | null;
+  vertragsende?: string | null;
+  anteil_komponist?: number | null;
+  anteil_text?: number | null;
+  anteil_verlag?: number | null;
+  jahresumsatz?: number | null;
+  katalogwert?: number | null;
+  bemerkungen?: string | null;
 }
 
 interface Album {
@@ -91,6 +114,7 @@ export const ArtistAlbumsSection = memo(({
   // Info dialogs state (for Viewer role)
   const [selectedSongForInfo, setSelectedSongForInfo] = useState<Song | null>(null);
   const [selectedAlbumForInfo, setSelectedAlbumForInfo] = useState<Album | null>(null);
+  const [selectedAlbumNameForSong, setSelectedAlbumNameForSong] = useState<string>("");
   const [songInfoOpen, setSongInfoOpen] = useState(false);
   const [albumInfoOpen, setAlbumInfoOpen] = useState(false);
 
@@ -111,14 +135,14 @@ export const ArtistAlbumsSection = memo(({
   const loadAlbumSongs = async (albumId: string) => {
     const { data: songs } = await supabase
       .from("songs")
-      .select("id, name, track_number, bpm, tonart, audio_url, generation_status, suno_task_id")
+      .select("*")
       .eq("album_id", albumId)
       .order("track_number", { ascending: true });
 
     if (songs) {
       setDetailedSongs(prev => {
         const next = new Map(prev);
-        songs.forEach(song => next.set(song.id, song));
+        songs.forEach(song => next.set(song.id, song as Song));
         return next;
       });
     }
@@ -667,6 +691,7 @@ export const ArtistAlbumsSection = memo(({
                               className="h-7 w-7 text-muted-foreground hover:text-primary"
                               onClick={() => {
                                 setSelectedSongForInfo(details);
+                                setSelectedAlbumNameForSong(album.name);
                                 setSongInfoOpen(true);
                               }}
                             >
@@ -731,7 +756,7 @@ export const ArtistAlbumsSection = memo(({
       {/* Info Dialogs for Viewer */}
       <SongInfoDialog
         song={selectedSongForInfo}
-        albumName={selectedAlbumForInfo?.name || albums.find(a => a.songs.some(s => s.id === selectedSongForInfo?.id))?.name || ""}
+        albumName={selectedAlbumNameForSong}
         artistName={artistName}
         open={songInfoOpen}
         onOpenChange={setSongInfoOpen}
