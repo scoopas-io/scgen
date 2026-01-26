@@ -219,23 +219,41 @@ const AudioGenerator = () => {
     }
   };
 
+  // Batch fetch helper to overcome 1000 row limit
+  const fetchAll = async <T,>(
+    table: "artists" | "albums" | "songs",
+    select: string,
+    orderBy: string,
+    pageSize = 1000
+  ): Promise<T[]> => {
+    const all: T[] = [];
+    let from = 0;
+
+    while (true) {
+      const { data, error } = await supabase
+        .from(table)
+        .select(select)
+        .order(orderBy)
+        .range(from, from + pageSize - 1);
+
+      if (error) throw error;
+      const batch = (data || []) as T[];
+      all.push(...batch);
+      if (batch.length < pageSize) break;
+      from += pageSize;
+    }
+
+    return all;
+  };
+
   const loadData = async () => {
     setLoading(true);
     try {
-      const { data: artistsData } = await supabase
-        .from("artists")
-        .select("id, name, genre, style, voice_prompt, personality, profile_image_url")
-        .order("name");
-
-      const { data: albumsData } = await supabase
-        .from("albums")
-        .select("id, name, artist_id")
-        .order("name");
-
-      const { data: songsData } = await supabase
-        .from("songs")
-        .select("id, name, album_id, bpm, tonart, audio_url, generation_status, suno_task_id, created_at")
-        .order("track_number");
+      const [artistsData, albumsData, songsData] = await Promise.all([
+        fetchAll<any>("artists", "id, name, genre, style, voice_prompt, personality, profile_image_url", "name"),
+        fetchAll<any>("albums", "id, name, artist_id", "name"),
+        fetchAll<any>("songs", "id, name, album_id, bpm, tonart, audio_url, generation_status, suno_task_id, created_at", "track_number"),
+      ]);
 
       setArtists(artistsData || []);
       setAlbums(albumsData || []);
