@@ -18,6 +18,17 @@ interface GenerateSongRequest {
   artistName: string;
   instrumental?: boolean;
   language?: string;
+  // Persona fields
+  vocalGender?: string | null;
+  vocalTexture?: string | null;
+  vocalRange?: string | null;
+  styleTags?: string[];
+  moodTags?: string[];
+  negativeTags?: string[];
+  defaultBpmMin?: number | null;
+  defaultBpmMax?: number | null;
+  preferredKeys?: string[];
+  instrumentalOnly?: boolean;
 }
 
 // Genres that should be generated as instrumental-only
@@ -69,18 +80,32 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const requestData: GenerateSongRequest = await req.json();
-    const { songId, title, genre, style, voicePrompt, personality, bpm, tonart, artistName, instrumental, language } = requestData;
+    const { 
+      songId, title, genre, style, voicePrompt, personality, bpm, tonart, artistName, 
+      instrumental, language,
+      // Persona fields
+      vocalGender: personaVocalGender,
+      vocalTexture,
+      vocalRange,
+      styleTags: personaStyleTags,
+      moodTags: personaMoodTags,
+      negativeTags: personaNegativeTags,
+      defaultBpmMin,
+      defaultBpmMax,
+      preferredKeys,
+      instrumentalOnly,
+    } = requestData;
 
     console.log(`Starting Suno generation for: ${title} by ${artistName}`);
-    console.log(`Request data:`, JSON.stringify({ genre, style, language, instrumental }));
+    console.log(`Request data:`, JSON.stringify({ genre, style, language, instrumental, personaVocalGender, vocalTexture }));
 
-    // Determine if instrumental based on genre or explicit flag
-    const isInstrumental = instrumental ?? INSTRUMENTAL_GENRES.some(
+    // Determine if instrumental based on: persona setting > explicit flag > genre detection
+    const isInstrumental = instrumentalOnly ?? instrumental ?? INSTRUMENTAL_GENRES.some(
       g => genre.toLowerCase().includes(g) || g.includes(genre.toLowerCase())
     );
     
-    // Extract vocal gender from voice prompt
-    const vocalGender = extractVocalGender(voicePrompt);
+    // Use persona vocal gender if set, otherwise extract from voice prompt
+    const vocalGender = personaVocalGender || extractVocalGender(voicePrompt);
     
     console.log(`Genre: ${genre}, Style: ${style}, Language: ${language}, Instrumental: ${isInstrumental}, VocalGender: ${vocalGender}`);
 
@@ -90,8 +115,18 @@ serve(async (req) => {
       .update({ generation_status: "generating" })
       .eq("id", songId);
 
+    // Determine BPM - use song BPM, or random within persona range, or null
+    let effectiveBpm = bpm;
+    if (!effectiveBpm && defaultBpmMin && defaultBpmMax) {
+      effectiveBpm = Math.floor(Math.random() * (defaultBpmMax - defaultBpmMin + 1)) + defaultBpmMin;
+    }
+
     // Build style tags for Suno - includes genre, style, voice characteristics, mood
-    const styleTags = buildStyleTags(genre, style, voicePrompt, personality, bpm, tonart, isInstrumental, language);
+    // Merge persona tags with dynamically generated ones
+    const styleTags = buildStyleTagsWithPersona(
+      genre, style, voicePrompt, personality, effectiveBpm, tonart, isInstrumental, language,
+      personaStyleTags, personaMoodTags, vocalTexture, vocalRange
+    );
     console.log("Style tags:", styleTags);
 
     // Build the prompt with language hint if not instrumental
@@ -108,7 +143,7 @@ serve(async (req) => {
       model: "V4_5ALL", // Use V4.5 for best quality
       title: title,
       prompt: prompt,
-      style: styleTags, // Now properly passed!
+      style: styleTags, // Now properly passed with persona data!
       instrumental: isInstrumental,
       callBackUrl: callbackUrl,
     };
@@ -118,10 +153,15 @@ serve(async (req) => {
       apiRequestBody.vocalGender = vocalGender;
     }
 
-    // Add negative tags to avoid unwanted styles
-    const negativeTags = buildNegativeTags(genre, isInstrumental);
-    if (negativeTags) {
-      apiRequestBody.negativeTags = negativeTags;
+    // Add negative tags - merge persona negative tags with genre-based ones
+    const builtNegativeTags = buildNegativeTags(genre, isInstrumental);
+    const allNegativeTags = [
+      ...(personaNegativeTags || []),
+      ...(builtNegativeTags ? builtNegativeTags.split(", ") : []),
+    ].filter((v, i, a) => a.indexOf(v) === i); // dedupe
+    
+    if (allNegativeTags.length > 0) {
+      apiRequestBody.negativeTags = allNegativeTags.join(", ");
     }
 
     console.log("API Request Body:", JSON.stringify(apiRequestBody));
@@ -305,20 +345,56 @@ function buildStyleTags(
   isInstrumental: boolean,
   language?: string
 ): string {
+  return buildStyleTagsWithPersona(
+    genre, style, voicePrompt, personality, bpm, tonart, isInstrumental, language,
+    undefined, undefined, undefined, undefined
+  );
+}
+
+/**
+ * Builds comprehensive style tags with persona data for Suno's customMode
+ */
+function buildStyleTagsWithPersona(
+  genre: string,
+  style: string,
+  voicePrompt: string,
+  personality: string,
+  bpm: number | null,
+  tonart: string | null,
+  isInstrumental: boolean,
+  language?: string,
+  personaStyleTags?: string[],
+  personaMoodTags?: string[],
+  vocalTexture?: string | null,
+  vocalRange?: string | null
+): string {
   const tags: string[] = [];
   
   // Primary genre and style
   if (genre) tags.push(genre);
   if (style && style !== genre) tags.push(style);
   
+  // Add persona style tags first (highest priority)
+  if (personaStyleTags && personaStyleTags.length > 0) {
+    personaStyleTags.forEach(tag => {
+      if (!tags.includes(tag)) tags.push(tag);
+    });
+  }
+  
   // Instrumental or vocal characteristics
   if (isInstrumental) {
     tags.push("instrumental", "no vocals");
   } else {
-    // Add voice characteristics
+    // Add persona vocal characteristics first
+    if (vocalTexture) tags.push(vocalTexture);
+    if (vocalRange) tags.push(vocalRange);
+    
+    // Add voice characteristics from prompt
     const voiceKeywords = extractVoiceKeywords(voicePrompt);
     if (voiceKeywords) {
-      voiceKeywords.split(", ").forEach(kw => tags.push(kw));
+      voiceKeywords.split(", ").forEach(kw => {
+        if (!tags.includes(kw)) tags.push(kw);
+      });
     }
     
     // Add language hint
@@ -328,10 +404,19 @@ function buildStyleTags(
     }
   }
   
-  // Mood from personality
-  const moodKeywords = extractMoodKeywords(personality);
-  if (moodKeywords) {
-    moodKeywords.split(", ").forEach(kw => tags.push(kw));
+  // Add persona mood tags
+  if (personaMoodTags && personaMoodTags.length > 0) {
+    personaMoodTags.forEach(tag => {
+      if (!tags.includes(tag)) tags.push(tag);
+    });
+  } else {
+    // Fallback to extracting mood from personality
+    const moodKeywords = extractMoodKeywords(personality);
+    if (moodKeywords) {
+      moodKeywords.split(", ").forEach(kw => {
+        if (!tags.includes(kw)) tags.push(kw);
+      });
+    }
   }
   
   // Technical details
@@ -339,7 +424,7 @@ function buildStyleTags(
   if (tonart) tags.push(tonart);
   
   // Limit to ~120 chars for optimal results
-  return tags.slice(0, 8).join(", ");
+  return tags.slice(0, 10).join(", ");
 }
 
 /**
