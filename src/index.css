@@ -2,7 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
-/* AI Artist Generator - Dark Music Industry Theme */
+/* Custom Font - ITC Avant Garde Pro Bold */
+@font-face {
+  font-family: 'ITC Avant Garde Pro';
+  src: url('@/assets/fonts/ITCAvantGardePro-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* scoopas Musikkatalog - Dark Music Industry Theme */
 
 @layer base {
   :root {
