@@ -48,6 +48,18 @@ interface ArtistData {
   voice_prompt?: string;
   katalognummer?: string;
   albums: Album[];
+  // Persona fields for generation
+  vocal_gender?: string | null;
+  vocal_texture?: string | null;
+  vocal_range?: string | null;
+  style_tags?: string[];
+  mood_tags?: string[];
+  negative_tags?: string[];
+  default_bpm_min?: number | null;
+  default_bpm_max?: number | null;
+  preferred_keys?: string[];
+  instrumental_only?: boolean | null;
+  persona_active?: boolean | null;
 }
 
 const LANGUAGE_FLAGS: Record<string, { flag: string; name: string }> = {
@@ -336,6 +348,19 @@ export const ArtistWithSocialCard = memo(({ artist, onDelete, onRefresh }: Artis
               personality={artist.personality || ""}
               albums={artist.albums}
               onRefresh={onRefresh}
+              // Full artist metadata for generation
+              language={artist.language}
+              vocalGender={artist.vocal_gender}
+              vocalTexture={artist.vocal_texture}
+              vocalRange={artist.vocal_range}
+              styleTags={artist.style_tags}
+              moodTags={artist.mood_tags}
+              negativeTags={artist.negative_tags}
+              defaultBpmMin={artist.default_bpm_min}
+              defaultBpmMax={artist.default_bpm_max}
+              preferredKeys={artist.preferred_keys}
+              instrumentalOnly={artist.instrumental_only}
+              personaActive={artist.persona_active}
             />
           </div>
         )}
