@@ -8,6 +8,7 @@ import { useCatalogData, type ArtistWithAlbums, type Song } from "@/hooks/useCat
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { usePlayerHeight } from "@/components/GlobalAudioPlayer";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 // Genre images
 import genreHipHop from "@/assets/genres/hip-hop.jpg";
@@ -96,7 +97,7 @@ const ACCENT_COLORS = [
 
 export default function Home() {
   const { artists, stats, isLoading } = useCatalogData();
-  const { play, currentTrack, isPlaying } = useAudioPlayer();
+  const { play, clearQueue, addToQueue, currentTrack, isPlaying } = useAudioPlayer();
   const playerHeight = usePlayerHeight();
 
   // Get all songs with audio
@@ -177,12 +178,86 @@ export default function Home() {
 
   const handlePlayPlaylist = (playlist: PlaylistCard) => {
     if (playlist.songs.length === 0) return;
-    handlePlaySong(playlist.songs[0]);
+    
+    // Clear queue and add all songs
+    clearQueue();
+    
+    // Play the first song
+    const firstItem = playlist.songs[0];
+    play({
+      id: firstItem.song.id,
+      title: firstItem.song.name,
+      artist: firstItem.artist.name,
+      album: firstItem.albumName,
+      audioUrl: firstItem.song.audio_url!,
+      coverUrl: firstItem.artist.profile_image_url,
+      artistImageUrl: firstItem.artist.profile_image_url,
+      songId: firstItem.song.id,
+      artistId: firstItem.artist.id,
+    });
+    
+    // Add the rest to the queue
+    playlist.songs.slice(1).forEach(item => {
+      if (item.song.audio_url) {
+        addToQueue({
+          id: item.song.id,
+          title: item.song.name,
+          artist: item.artist.name,
+          album: item.albumName,
+          audioUrl: item.song.audio_url,
+          coverUrl: item.artist.profile_image_url,
+          artistImageUrl: item.artist.profile_image_url,
+          songId: item.song.id,
+          artistId: item.artist.id,
+        });
+      }
+    });
+    
+    toast.success(`${playlist.title} Mix gestartet`, {
+      description: `${playlist.songs.length} Songs in der Warteschlange`,
+    });
   };
 
   const handleShuffleAll = () => {
     if (shuffledSongs.length === 0) return;
-    handlePlaySong(shuffledSongs[0]);
+    
+    // Clear queue and add all shuffled songs
+    clearQueue();
+    
+    // Play the first song
+    const firstItem = shuffledSongs[0];
+    play({
+      id: firstItem.song.id,
+      title: firstItem.song.name,
+      artist: firstItem.artist.name,
+      album: firstItem.albumName,
+      audioUrl: firstItem.song.audio_url!,
+      coverUrl: firstItem.artist.profile_image_url,
+      artistImageUrl: firstItem.artist.profile_image_url,
+      songId: firstItem.song.id,
+      artistId: firstItem.artist.id,
+    });
+    
+    // Add the rest to the queue
+    shuffledSongs.slice(1).forEach(item => {
+      if (item.song.audio_url) {
+        addToQueue({
+          id: item.song.id,
+          title: item.song.name,
+          artist: item.artist.name,
+          album: item.albumName,
+          audioUrl: item.song.audio_url,
+          coverUrl: item.artist.profile_image_url,
+          artistImageUrl: item.artist.profile_image_url,
+          songId: item.song.id,
+          artistId: item.artist.id,
+        });
+      }
+    });
+    
+    toast.success("Zufallsmix gestartet", {
+      description: `${shuffledSongs.length} Songs in der Warteschlange`,
+    });
   };
 
   if (isLoading) {
