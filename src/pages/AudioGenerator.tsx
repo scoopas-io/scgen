@@ -156,7 +156,12 @@ const AudioGenerator = () => {
   const isMobile = useIsMobile();
   const { loadFromCache, saveToCache, getCacheAge } = useAudioGeneratorCache();
 
+  // Track whether we've already loaded data to prevent double-loading
+  const initialLoadDone = useRef(false);
+
   useEffect(() => {
+    if (initialLoadDone.current) return;
+    
     // Try to load from cache first for instant display
     const cachedData = loadFromCache();
     
@@ -165,27 +170,23 @@ const AudioGenerator = () => {
       setArtists(cachedData.artists);
       setAlbums(cachedData.albums);
       setSongs(cachedData.songs);
+      // Use stats from cache to keep counts stable
       setStats(cachedData.stats);
       setCacheAge(getCacheAge());
       setLoading(false);
+      initialLoadDone.current = true;
       
-      // Then refresh in background
+      // Then refresh in background silently (without updating stats first)
       setIsBackgroundRefresh(true);
-      loadStats().then(() => {
-        // loadData will be triggered by stats change
-      });
+      loadDataDirect(true);
     } else {
-      // No cache, load fresh
-      loadStats();
+      // No cache, load fresh - first get stats for progress display
+      loadStats().then(() => {
+        loadDataDirect(false);
+      });
+      initialLoadDone.current = true;
     }
   }, []);
-
-  // Load data once stats are available (skip if already loaded from cache in background mode)
-  useEffect(() => {
-    if (stats.artists > 0 || stats.albums > 0 || stats.songs > 0) {
-      loadData(isBackgroundRefresh);
-    }
-  }, [stats.artists, stats.albums, stats.songs]);
 
   const loadStats = async () => {
     const [artistsRes, albumsRes, songsRes] = await Promise.all([
@@ -306,7 +307,7 @@ const AudioGenerator = () => {
 
   const refreshSongs = async (opts?: { silent?: boolean }) => {
     if (artists.length === 0 || albums.length === 0) {
-      await loadData();
+      await loadDataDirect();
       return;
     }
 
@@ -353,7 +354,8 @@ const AudioGenerator = () => {
     return all;
   };
 
-  const loadData = async (isBackground = false) => {
+  // Direct load function that doesn't depend on stats state
+  const loadDataDirect = async (isBackground = false) => {
     // Don't show loading UI for background refresh
     if (!isBackground) {
       setLoading(true);
@@ -361,11 +363,27 @@ const AudioGenerator = () => {
     
     const startTime = Date.now();
     
+    // Get fresh stats for progress display (but don't update state if background)
+    let currentStats = stats;
+    if (!isBackground) {
+      const [artistsRes, albumsRes, songsRes] = await Promise.all([
+        supabase.from("artists").select("id", { count: "exact", head: true }),
+        supabase.from("albums").select("id", { count: "exact", head: true }),
+        supabase.from("songs").select("id", { count: "exact", head: true }),
+      ]);
+      currentStats = {
+        artists: artistsRes.count || 0,
+        albums: albumsRes.count || 0,
+        songs: songsRes.count || 0,
+      };
+      setStats(currentStats);
+    }
+    
     if (!isBackground) {
       setLoadingProgress({
         phase: "init",
         current: 0,
-        total: stats.artists + stats.albums + stats.songs,
+        total: currentStats.artists + currentStats.albums + currentStats.songs,
         startTime,
         phaseStartTime: startTime,
         artistsLoaded: 0,
@@ -388,7 +406,7 @@ const AudioGenerator = () => {
         "artists", 
         "id, name, genre, style, voice_prompt, personality, profile_image_url, language, vocal_gender, vocal_texture, vocal_range, style_tags, mood_tags, negative_tags, default_bpm_min, default_bpm_max, preferred_keys, instrumental_only, persona_name, persona_description, persona_active", 
         "name",
-        stats.artists,
+        currentStats.artists,
         isBackground ? () => {} : (loaded) => setLoadingProgress(prev => ({ 
           ...prev, 
           artistsLoaded: loaded,
@@ -410,7 +428,7 @@ const AudioGenerator = () => {
         "albums", 
         "id, name, artist_id", 
         "name",
-        stats.albums,
+        currentStats.albums,
         isBackground ? () => {} : (loaded) => setLoadingProgress(prev => ({ 
           ...prev, 
           albumsLoaded: loaded,
@@ -432,7 +450,7 @@ const AudioGenerator = () => {
         "songs", 
         "id, name, album_id, bpm, tonart, audio_url, generation_status, suno_task_id, created_at", 
         "track_number",
-        stats.songs,
+        currentStats.songs,
         isBackground ? () => {} : (loaded) => setLoadingProgress(prev => ({ 
           ...prev, 
           songsLoaded: loaded,
@@ -450,16 +468,27 @@ const AudioGenerator = () => {
       }
       
       const processedSongs = mapSongsWithDetails(songsData as Song[] | null | undefined, artistsData, albumsData);
+      
+      // Update stats only after all data is loaded to prevent jumps
+      const newStats = {
+        artists: artistsData?.length || 0,
+        albums: albumsData?.length || 0,
+        songs: processedSongs.length,
+      };
+      
+      // Batch update all state together to prevent intermediate renders
+      setArtists(artistsData || []);
+      setAlbums(albumsData || []);
       setSongs(processedSongs);
+      setStats(newStats);
       
       // Save to cache after successful load
-      saveToCache(stats, artistsData || [], albumsData || [], processedSongs);
+      saveToCache(newStats, artistsData || [], albumsData || [], processedSongs);
       setCacheAge(null); // Fresh data, no cache age to show
       
       if (!isBackground) {
         setLoadingProgress(prev => ({ ...prev, phase: "done" }));
       } else {
-        setIsBackgroundRefresh(false);
         toast.success("Daten im Hintergrund aktualisiert", { duration: 2000 });
       }
     } catch (error) {
@@ -678,7 +707,7 @@ const AudioGenerator = () => {
     } else {
       toast.warning(`${successCount} erfolgreich, ${errorCount} fehlgeschlagen`);
     }
-    loadData();
+    loadDataDirect();
   };
 
   const playAudio = (song: SongWithDetails) => {
@@ -874,7 +903,7 @@ const AudioGenerator = () => {
                     <>
                       {/* Persona Batch Update + Bulk Generation Panel */}
                       <div className="flex items-center gap-3 mb-4">
-                        <PersonaBatchUpdateButton onComplete={() => loadData(true)} />
+                        <PersonaBatchUpdateButton onComplete={() => loadDataDirect(true)} />
                       </div>
                       
                       <BulkGenerationPanel
@@ -884,7 +913,7 @@ const AudioGenerator = () => {
                             s.id === songId ? { ...s, ...updates } : s
                           ));
                         }}
-                        onComplete={() => loadData()}
+                        onComplete={() => loadDataDirect()}
                       />
 
                       {/* Generation Progress */}
@@ -1287,7 +1316,7 @@ const AudioGenerator = () => {
         open={!!personaEditorArtist}
         onOpenChange={(open) => !open && setPersonaEditorArtist(null)}
         artist={personaEditorArtist}
-        onSave={() => loadData(true)}
+        onSave={() => loadDataDirect(true)}
       />
     </div>
   );
