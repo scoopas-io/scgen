@@ -21,6 +21,7 @@ import { Slider } from '@/components/ui/slider';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { TrackEditDialog } from '@/components/TrackEditDialog';
+import { useAuth } from '@/contexts/AuthContext';
 
 const formatTime = (seconds: number): string => {
   if (isNaN(seconds) || !isFinite(seconds)) return '0:00';
@@ -239,6 +240,7 @@ const SidePanel: React.FC = () => {
     toggleShuffle
   } = useAudioPlayer();
 
+  const { isAdmin } = useAuth();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [localTrack, setLocalTrack] = useState<Track | null>(null);
 
@@ -428,7 +430,7 @@ const SidePanel: React.FC = () => {
                 onValueChange={([value]) => setVolume(value / 100)}
                 className="flex-1"
               />
-              {localTrack?.songId && (
+              {localTrack?.songId && isAdmin && (
                 <Button
                   variant="ghost"
                   size="icon"
