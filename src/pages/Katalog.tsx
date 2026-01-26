@@ -15,6 +15,7 @@ import { EmptyState } from "@/components/catalog/EmptyState";
 import { LoadingSpinner } from "@/components/catalog/LoadingSpinner";
 import { exportCatalogAsCSV, exportCatalogAsJSON } from "@/lib/exportCatalog";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
+import { usePlayerHeight } from "@/components/GlobalAudioPlayer";
 import { 
   useCatalogData, 
   useFilteredCatalog, 
@@ -27,6 +28,7 @@ const ITEMS_PER_PAGE_OPTIONS = [10, 25, 50, 100];
 const Katalog = () => {
   const { artists, stats, isLoading, loadData, deleteArtist } = useCatalogData();
   const { play, currentTrack, isPlaying, pause, resume } = useAudioPlayer();
+  const playerHeight = usePlayerHeight();
   
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedArtists, setExpandedArtists] = useState<Set<string>>(new Set());
@@ -140,7 +142,7 @@ const Katalog = () => {
     <div className="h-screen flex flex-col overflow-hidden">
       <AppHeader stats={stats} />
 
-      <main className="flex-1 min-h-0 overflow-hidden pb-16 md:pb-0">
+      <main className="flex-1 min-h-0 overflow-hidden" style={{ paddingBottom: playerHeight }}>
         <div className="container h-full py-4 md:py-6 px-3 md:px-6">
           <div className="flex flex-col h-full gap-3 md:gap-4 min-h-0">
             {/* Toolbar - Mobile optimized */}

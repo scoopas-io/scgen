@@ -6,6 +6,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { AppHeader } from "@/components/AppHeader";
 import { useCatalogData, type ArtistWithAlbums, type Song } from "@/hooks/useCatalogData";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
+import { usePlayerHeight } from "@/components/GlobalAudioPlayer";
 import { cn } from "@/lib/utils";
 
 // Genre images
@@ -96,6 +97,7 @@ const ACCENT_COLORS = [
 export default function Home() {
   const { artists, stats, isLoading } = useCatalogData();
   const { play, currentTrack, isPlaying } = useAudioPlayer();
+  const playerHeight = usePlayerHeight();
 
   // Get all songs with audio
   const allSongsWithAudio = useMemo(() => {
@@ -202,7 +204,7 @@ export default function Home() {
       <AppHeader stats={stats} />
       
       <ScrollArea className="flex-1">
-        <div className="container py-6 px-4 md:px-6 space-y-8 pb-32 max-w-6xl">
+        <div className="container py-6 px-4 md:px-6 space-y-8 max-w-6xl" style={{ paddingBottom: Math.max(playerHeight + 24, 32) }}>
           
           {/* Hero - Compact */}
           <section className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-4">
