@@ -7,6 +7,7 @@ interface Song {
   name: string;
   album_id: string;
   track_number: number;
+  created_at: string;
   song_id?: string;
   komponist?: string;
   textdichter?: string;
