@@ -397,8 +397,8 @@ export default function Home() {
                   Alle <ChevronRight className="h-3 w-3" />
                 </Link>
               </div>
-              <ScrollArea className="w-full -mx-4 px-4">
-                <div className="flex gap-4 pb-2">
+              <ScrollArea className="w-full -mx-4">
+                <div className="flex gap-4 pb-2 px-4">
                   {topArtists.map((artist) => (
                     <Link
                       key={artist.id}
