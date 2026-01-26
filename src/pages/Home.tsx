@@ -569,8 +569,8 @@ export default function Home() {
                 <Clock className="h-4 w-4 text-primary" />
                 Kürzlich gespielt
               </h2>
-              <ScrollArea className="w-full -mx-4 px-4">
-                <div className="flex gap-3 pb-2">
+              <ScrollArea className="w-full -mx-4">
+                <div className="flex gap-3 pb-2 px-4">
                   {recentlyPlayed.map((track, idx) => {
                     const isCurrentlyPlaying = currentTrack?.id === track.id && isPlaying;
                     return (
