@@ -9,6 +9,10 @@ export interface Track {
   coverUrl?: string;
   artistImageUrl?: string;
   duration?: number;
+  // IDs for editing
+  songId?: string;
+  artistId?: string;
+  albumId?: string;
 }
 
 interface AudioPlayerContextType {

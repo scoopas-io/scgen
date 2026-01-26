@@ -1,5 +1,5 @@
-import React from 'react';
-import { useAudioPlayer } from '@/contexts/AudioPlayerContext';
+import React, { useState, useCallback } from 'react';
+import { useAudioPlayer, Track } from '@/contexts/AudioPlayerContext';
 import { 
   Play, 
   Pause, 
@@ -11,12 +11,13 @@ import {
   ChevronRight,
   X,
   ListMusic,
-  Clock
+  Pencil
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { TrackEditDialog } from '@/components/TrackEditDialog';
 
 const formatTime = (seconds: number): string => {
   if (isNaN(seconds) || !isFinite(seconds)) return '0:00';
@@ -222,6 +223,20 @@ const SidePanel: React.FC = () => {
     clearQueue
   } = useAudioPlayer();
 
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [localTrack, setLocalTrack] = useState<Track | null>(null);
+
+  // Keep local track in sync with current track, but allow updates from dialog
+  React.useEffect(() => {
+    if (currentTrack) {
+      setLocalTrack(currentTrack);
+    }
+  }, [currentTrack]);
+
+  const handleTrackUpdated = useCallback((updates: Partial<Track>) => {
+    setLocalTrack(prev => prev ? { ...prev, ...updates } : null);
+  }, []);
+
   if (!isPanelOpen) return null;
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
@@ -248,10 +263,10 @@ const SidePanel: React.FC = () => {
           <div className="p-4 md:p-6 space-y-6 md:space-y-8">
             {/* Artist/Album Art */}
             <div className="aspect-square w-full max-w-[280px] md:max-w-xs mx-auto rounded-2xl bg-muted overflow-hidden shadow-2xl ring-4 ring-border/50">
-              {currentTrack?.artistImageUrl || currentTrack?.coverUrl ? (
+              {localTrack?.artistImageUrl || localTrack?.coverUrl ? (
                 <img 
-                  src={currentTrack.artistImageUrl || currentTrack.coverUrl} 
-                  alt={currentTrack?.artist || currentTrack?.title}
+                  src={localTrack.artistImageUrl || localTrack.coverUrl} 
+                  alt={localTrack?.artist || localTrack?.title}
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -261,18 +276,33 @@ const SidePanel: React.FC = () => {
               )}
             </div>
 
-            {/* Track Info */}
-            <div className="text-center space-y-1">
-              <h3 className="text-xl font-bold truncate">
-                {currentTrack?.title || 'No track selected'}
-              </h3>
-              <p className="text-muted-foreground truncate">
-                {currentTrack?.artist || 'Unknown artist'}
-              </p>
-              {currentTrack?.album && (
-                <p className="text-sm text-muted-foreground/70 truncate">
-                  {currentTrack.album}
+            {/* Track Info with Edit Button */}
+            <div className="text-center space-y-2">
+              <div className="space-y-1">
+                <h3 className="text-xl font-bold truncate">
+                  {localTrack?.title || 'No track selected'}
+                </h3>
+                <p className="text-muted-foreground truncate">
+                  {localTrack?.artist || 'Unknown artist'}
                 </p>
+                {localTrack?.album && (
+                  <p className="text-sm text-muted-foreground/70 truncate">
+                    {localTrack.album}
+                  </p>
+                )}
+              </div>
+              
+              {/* Edit Button */}
+              {localTrack?.songId && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditDialogOpen(true)}
+                  className="gap-2"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  Bearbeiten
+                </Button>
               )}
             </div>
 
@@ -404,6 +434,14 @@ const SidePanel: React.FC = () => {
           </div>
         </ScrollArea>
       </div>
+
+      {/* Edit Dialog */}
+      <TrackEditDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        track={localTrack}
+        onTrackUpdated={handleTrackUpdated}
+      />
     </>
   );
 };

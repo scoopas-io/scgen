@@ -79,10 +79,19 @@ const Katalog = () => {
     });
   }, []);
 
-  // Play audio using global player
-  const handlePlayAudio = useCallback((audioUrl: string, songName: string, artistName: string, albumName?: string, artistImageUrl?: string) => {
+  // Play audio using global player with full metadata for editing
+  const handlePlayAudio = useCallback((params: {
+    url: string;
+    songId: string;
+    songName: string;
+    artistId: string;
+    artistName: string;
+    albumId: string;
+    albumName: string;
+    artistImageUrl?: string;
+  }) => {
     // If same track is playing, toggle pause/resume
-    if (currentTrack?.audioUrl === audioUrl) {
+    if (currentTrack?.audioUrl === params.url) {
       if (isPlaying) {
         pause();
       } else {
@@ -91,14 +100,17 @@ const Katalog = () => {
       return;
     }
     
-    // Play new track
+    // Play new track with all IDs for editing
     play({
-      id: audioUrl,
-      title: songName,
-      artist: artistName,
-      artistImageUrl: artistImageUrl,
-      album: albumName,
-      audioUrl: audioUrl,
+      id: params.songId,
+      title: params.songName,
+      artist: params.artistName,
+      artistImageUrl: params.artistImageUrl,
+      album: params.albumName,
+      audioUrl: params.url,
+      songId: params.songId,
+      artistId: params.artistId,
+      albumId: params.albumId,
     });
   }, [currentTrack, isPlaying, pause, resume, play]);
 
