@@ -263,9 +263,14 @@ function needsPersonaUpdate(artist: Artist): boolean {
   const hasVocalInfo = artist.vocal_gender || artist.vocal_texture || artist.vocal_range;
   const hasStyleInfo = artist.style_tags && artist.style_tags.length > 0;
   const hasMoodInfo = artist.mood_tags && artist.mood_tags.length > 0;
+  const hasBpmInfo = artist.default_bpm_min && artist.default_bpm_max;
+  const hasKeyInfo = artist.preferred_keys && artist.preferred_keys.length > 0;
   
-  // Needs update if missing most persona data
-  return !hasVocalInfo && !hasStyleInfo && !hasMoodInfo;
+  // Needs update if missing vocal, style/mood OR technical metadata (BPM/keys)
+  const missingVocalOrStyle = !hasVocalInfo && !hasStyleInfo && !hasMoodInfo;
+  const missingTechnical = !hasBpmInfo || !hasKeyInfo;
+  
+  return missingVocalOrStyle || missingTechnical;
 }
 
 export function usePersonaBatchUpdate() {
