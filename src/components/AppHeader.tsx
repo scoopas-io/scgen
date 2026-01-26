@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Music, Zap, Database, Volume2, Share2, Users, Disc, Menu } from "lucide-react";
+import { Music, Zap, Database, Volume2, Share2, Users, Disc, Menu, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScoopasIcon } from "@/components/ScoopasIcon";
 import { HeaderMiniPlayer } from "@/components/GlobalAudioPlayer";
@@ -20,7 +20,8 @@ export const AppHeader = ({ stats }: AppHeaderProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   const navItems = [
-    { path: "/", label: "Erweitern", icon: Zap },
+    { path: "/", label: "Home", icon: Home },
+    { path: "/erweitern", label: "Erweitern", icon: Zap },
     { path: "/katalog", label: "Katalog", icon: Database },
     { path: "/audio-generator", label: "Audio", icon: Volume2 },
     { path: "/social-tools", label: "Social", icon: Share2 },
