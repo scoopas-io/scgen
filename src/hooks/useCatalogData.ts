@@ -32,6 +32,8 @@ interface Song {
   katalogwert?: number;
   bemerkungen?: string;
   audio_url?: string;
+  generation_status?: string | null;
+  suno_task_id?: string | null;
 }
 
 interface Album {
