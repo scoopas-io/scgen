@@ -37,7 +37,7 @@ export const AppHeader = ({ stats }: AppHeaderProps) => {
               <h1 className="text-lg md:text-2xl lg:text-3xl font-display font-bold tracking-tight truncate">
                 <span className="text-foreground">sc<span className="text-primary">oo</span>pas</span>
               </h1>
-              <span className="text-[9px] md:text-[10px] font-sans tracking-[0.25em] text-muted-foreground uppercase text-center -mt-1.5">
+              <span className="text-[9px] md:text-[10px] font-sans font-bold tracking-[0.25em] text-muted-foreground uppercase text-center -mt-1.5">
                 Musikkatalog
               </span>
             </Link>
