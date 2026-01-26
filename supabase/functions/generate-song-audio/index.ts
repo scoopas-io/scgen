@@ -138,14 +138,14 @@ serve(async (req) => {
     const callbackUrl = `${SUPABASE_URL}/functions/v1/suno-callback`;
 
     // Build the API request body with all available parameters
-    // IMPORTANT: Do NOT use "prompt" field - Suno interprets it as lyrics!
-    // Instead use title + style tags for song description
+    // In customMode: false, the API generates lyrics based on title + style
+    // This prevents instrumental-only output when vocals are requested
     const apiRequestBody: Record<string, any> = {
-      // Use customMode: true to enable style parameter
-      customMode: true,
+      // Use customMode: false to let API generate lyrics
+      customMode: false,
       model: "V4_5ALL", // Use V4.5 for best quality
       title: title,
-      // prompt field REMOVED - it was being interpreted as lyrics!
+      prompt: prompt, // Description for AI to generate appropriate lyrics
       style: styleTags, // Style tags contain genre, style, mood, language hints
       instrumental: isInstrumental,
       callBackUrl: callbackUrl,
@@ -155,6 +155,10 @@ serve(async (req) => {
     if (!isInstrumental && vocalGender) {
       apiRequestBody.vocalGender = vocalGender;
     }
+
+    // Add advanced control parameters for better generation quality
+    apiRequestBody.styleWeight = 0.7; // Balance between style adherence and creativity
+    apiRequestBody.weirdnessConstraint = 0.3; // Moderate creative deviation
 
     // Add negative tags - merge persona negative tags with genre-based ones
     const builtNegativeTags = buildNegativeTags(genre, isInstrumental);
