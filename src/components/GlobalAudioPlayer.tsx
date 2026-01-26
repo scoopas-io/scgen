@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { useAudioPlayer, Track } from '@/contexts/AudioPlayerContext';
+import { useAudioPlayer, Track, RepeatMode } from '@/contexts/AudioPlayerContext';
 import { 
   Play, 
   Pause, 
@@ -11,7 +11,10 @@ import {
   X,
   ListMusic,
   Pencil,
-  ChevronUp
+  ChevronUp,
+  Repeat,
+  Repeat1,
+  Shuffle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -221,6 +224,8 @@ const SidePanel: React.FC = () => {
     volume,
     isMuted,
     queue,
+    repeatMode,
+    isShuffled,
     pause,
     resume,
     seek,
@@ -229,7 +234,9 @@ const SidePanel: React.FC = () => {
     closePanel,
     playNext,
     playPrevious,
-    clearQueue
+    clearQueue,
+    toggleRepeatMode,
+    toggleShuffle
   } = useAudioPlayer();
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -332,7 +339,21 @@ const SidePanel: React.FC = () => {
             </div>
 
             {/* Main Controls */}
-            <div className="flex items-center justify-center gap-4 py-2">
+            <div className="flex items-center justify-center gap-2 py-2">
+              {/* Shuffle Button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "h-10 w-10 rounded-full transition-all hover:scale-105",
+                  isShuffled ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground"
+                )}
+                onClick={toggleShuffle}
+                title={isShuffled ? "Shuffle aus" : "Shuffle an"}
+              >
+                <Shuffle className="h-4 w-4" />
+              </Button>
+
               <Button
                 variant="ghost"
                 size="icon"
@@ -361,6 +382,28 @@ const SidePanel: React.FC = () => {
                 onClick={playNext}
               >
                 <SkipForward className="h-5 w-5" />
+              </Button>
+
+              {/* Repeat Button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "h-10 w-10 rounded-full transition-all hover:scale-105",
+                  repeatMode !== 'off' ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground"
+                )}
+                onClick={toggleRepeatMode}
+                title={
+                  repeatMode === 'off' ? "Wiederholen aus" : 
+                  repeatMode === 'one' ? "Einzelnen Song wiederholen" : 
+                  "Alle wiederholen"
+                }
+              >
+                {repeatMode === 'one' ? (
+                  <Repeat1 className="h-4 w-4" />
+                ) : (
+                  <Repeat className="h-4 w-4" />
+                )}
               </Button>
             </div>
 
