@@ -12,6 +12,7 @@ interface RegenerateRequest {
   artistName: string;
   genre: string;
   style: string;
+  gender?: 'male' | 'female' | 'duo';
 }
 
 serve(async (req) => {
@@ -20,7 +21,7 @@ serve(async (req) => {
   }
 
   try {
-    const { artistId, artistName, genre, style }: RegenerateRequest = await req.json();
+    const { artistId, artistName, genre, style, gender = 'male' }: RegenerateRequest = await req.json();
     
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
@@ -31,9 +32,16 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    console.log(`Regenerating image for ${artistName}...`);
+    console.log(`Regenerating image for ${artistName} (${gender})...`);
     
-    const imagePrompt = `Portrait of a ${genre} musician, ${style} aesthetic, professional photo, artistic lighting, high quality`;
+    // Build gender-specific prompt
+    const genderDescription = gender === 'duo' 
+      ? 'a duo of two musicians (one male, one female)' 
+      : gender === 'female' 
+        ? 'a female musician' 
+        : 'a male musician';
+    
+    const imagePrompt = `Portrait of ${genderDescription}, ${genre} artist, ${style} aesthetic, professional photo, artistic lighting, high quality`;
     
     const imageResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

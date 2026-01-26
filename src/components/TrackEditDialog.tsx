@@ -4,10 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Music, User, Save, ImageIcon, RefreshCw } from 'lucide-react';
+import { Loader2, Music, User, Save, RefreshCw, Users } from 'lucide-react';
 import { Track } from '@/contexts/AudioPlayerContext';
+
+type GenderOption = 'male' | 'female' | 'duo';
 
 interface TrackEditDialogProps {
   open: boolean;
@@ -40,6 +43,7 @@ export const TrackEditDialog: React.FC<TrackEditDialogProps> = ({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [regeneratingImage, setRegeneratingImage] = useState(false);
+  const [selectedGender, setSelectedGender] = useState<GenderOption>('male');
   
   const [songData, setSongData] = useState<SongData>({
     name: '',
@@ -208,7 +212,13 @@ export const TrackEditDialog: React.FC<TrackEditDialogProps> = ({
     setRegeneratingImage(true);
     try {
       const { error } = await supabase.functions.invoke('regenerate-image', {
-        body: { artistId: track.artistId },
+        body: { 
+          artistId: track.artistId,
+          artistName: artistData.name,
+          genre: artistData.genre,
+          style: artistData.style,
+          gender: selectedGender,
+        },
       });
       
       if (error) throw error;
@@ -333,39 +343,65 @@ export const TrackEditDialog: React.FC<TrackEditDialogProps> = ({
             </TabsContent>
 
             <TabsContent value="artist" className="space-y-4 mt-4">
-              {/* Artist image preview */}
-              <div className="flex items-center gap-4">
-                <div className="relative w-20 h-20 rounded-full overflow-hidden bg-muted flex-shrink-0 ring-2 ring-border">
-                  {artistData.profile_image_url ? (
-                    <img 
-                      src={artistData.profile_image_url} 
-                      alt={artistData.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <User className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 space-y-2">
-                  <p className="text-sm text-muted-foreground">
-                    Bild passt nicht zum Künstler?
-                  </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleRegenerateImage}
-                    disabled={regeneratingImage || !track.artistId}
-                    className="gap-2"
-                  >
-                    {regeneratingImage ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+              {/* Artist image preview with gender selection */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-4">
+                  <div className="relative w-20 h-20 rounded-full overflow-hidden bg-muted flex-shrink-0 ring-2 ring-border">
+                    {artistData.profile_image_url ? (
+                      <img 
+                        src={artistData.profile_image_url} 
+                        alt={artistData.name}
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
-                      <RefreshCw className="h-4 w-4" />
+                      <div className="w-full h-full flex items-center justify-center">
+                        <User className="h-8 w-8 text-muted-foreground" />
+                      </div>
                     )}
-                    Neues Bild generieren
-                  </Button>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Bild passt nicht zum Künstler?
+                    </p>
+                    
+                    {/* Gender Selection */}
+                    <RadioGroup
+                      value={selectedGender}
+                      onValueChange={(value) => setSelectedGender(value as GenderOption)}
+                      className="flex gap-3 mb-3"
+                    >
+                      <div className="flex items-center space-x-1.5">
+                        <RadioGroupItem value="male" id="male" />
+                        <Label htmlFor="male" className="text-xs cursor-pointer">Männlich</Label>
+                      </div>
+                      <div className="flex items-center space-x-1.5">
+                        <RadioGroupItem value="female" id="female" />
+                        <Label htmlFor="female" className="text-xs cursor-pointer">Weiblich</Label>
+                      </div>
+                      <div className="flex items-center space-x-1.5">
+                        <RadioGroupItem value="duo" id="duo" />
+                        <Label htmlFor="duo" className="text-xs cursor-pointer flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          Duo
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRegenerateImage}
+                      disabled={regeneratingImage || !track.artistId}
+                      className="gap-2"
+                    >
+                      {regeneratingImage ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4" />
+                      )}
+                      Neues Bild generieren
+                    </Button>
+                  </div>
                 </div>
               </div>
 
