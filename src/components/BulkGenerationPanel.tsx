@@ -34,6 +34,7 @@ interface Song {
   style: string;
   voicePrompt: string;
   personality: string;
+  language?: string;
 }
 
 interface FailedSong extends Song {
@@ -219,6 +220,7 @@ const BulkGenerationPanel = forwardRef<BulkGenerationPanelRef, BulkGenerationPan
             tonart: song.tonart,
             artistName: song.artistName,
             instrumental: isInstrumentalGenre(song.genre),
+            language: song.language,
           }),
         }
       );
