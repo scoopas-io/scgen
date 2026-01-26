@@ -15,6 +15,8 @@ export interface Track {
   albumId?: string;
 }
 
+export type RepeatMode = 'off' | 'one' | 'all';
+
 interface AudioPlayerContextType {
   // Current track
   currentTrack: Track | null;
@@ -29,6 +31,10 @@ interface AudioPlayerContextType {
   
   // Queue
   queue: Track[];
+  
+  // Repeat & Shuffle
+  repeatMode: RepeatMode;
+  isShuffled: boolean;
   
   // Actions
   play: (track: Track) => void;
@@ -47,6 +53,10 @@ interface AudioPlayerContextType {
   clearQueue: () => void;
   playNext: () => void;
   playPrevious: () => void;
+  
+  // Repeat & Shuffle actions
+  toggleRepeatMode: () => void;
+  toggleShuffle: () => void;
 }
 
 const AudioPlayerContext = createContext<AudioPlayerContextType | null>(null);
@@ -72,6 +82,9 @@ export const AudioPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [isMuted, setIsMuted] = useState(false);
   const [queue, setQueue] = useState<Track[]>([]);
   const [history, setHistory] = useState<Track[]>([]);
+  const [repeatMode, setRepeatMode] = useState<RepeatMode>('off');
+  const [isShuffled, setIsShuffled] = useState(false);
+  const [originalQueue, setOriginalQueue] = useState<Track[]>([]);
 
   // Keep queueRef in sync with queue state
   useEffect(() => {
@@ -95,6 +108,18 @@ export const AudioPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     
     const handleEnded = () => {
       setIsPlaying(false);
+      
+      // Handle repeat one - replay current track
+      if (repeatMode === 'one') {
+        if (audioRef.current) {
+          audioRef.current.currentTime = 0;
+          audioRef.current.play()
+            .then(() => setIsPlaying(true))
+            .catch(console.error);
+        }
+        return;
+      }
+      
       // Use ref to get current queue state
       if (queueRef.current.length > 0) {
         const [nextTrack, ...rest] = queueRef.current;
@@ -106,6 +131,21 @@ export const AudioPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
           audioRef.current.play()
             .then(() => setIsPlaying(true))
             .catch(console.error);
+        }
+      } else if (repeatMode === 'all' && history.length > 0) {
+        // Repeat all: restart from history
+        const allTracks = [...history].reverse();
+        if (allTracks.length > 0) {
+          const [firstTrack, ...rest] = allTracks;
+          setQueue(rest);
+          setHistory([]);
+          if (audioRef.current) {
+            setCurrentTrack(firstTrack);
+            audioRef.current.src = firstTrack.audioUrl;
+            audioRef.current.play()
+              .then(() => setIsPlaying(true))
+              .catch(console.error);
+          }
         }
       }
     };
@@ -233,6 +273,39 @@ export const AudioPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   }, [history, currentTrack]);
 
+  const toggleRepeatMode = useCallback(() => {
+    setRepeatMode(prev => {
+      if (prev === 'off') return 'one';
+      if (prev === 'one') return 'all';
+      return 'off';
+    });
+  }, []);
+
+  const shuffleArray = <T,>(array: T[]): T[] => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
+  const toggleShuffle = useCallback(() => {
+    setIsShuffled(prev => {
+      if (!prev) {
+        // Enable shuffle: save original queue and shuffle current
+        setOriginalQueue(queue);
+        setQueue(shuffleArray(queue));
+        return true;
+      } else {
+        // Disable shuffle: restore original queue
+        setQueue(originalQueue);
+        setOriginalQueue([]);
+        return false;
+      }
+    });
+  }, [queue, originalQueue]);
+
   return (
     <AudioPlayerContext.Provider
       value={{
@@ -244,6 +317,8 @@ export const AudioPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         volume,
         isMuted,
         queue,
+        repeatMode,
+        isShuffled,
         play,
         pause,
         resume,
@@ -258,6 +333,8 @@ export const AudioPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         clearQueue,
         playNext,
         playPrevious,
+        toggleRepeatMode,
+        toggleShuffle,
       }}
     >
       {children}
