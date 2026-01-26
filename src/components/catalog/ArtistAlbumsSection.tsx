@@ -1,5 +1,6 @@
-import { memo, useState, useCallback } from "react";
-import { Disc, Play, Pause, Loader2, Download, ChevronRight, Music } from "lucide-react";
+import { memo, useState, useCallback, useMemo } from "react";
+import { Disc, Play, Pause, Loader2, Download, ChevronRight } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -52,6 +53,7 @@ export const ArtistAlbumsSection = memo(({
   const [expandedAlbums, setExpandedAlbums] = useState<Set<string>>(new Set());
   const [generatingSongs, setGeneratingSongs] = useState<Set<string>>(new Set());
   const [generatingAlbums, setGeneratingAlbums] = useState<Set<string>>(new Set());
+  const [albumProgress, setAlbumProgress] = useState<Map<string, { current: number; total: number }>>(new Map());
   const [detailedSongs, setDetailedSongs] = useState<Map<string, Song>>(new Map());
 
   const toggleAlbum = useCallback((albumId: string) => {
@@ -289,11 +291,14 @@ export const ArtistAlbumsSection = memo(({
     }
 
     setGeneratingAlbums(prev => new Set(prev).add(album.id));
+    setAlbumProgress(prev => new Map(prev).set(album.id, { current: 0, total: songsWithoutAudio.length }));
 
     toast.info(`${songsWithoutAudio.length} Songs werden abgerufen...`);
 
     // Generate songs sequentially with delay to avoid rate limiting
-    for (const song of songsWithoutAudio) {
+    for (let i = 0; i < songsWithoutAudio.length; i++) {
+      const song = songsWithoutAudio[i];
+      setAlbumProgress(prev => new Map(prev).set(album.id, { current: i + 1, total: songsWithoutAudio.length }));
       await generateSong(song, album);
       await new Promise(resolve => setTimeout(resolve, 1500));
     }
@@ -303,7 +308,21 @@ export const ArtistAlbumsSection = memo(({
       next.delete(album.id);
       return next;
     });
+    setAlbumProgress(prev => {
+      const next = new Map(prev);
+      next.delete(album.id);
+      return next;
+    });
   };
+
+  // Get currently loading songs for display
+  const loadingSongs = useMemo(() => {
+    return albums.flatMap(album => 
+      album.songs
+        .map(s => ({ ...getSongDetails(s), albumName: album.name }))
+        .filter(s => generatingSongs.has(s.id) || s.generation_status === "processing" || s.generation_status === "generating")
+    );
+  }, [albums, generatingSongs, detailedSongs]);
 
   const totalSongs = albums.reduce((acc, album) => acc + album.songs.length, 0);
   const songsWithAudio = albums.reduce((acc, album) => 
@@ -311,14 +330,39 @@ export const ArtistAlbumsSection = memo(({
   );
 
   return (
-    <div>
-      <h4 className="text-xs sm:text-sm font-medium text-muted-foreground mb-2 sm:mb-3 flex items-center gap-2">
-        <Disc className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-        Alben & Songs
-        <Badge variant="outline" className="text-[10px] sm:text-xs">
-          {albums.length} Alben • {songsWithAudio}/{totalSongs} Songs
-        </Badge>
-      </h4>
+    <div className="space-y-4">
+      {/* Loading Queue Display */}
+      {loadingSongs.length > 0 && (
+        <div className="bg-muted/50 border border-border rounded-lg p-3">
+          <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-2">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            Wird geladen ({loadingSongs.length} {loadingSongs.length === 1 ? 'Song' : 'Songs'})
+          </p>
+          <div className="space-y-1.5">
+            {loadingSongs.slice(0, 5).map(song => (
+              <div key={song.id} className="flex items-center gap-2 text-xs">
+                <div className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />
+                <span className="truncate flex-1">{song.name}</span>
+                <span className="text-muted-foreground shrink-0">{song.albumName}</span>
+              </div>
+            ))}
+            {loadingSongs.length > 5 && (
+              <p className="text-[10px] text-muted-foreground">
+                + {loadingSongs.length - 5} weitere...
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div>
+        <h4 className="text-xs sm:text-sm font-medium text-muted-foreground mb-2 sm:mb-3 flex items-center gap-2">
+          <Disc className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          Alben & Songs
+          <Badge variant="outline" className="text-[10px] sm:text-xs">
+            {albums.length} Alben • {songsWithAudio}/{totalSongs} Songs
+          </Badge>
+        </h4>
 
       <div className="space-y-2">
         {albums.map(album => {
@@ -363,7 +407,19 @@ export const ArtistAlbumsSection = memo(({
                       <Play className="h-4 w-4" />
                     </Button>
                   )}
-                  {!allGenerated && (
+                {!allGenerated && (
+                  <div className="flex items-center gap-2">
+                    {isGeneratingAlbum && albumProgress.get(album.id) && (
+                      <div className="flex items-center gap-2 min-w-[100px]">
+                        <Progress 
+                          value={(albumProgress.get(album.id)!.current / albumProgress.get(album.id)!.total) * 100} 
+                          className="h-1.5 w-16"
+                        />
+                        <span className="text-[10px] text-muted-foreground tabular-nums">
+                          {Math.round((albumProgress.get(album.id)!.current / albumProgress.get(album.id)!.total) * 100)}%
+                        </span>
+                      </div>
+                    )}
                     <Button
                       variant="outline"
                       size="sm"
@@ -374,10 +430,11 @@ export const ArtistAlbumsSection = memo(({
                       {isGeneratingAlbum ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       ) : (
-                        <>Alle abrufen</>
+                        <>Album laden</>
                       )}
                     </Button>
-                  )}
+                  </div>
+                )}
                 </div>
               </div>
 
@@ -470,6 +527,7 @@ export const ArtistAlbumsSection = memo(({
             </div>
           );
         })}
+      </div>
       </div>
     </div>
   );
