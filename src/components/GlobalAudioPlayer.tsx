@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useAudioPlayer, Track, RepeatMode } from '@/contexts/AudioPlayerContext';
 import { 
   Play, 
@@ -14,7 +14,8 @@ import {
   ChevronUp,
   Repeat,
   Repeat1,
-  Shuffle
+  Shuffle,
+  Info
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -22,6 +23,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { TrackEditDialog } from '@/components/TrackEditDialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { SongInfoDialog } from '@/components/catalog/SongInfoDialog';
+import { supabase } from '@/integrations/supabase/client';
 
 const formatTime = (seconds: number): string => {
   if (isNaN(seconds) || !isFinite(seconds)) return '0:00';
@@ -243,12 +246,35 @@ const SidePanel: React.FC = () => {
   const { isAdmin } = useAuth();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [localTrack, setLocalTrack] = useState<Track | null>(null);
+  const [infoDialogOpen, setInfoDialogOpen] = useState(false);
+  const [songMetadata, setSongMetadata] = useState<any>(null);
+  const [albumName, setAlbumName] = useState<string>("");
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (currentTrack) {
       setLocalTrack(currentTrack);
     }
   }, [currentTrack]);
+
+  // Load full song metadata for info dialog
+  useEffect(() => {
+    const loadSongMetadata = async () => {
+      if (!localTrack?.songId || isAdmin) return;
+      
+      const { data: songData } = await supabase
+        .from("songs")
+        .select("*, albums(name)")
+        .eq("id", localTrack.songId)
+        .single();
+      
+      if (songData) {
+        setSongMetadata(songData);
+        setAlbumName((songData.albums as any)?.name || localTrack.album || "");
+      }
+    };
+    
+    loadSongMetadata();
+  }, [localTrack?.songId, isAdmin, localTrack?.album]);
 
   const handleTrackUpdated = useCallback((updates: Partial<Track>) => {
     setLocalTrack(prev => prev ? { ...prev, ...updates } : null);
@@ -440,6 +466,17 @@ const SidePanel: React.FC = () => {
                   <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                 </Button>
               )}
+              {localTrack?.songId && !isAdmin && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setInfoDialogOpen(true)}
+                  className="h-8 w-8 rounded-full"
+                  title="Song-Informationen"
+                >
+                  <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                </Button>
+              )}
             </div>
 
             {/* Queue */}
@@ -508,6 +545,15 @@ const SidePanel: React.FC = () => {
         onOpenChange={setEditDialogOpen}
         track={localTrack}
         onTrackUpdated={handleTrackUpdated}
+      />
+
+      {/* Info Dialog for Viewer */}
+      <SongInfoDialog
+        song={songMetadata}
+        albumName={albumName}
+        artistName={localTrack?.artist || ""}
+        open={infoDialogOpen}
+        onOpenChange={setInfoDialogOpen}
       />
     </>
   );
