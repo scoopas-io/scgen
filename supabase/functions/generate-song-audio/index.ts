@@ -137,13 +137,15 @@ serve(async (req) => {
     const callbackUrl = `${SUPABASE_URL}/functions/v1/suno-callback`;
 
     // Build the API request body with all available parameters
+    // IMPORTANT: Do NOT use "prompt" field - Suno interprets it as lyrics!
+    // Instead use title + style tags for song description
     const apiRequestBody: Record<string, any> = {
       // Use customMode: true to enable style parameter
       customMode: true,
       model: "V4_5ALL", // Use V4.5 for best quality
       title: title,
-      prompt: prompt,
-      style: styleTags, // Now properly passed with persona data!
+      // prompt field REMOVED - it was being interpreted as lyrics!
+      style: styleTags, // Style tags contain genre, style, mood, language hints
       instrumental: isInstrumental,
       callBackUrl: callbackUrl,
     };

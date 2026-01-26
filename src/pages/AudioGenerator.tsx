@@ -1005,15 +1005,52 @@ const AudioGenerator = () => {
                                       )}
                                       <Disc className="h-3 w-3 text-primary flex-shrink-0" />
                                       <span className="text-xs md:text-sm truncate flex-1 min-w-0">{album.name}</span>
-                                      <Button 
-                                        size="sm" 
-                                        variant="ghost" 
-                                        className="h-6 text-[10px] md:text-xs ml-auto px-2 flex-shrink-0"
-                                        onClick={(e) => { e.stopPropagation(); selectAllFromAlbum(album.id); }}
-                                      >
-                                        <span className="hidden md:inline">Album auswählen</span>
-                                        <span className="md:hidden">Album</span>
-                                      </Button>
+                                      <div className="flex items-center gap-1 ml-auto flex-shrink-0">
+                                        <Button 
+                                          size="sm" 
+                                          variant="ghost" 
+                                          className="h-6 text-[10px] md:text-xs px-2"
+                                          onClick={(e) => { e.stopPropagation(); selectAllFromAlbum(album.id); }}
+                                        >
+                                          <span className="hidden md:inline">Album auswählen</span>
+                                          <span className="md:hidden">Alle</span>
+                                        </Button>
+                                        <Button 
+                                          size="sm" 
+                                          variant="ghost" 
+                                          className="h-6 text-[10px] md:text-xs px-2 text-primary hover:text-primary"
+                                          onClick={(e) => { 
+                                            e.stopPropagation(); 
+                                            const albumSongs = getAlbumSongs(album.id);
+                                            albumSongs.forEach(song => {
+                                              if (!selectedSongs.has(song.id)) {
+                                                toggleSong(song.id);
+                                              }
+                                            });
+                                            // Reset song statuses for this album to trigger re-generation
+                                            albumSongs.forEach(async (song) => {
+                                              await supabase
+                                                .from("songs")
+                                                .update({ 
+                                                  generation_status: "pending",
+                                                  audio_url: null,
+                                                  suno_task_id: null
+                                                })
+                                                .eq("id", song.id);
+                                            });
+                                            setSongs(prev => prev.map(s => {
+                                              if (albumSongs.some(as => as.id === s.id)) {
+                                                return { ...s, generation_status: "pending", audio_url: null, suno_task_id: null };
+                                              }
+                                              return s;
+                                            }));
+                                            toast.success(`Album "${album.name}" zurückgesetzt - bereit zur Neugenerierung`);
+                                          }}
+                                          title="Album zurücksetzen für Neugenerierung"
+                                        >
+                                          <RefreshCw className="h-3 w-3" />
+                                        </Button>
+                                      </div>
                                     </div>
 
                                     {expandedAlbums.has(album.id) && (
