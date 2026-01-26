@@ -55,6 +55,7 @@ export const ArtistAlbumsSection = memo(({
   const [generatingAlbums, setGeneratingAlbums] = useState<Set<string>>(new Set());
   const [albumProgress, setAlbumProgress] = useState<Map<string, { current: number; total: number }>>(new Map());
   const [detailedSongs, setDetailedSongs] = useState<Map<string, Song>>(new Map());
+  const [processingAlbumSongs, setProcessingAlbumSongs] = useState<Map<string, Set<string>>>(new Map());
 
   const toggleAlbum = useCallback((albumId: string) => {
     setExpandedAlbums(prev => {
@@ -160,7 +161,7 @@ export const ArtistAlbumsSection = memo(({
     toast.success(`${songsWithAudio.length} Songs zur Wiedergabe hinzugefügt`);
   }, [clearQueue, play, addToQueue, artistName, artistImageUrl, artistId]);
 
-  const generateSong = async (song: Song, album: Album) => {
+  const generateSong = async (song: Song, album: Album, isAlbumGeneration = false) => {
     setGeneratingSongs(prev => new Set(prev).add(song.id));
 
     try {
@@ -205,13 +206,51 @@ export const ArtistAlbumsSection = memo(({
         });
 
         // Start polling for this song
-        pollSongStatus(song.id, album);
+        pollSongStatus(song.id, album, isAlbumGeneration);
       } else {
         toast.error(`Fehler: ${result.error}`);
+        // Remove from processing on error
+        if (isAlbumGeneration) {
+          setProcessingAlbumSongs(prev => {
+            const next = new Map(prev);
+            const albumSongs = next.get(album.id);
+            if (albumSongs) {
+              albumSongs.delete(song.id);
+              if (albumSongs.size === 0) {
+                next.delete(album.id);
+                setGeneratingAlbums(prevAlbums => {
+                  const nextAlbums = new Set(prevAlbums);
+                  nextAlbums.delete(album.id);
+                  return nextAlbums;
+                });
+              }
+            }
+            return next;
+          });
+        }
       }
     } catch (error) {
       console.error("Error generating song:", error);
       toast.error("Verbindungsfehler");
+      // Remove from processing on error
+      if (isAlbumGeneration) {
+        setProcessingAlbumSongs(prev => {
+          const next = new Map(prev);
+          const albumSongs = next.get(album.id);
+          if (albumSongs) {
+            albumSongs.delete(song.id);
+            if (albumSongs.size === 0) {
+              next.delete(album.id);
+              setGeneratingAlbums(prevAlbums => {
+                const nextAlbums = new Set(prevAlbums);
+                nextAlbums.delete(album.id);
+                return nextAlbums;
+              });
+            }
+          }
+          return next;
+        });
+      }
     } finally {
       setGeneratingSongs(prev => {
         const next = new Set(prev);
@@ -221,7 +260,7 @@ export const ArtistAlbumsSection = memo(({
     }
   };
 
-  const pollSongStatus = async (songId: string, album: Album) => {
+  const pollSongStatus = async (songId: string, album: Album, isAlbumGeneration = false) => {
     const maxAttempts = 60; // 5 minutes with 5s intervals
     let attempts = 0;
 
@@ -261,12 +300,57 @@ export const ArtistAlbumsSection = memo(({
           toast.success(`"${song.name}" bereit`, {
             description: "Zur Playlist hinzugefügt",
           });
-          onRefresh?.();
+          
+          // Remove from processing set if part of album generation
+          if (isAlbumGeneration) {
+            setProcessingAlbumSongs(prev => {
+              const next = new Map(prev);
+              const albumSongs = next.get(album.id);
+              if (albumSongs) {
+                albumSongs.delete(songId);
+                if (albumSongs.size === 0) {
+                  // All songs for this album are done
+                  next.delete(album.id);
+                  setGeneratingAlbums(prevAlbums => {
+                    const nextAlbums = new Set(prevAlbums);
+                    nextAlbums.delete(album.id);
+                    return nextAlbums;
+                  });
+                  toast.success(`Album "${album.name}" vollständig geladen`);
+                } else {
+                  next.set(album.id, albumSongs);
+                }
+              }
+              return next;
+            });
+          }
+          
+          // Don't call onRefresh to avoid page reload
           return;
         }
 
         if (song.generation_status === "error") {
           toast.error(`Fehler bei "${song.name}"`);
+          
+          // Remove from processing set on error
+          if (isAlbumGeneration) {
+            setProcessingAlbumSongs(prev => {
+              const next = new Map(prev);
+              const albumSongs = next.get(album.id);
+              if (albumSongs) {
+                albumSongs.delete(songId);
+                if (albumSongs.size === 0) {
+                  next.delete(album.id);
+                  setGeneratingAlbums(prevAlbums => {
+                    const nextAlbums = new Set(prevAlbums);
+                    nextAlbums.delete(album.id);
+                    return nextAlbums;
+                  });
+                }
+              }
+              return next;
+            });
+          }
           return;
         }
       }
@@ -274,6 +358,26 @@ export const ArtistAlbumsSection = memo(({
       attempts++;
       if (attempts < maxAttempts) {
         setTimeout(poll, 5000);
+      } else {
+        // Timeout - remove from processing
+        if (isAlbumGeneration) {
+          setProcessingAlbumSongs(prev => {
+            const next = new Map(prev);
+            const albumSongs = next.get(album.id);
+            if (albumSongs) {
+              albumSongs.delete(songId);
+              if (albumSongs.size === 0) {
+                next.delete(album.id);
+                setGeneratingAlbums(prevAlbums => {
+                  const nextAlbums = new Set(prevAlbums);
+                  nextAlbums.delete(album.id);
+                  return nextAlbums;
+                });
+              }
+            }
+            return next;
+          });
+        }
       }
     };
 
@@ -290,6 +394,13 @@ export const ArtistAlbumsSection = memo(({
       return;
     }
 
+    // Track all songs that need to be processed for this album
+    setProcessingAlbumSongs(prev => {
+      const next = new Map(prev);
+      next.set(album.id, new Set(songsWithoutAudio.map(s => s.id)));
+      return next;
+    });
+    
     setGeneratingAlbums(prev => new Set(prev).add(album.id));
     setAlbumProgress(prev => new Map(prev).set(album.id, { current: 0, total: songsWithoutAudio.length }));
 
@@ -299,15 +410,12 @@ export const ArtistAlbumsSection = memo(({
     for (let i = 0; i < songsWithoutAudio.length; i++) {
       const song = songsWithoutAudio[i];
       setAlbumProgress(prev => new Map(prev).set(album.id, { current: i + 1, total: songsWithoutAudio.length }));
-      await generateSong(song, album);
+      await generateSong(song, album, true); // Pass true for isAlbumGeneration
       await new Promise(resolve => setTimeout(resolve, 1500));
     }
 
-    setGeneratingAlbums(prev => {
-      const next = new Set(prev);
-      next.delete(album.id);
-      return next;
-    });
+    // Don't clear generatingAlbums here - it will be cleared when all polling completes
+    // Only clear the progress bar after requests are sent
     setAlbumProgress(prev => {
       const next = new Map(prev);
       next.delete(album.id);
@@ -370,6 +478,9 @@ export const ArtistAlbumsSection = memo(({
           const albumSongsWithAudio = album.songs.filter(s => getSongDetails(s).audio_url).length;
           const allGenerated = albumSongsWithAudio === album.songs.length;
           const isGeneratingAlbum = generatingAlbums.has(album.id);
+          const hasProcessingSongs = processingAlbumSongs.has(album.id);
+          const remainingProcessingSongs = processingAlbumSongs.get(album.id)?.size || 0;
+          const isAlbumBusy = isGeneratingAlbum || hasProcessingSongs;
 
           return (
             <div key={album.id} className="border border-border rounded-lg overflow-hidden bg-card/30">
@@ -409,7 +520,7 @@ export const ArtistAlbumsSection = memo(({
                   )}
                 {!allGenerated && (
                   <div className="flex items-center gap-2">
-                    {isGeneratingAlbum && albumProgress.get(album.id) && (
+                    {isAlbumBusy && albumProgress.get(album.id) && (
                       <div className="flex items-center gap-2 min-w-[100px]">
                         <Progress 
                           value={(albumProgress.get(album.id)!.current / albumProgress.get(album.id)!.total) * 100} 
@@ -420,14 +531,22 @@ export const ArtistAlbumsSection = memo(({
                         </span>
                       </div>
                     )}
+                    {isAlbumBusy && !albumProgress.get(album.id) && remainingProcessingSongs > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                        <span className="text-[10px] text-muted-foreground">
+                          {remainingProcessingSongs} {remainingProcessingSongs === 1 ? 'Song' : 'Songs'} lädt...
+                        </span>
+                      </div>
+                    )}
                     <Button
                       variant="outline"
                       size="sm"
                       className="h-8 text-xs"
                       onClick={() => generateAlbum(album)}
-                      disabled={isGeneratingAlbum}
+                      disabled={isAlbumBusy}
                     >
-                      {isGeneratingAlbum ? (
+                      {isAlbumBusy ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       ) : (
                         <>Album laden</>
