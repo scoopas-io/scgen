@@ -123,9 +123,10 @@ serve(async (req) => {
 
     // Build style tags for Suno - includes genre, style, voice characteristics, mood
     // Merge persona tags with dynamically generated ones
+    // CRITICAL: Pass vocalGender to ensure consistency between gender param and style tags
     const styleTags = buildStyleTagsWithPersona(
       genre, style, voicePrompt, personality, effectiveBpm, tonart, isInstrumental, language,
-      personaStyleTags, personaMoodTags, vocalTexture, vocalRange
+      personaStyleTags, personaMoodTags, vocalTexture, vocalRange, vocalGender
     );
     console.log("Style tags:", styleTags);
 
@@ -376,7 +377,8 @@ function buildStyleTagsWithPersona(
   personaStyleTags?: string[],
   personaMoodTags?: string[],
   vocalTexture?: string | null,
-  vocalRange?: string | null
+  vocalRange?: string | null,
+  personaVocalGender?: string | null
 ): string {
   const tags: string[] = [];
   
@@ -395,14 +397,28 @@ function buildStyleTagsWithPersona(
   if (isInstrumental) {
     tags.push("instrumental", "no vocals");
   } else {
-    // Add persona vocal characteristics first
+    // Determine effective vocal gender - persona takes priority
+    const effectiveVocalGender = personaVocalGender || extractVocalGender(voicePrompt);
+    
+    // Add correct gender vocals based on effective gender (CRITICAL: must be consistent!)
+    if (effectiveVocalGender === "m") {
+      tags.push("male vocals");
+    } else if (effectiveVocalGender === "f") {
+      tags.push("female vocals");
+    }
+    
+    // Add persona vocal characteristics
     if (vocalTexture) tags.push(vocalTexture);
     if (vocalRange) tags.push(vocalRange);
     
-    // Add voice characteristics from prompt
+    // Add voice characteristics from prompt, but SKIP gender keywords to avoid conflicts
     const voiceKeywords = extractVoiceKeywords(voicePrompt);
     if (voiceKeywords) {
       voiceKeywords.split(", ").forEach(kw => {
+        // Skip gender-related keywords - we already added the correct one above
+        if (kw === "male vocals" || kw === "female vocals") {
+          return;
+        }
         if (!tags.includes(kw)) tags.push(kw);
       });
     }
