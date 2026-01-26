@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Play, Shuffle, Music, Disc, TrendingUp, Sparkles, Users, ChevronRight } from "lucide-react";
+import { Play, Shuffle, Music, Disc, TrendingUp, Sparkles, Users, ChevronRight, Clock, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { AppHeader } from "@/components/AppHeader";
@@ -97,7 +97,7 @@ const ACCENT_COLORS = [
 
 export default function Home() {
   const { artists, stats, isLoading } = useCatalogData();
-  const { play, clearQueue, addToQueue, currentTrack, isPlaying } = useAudioPlayer();
+  const { play, clearQueue, addToQueue, currentTrack, isPlaying, history } = useAudioPlayer();
   const playerHeight = usePlayerHeight();
 
   // Get all songs with audio
@@ -115,9 +115,35 @@ export default function Home() {
     return songs;
   }, [artists]);
 
-  // Recently added songs
+  // Recently added songs - sorted by song created_at
   const recentlyAdded = useMemo(() => {
-    return [...allSongsWithAudio].slice(0, 6);
+    return [...allSongsWithAudio]
+      .sort((a, b) => new Date(b.song.created_at).getTime() - new Date(a.song.created_at).getTime())
+      .slice(0, 6);
+  }, [allSongsWithAudio]);
+
+  // Recently played from history
+  const recentlyPlayed = useMemo(() => {
+    return history.slice(0, 6);
+  }, [history]);
+
+  // Most popular songs (songs that have audio, sorted by artist with most songs as proxy for popularity)
+  const popularSongs = useMemo(() => {
+    // Create a map of artist song counts
+    const artistSongCounts = new Map<string, number>();
+    allSongsWithAudio.forEach(item => {
+      const count = artistSongCounts.get(item.artist.id) || 0;
+      artistSongCounts.set(item.artist.id, count + 1);
+    });
+    
+    // Sort songs by their artist's song count (as a proxy for popularity)
+    return [...allSongsWithAudio]
+      .sort((a, b) => {
+        const aCount = artistSongCounts.get(a.artist.id) || 0;
+        const bCount = artistSongCounts.get(b.artist.id) || 0;
+        return bCount - aCount;
+      })
+      .slice(0, 6);
   }, [allSongsWithAudio]);
 
   // Top artists (by song count)
@@ -409,64 +435,198 @@ export default function Home() {
             </section>
           )}
 
-          {/* Recently Added - Compact List */}
-          {recentlyAdded.length > 0 && (
+          {/* Two Column Grid: Recently Added & Popular Songs */}
+          {(recentlyAdded.length > 0 || popularSongs.length > 0) && (
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Recently Added */}
+              {recentlyAdded.length > 0 && (
+                <section>
+                  <h2 className="font-display text-lg font-semibold mb-4 flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    Kürzlich hinzugefügt
+                  </h2>
+                  <div className="grid gap-1 rounded-xl overflow-hidden border border-border/50 bg-card/30">
+                    {recentlyAdded.map((item, idx) => {
+                      const isCurrentlyPlaying = currentTrack?.id === item.song.id && isPlaying;
+                      return (
+                        <button
+                          key={item.song.id}
+                          onClick={() => handlePlaySong(item)}
+                          className={cn(
+                            "flex items-center gap-3 p-3 transition-colors text-left w-full group",
+                            "hover:bg-muted/40",
+                            isCurrentlyPlaying && "bg-primary/10"
+                          )}
+                        >
+                          <span className="w-5 text-center text-muted-foreground text-xs">
+                            {isCurrentlyPlaying ? (
+                              <span className="flex items-center justify-center gap-px">
+                                <span className="w-0.5 h-3 bg-primary rounded-full animate-pulse" />
+                                <span className="w-0.5 h-2 bg-primary rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
+                                <span className="w-0.5 h-3.5 bg-primary rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
+                              </span>
+                            ) : (
+                              <>
+                                <span className="group-hover:hidden">{idx + 1}</span>
+                                <Play className="h-3 w-3 hidden group-hover:block mx-auto text-primary" fill="currentColor" />
+                              </>
+                            )}
+                          </span>
+                          <div className="w-9 h-9 rounded overflow-hidden flex-shrink-0">
+                            {item.artist.profile_image_url ? (
+                              <img src={item.artist.profile_image_url} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full bg-muted flex items-center justify-center">
+                                <Music className="h-4 w-4 text-muted-foreground" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className={cn(
+                              "text-sm font-medium truncate",
+                              isCurrentlyPlaying && "text-primary"
+                            )}>
+                              {item.song.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {item.artist.name}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
+
+              {/* Popular Songs */}
+              {popularSongs.length > 0 && (
+                <section>
+                  <h2 className="font-display text-lg font-semibold mb-4 flex items-center gap-2">
+                    <Flame className="h-4 w-4 text-orange-500" />
+                    Beliebteste Songs
+                  </h2>
+                  <div className="grid gap-1 rounded-xl overflow-hidden border border-border/50 bg-card/30">
+                    {popularSongs.map((item, idx) => {
+                      const isCurrentlyPlaying = currentTrack?.id === item.song.id && isPlaying;
+                      return (
+                        <button
+                          key={item.song.id}
+                          onClick={() => handlePlaySong(item)}
+                          className={cn(
+                            "flex items-center gap-3 p-3 transition-colors text-left w-full group",
+                            "hover:bg-muted/40",
+                            isCurrentlyPlaying && "bg-primary/10"
+                          )}
+                        >
+                          <span className="w-5 text-center text-muted-foreground text-xs">
+                            {isCurrentlyPlaying ? (
+                              <span className="flex items-center justify-center gap-px">
+                                <span className="w-0.5 h-3 bg-primary rounded-full animate-pulse" />
+                                <span className="w-0.5 h-2 bg-primary rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
+                                <span className="w-0.5 h-3.5 bg-primary rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
+                              </span>
+                            ) : (
+                              <>
+                                <span className="group-hover:hidden">{idx + 1}</span>
+                                <Play className="h-3 w-3 hidden group-hover:block mx-auto text-primary" fill="currentColor" />
+                              </>
+                            )}
+                          </span>
+                          <div className="w-9 h-9 rounded overflow-hidden flex-shrink-0">
+                            {item.artist.profile_image_url ? (
+                              <img src={item.artist.profile_image_url} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full bg-muted flex items-center justify-center">
+                                <Music className="h-4 w-4 text-muted-foreground" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className={cn(
+                              "text-sm font-medium truncate",
+                              isCurrentlyPlaying && "text-primary"
+                            )}>
+                              {item.song.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {item.artist.name}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
+            </div>
+          )}
+
+          {/* Recently Played */}
+          {recentlyPlayed.length > 0 && (
             <section>
               <h2 className="font-display text-lg font-semibold mb-4 flex items-center gap-2">
-                <Music className="h-4 w-4 text-primary" />
-                Kürzlich hinzugefügt
+                <Clock className="h-4 w-4 text-primary" />
+                Kürzlich gespielt
               </h2>
-              <div className="grid gap-1 rounded-xl overflow-hidden border border-border/50 bg-card/30">
-                {recentlyAdded.map((item, idx) => {
-                  const isCurrentlyPlaying = currentTrack?.id === item.song.id && isPlaying;
-                  return (
-                    <button
-                      key={item.song.id}
-                      onClick={() => handlePlaySong(item)}
-                      className={cn(
-                        "flex items-center gap-3 p-3 transition-colors text-left w-full group",
-                        "hover:bg-muted/40",
-                        isCurrentlyPlaying && "bg-primary/10"
-                      )}
-                    >
-                      <span className="w-5 text-center text-muted-foreground text-xs">
-                        {isCurrentlyPlaying ? (
-                          <span className="flex items-center justify-center gap-px">
-                            <span className="w-0.5 h-3 bg-primary rounded-full animate-pulse" />
-                            <span className="w-0.5 h-2 bg-primary rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
-                            <span className="w-0.5 h-3.5 bg-primary rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
-                          </span>
-                        ) : (
-                          <>
-                            <span className="group-hover:hidden">{idx + 1}</span>
-                            <Play className="h-3 w-3 hidden group-hover:block mx-auto text-primary" fill="currentColor" />
-                          </>
-                        )}
-                      </span>
-                      <div className="w-9 h-9 rounded overflow-hidden flex-shrink-0">
-                        {item.artist.profile_image_url ? (
-                          <img src={item.artist.profile_image_url} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full bg-muted flex items-center justify-center">
-                            <Music className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={cn(
-                          "text-sm font-medium truncate",
-                          isCurrentlyPlaying && "text-primary"
+              <ScrollArea className="w-full -mx-4 px-4">
+                <div className="flex gap-3 pb-2">
+                  {recentlyPlayed.map((track, idx) => {
+                    const isCurrentlyPlaying = currentTrack?.id === track.id && isPlaying;
+                    return (
+                      <button
+                        key={`${track.id}-${idx}`}
+                        onClick={() => play(track)}
+                        className="group flex-shrink-0 w-32 md:w-36 text-left"
+                      >
+                        <div className={cn(
+                          "relative aspect-square rounded-lg overflow-hidden mb-2 shadow-md transition-all",
+                          "ring-2 ring-transparent group-hover:ring-primary/50",
+                          isCurrentlyPlaying && "ring-primary"
                         )}>
-                          {item.song.name}
+                          {track.artistImageUrl || track.coverUrl ? (
+                            <img
+                              src={track.artistImageUrl || track.coverUrl}
+                              alt={track.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-muted flex items-center justify-center">
+                              <Music className="h-8 w-8 text-muted-foreground" />
+                            </div>
+                          )}
+                          <div className={cn(
+                            "absolute inset-0 flex items-center justify-center bg-black/40 transition-opacity",
+                            isCurrentlyPlaying ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                          )}>
+                            {isCurrentlyPlaying ? (
+                              <div className="flex items-center justify-center gap-0.5">
+                                <span className="w-1 h-4 bg-white rounded-full animate-pulse" />
+                                <span className="w-1 h-3 bg-white rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
+                                <span className="w-1 h-5 bg-white rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
+                              </div>
+                            ) : (
+                              <div className="p-2 rounded-full bg-primary text-primary-foreground">
+                                <Play className="h-4 w-4 ml-0.5" fill="currentColor" />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <p className={cn(
+                          "text-xs font-medium truncate transition-colors",
+                          isCurrentlyPlaying ? "text-primary" : "group-hover:text-primary"
+                        )}>
+                          {track.title}
                         </p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {item.artist.name}
+                        <p className="text-[10px] text-muted-foreground truncate">
+                          {track.artist}
                         </p>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
+                      </button>
+                    );
+                  })}
+                </div>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
             </section>
           )}
 

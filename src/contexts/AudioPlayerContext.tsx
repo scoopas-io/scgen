@@ -29,8 +29,9 @@ interface AudioPlayerContextType {
   volume: number;
   isMuted: boolean;
   
-  // Queue
+  // Queue & History
   queue: Track[];
+  history: Track[];
   
   // Repeat & Shuffle
   repeatMode: RepeatMode;
@@ -317,6 +318,7 @@ export const AudioPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         volume,
         isMuted,
         queue,
+        history,
         repeatMode,
         isShuffled,
         play,
