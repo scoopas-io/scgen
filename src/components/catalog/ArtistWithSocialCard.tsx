@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { ArtistManagementDialog } from "@/components/ArtistManagementDialog";
+import { ArtistAlbumsSection } from "@/components/catalog/ArtistAlbumsSection";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface SocialContent {
@@ -19,10 +20,21 @@ interface SocialContent {
   created_at: string;
 }
 
+interface Song {
+  id: string;
+  name: string;
+  track_number?: number;
+  bpm?: number;
+  tonart?: string;
+  audio_url?: string | null;
+  generation_status?: string | null;
+}
+
 interface Album {
   id: string;
   name: string;
-  songs: { id: string; name: string }[];
+  release_date?: string;
+  songs: Song[];
 }
 
 interface ArtistData {
@@ -211,7 +223,7 @@ export const ArtistWithSocialCard = memo(({ artist, onDelete, onRefresh }: Artis
 
         {/* Expanded Content */}
         {isExpanded && (
-          <div className="border-t border-border bg-muted/20 p-3 sm:p-4 space-y-3 sm:space-y-4 animate-in slide-in-from-top-2 duration-200">
+          <div className="border-t border-border bg-muted/20 p-3 sm:p-4 space-y-4 sm:space-y-6 animate-in slide-in-from-top-2 duration-200">
             {/* Social Content Section */}
             <div>
               <h4 className="text-xs sm:text-sm font-medium text-muted-foreground mb-2 sm:mb-3 flex items-center gap-2">
@@ -312,6 +324,19 @@ export const ArtistWithSocialCard = memo(({ artist, onDelete, onRefresh }: Artis
                 </div>
               )}
             </div>
+
+            {/* Albums & Songs Section */}
+            <ArtistAlbumsSection
+              artistId={artist.id}
+              artistName={artist.name}
+              artistImageUrl={artist.profile_image_url}
+              genre={artist.genre}
+              style={artist.style}
+              voicePrompt={artist.voice_prompt || ""}
+              personality={artist.personality || ""}
+              albums={artist.albums}
+              onRefresh={onRefresh}
+            />
           </div>
         )}
       </div>
