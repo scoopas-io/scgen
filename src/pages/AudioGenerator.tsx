@@ -12,6 +12,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { BulkGenerationPanel } from "@/components/BulkGenerationPanel";
+import { DataLoadingProgress } from "@/components/DataLoadingProgress";
 import { isInstrumentalGenre } from "@/lib/genreConfig";
 import { 
   Music, Disc, User, Play, Pause, Download, Loader2, 
@@ -62,6 +63,16 @@ type SortDirection = "asc" | "desc";
 
 const AudioGenerator = () => {
   const [loading, setLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState({
+    phase: "init" as "init" | "artists" | "albums" | "songs" | "processing" | "done",
+    current: 0,
+    total: 0,
+    startTime: null as number | null,
+    phaseStartTime: null as number | null,
+    artistsLoaded: 0,
+    albumsLoaded: 0,
+    songsLoaded: 0,
+  });
   const [artists, setArtists] = useState<Artist[]>([]);
   const [albums, setAlbums] = useState<Album[]>([]);
   const [songs, setSongs] = useState<SongWithDetails[]>([]);
@@ -101,9 +112,19 @@ const AudioGenerator = () => {
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    loadData();
-    loadStats();
+    // Load stats first, then data with progress tracking
+    const init = async () => {
+      await loadStats();
+    };
+    init();
   }, []);
+
+  // Load data once stats are available
+  useEffect(() => {
+    if (stats.artists > 0 || stats.albums > 0 || stats.songs > 0) {
+      loadData();
+    }
+  }, [stats.artists, stats.albums, stats.songs]);
 
   const loadStats = async () => {
     const [artistsRes, albumsRes, songsRes] = await Promise.all([
@@ -111,11 +132,17 @@ const AudioGenerator = () => {
       supabase.from("albums").select("id", { count: "exact", head: true }),
       supabase.from("songs").select("id", { count: "exact", head: true }),
     ]);
-    setStats({
+    const newStats = {
       artists: artistsRes.count || 0,
       albums: albumsRes.count || 0,
       songs: songsRes.count || 0,
-    });
+    };
+    setStats(newStats);
+    
+    // If everything is empty, still proceed
+    if (newStats.artists === 0 && newStats.albums === 0 && newStats.songs === 0) {
+      setLoading(false);
+    }
   };
 
   // Setup realtime subscription for song updates
@@ -219,11 +246,13 @@ const AudioGenerator = () => {
     }
   };
 
-  // Batch fetch helper to overcome 1000 row limit
-  const fetchAll = async <T,>(
+  // Batch fetch helper with progress tracking
+  const fetchAllWithProgress = async <T,>(
     table: "artists" | "albums" | "songs",
     select: string,
     orderBy: string,
+    expectedTotal: number,
+    onProgress: (loaded: number) => void,
     pageSize = 1000
   ): Promise<T[]> => {
     const all: T[] = [];
@@ -239,6 +268,7 @@ const AudioGenerator = () => {
       if (error) throw error;
       const batch = (data || []) as T[];
       all.push(...batch);
+      onProgress(all.length);
       if (batch.length < pageSize) break;
       from += pageSize;
     }
@@ -248,16 +278,89 @@ const AudioGenerator = () => {
 
   const loadData = async () => {
     setLoading(true);
+    const startTime = Date.now();
+    
+    setLoadingProgress({
+      phase: "init",
+      current: 0,
+      total: stats.artists + stats.albums + stats.songs,
+      startTime,
+      phaseStartTime: startTime,
+      artistsLoaded: 0,
+      albumsLoaded: 0,
+      songsLoaded: 0,
+    });
+    
     try {
-      const [artistsData, albumsData, songsData] = await Promise.all([
-        fetchAll<any>("artists", "id, name, genre, style, voice_prompt, personality, profile_image_url", "name"),
-        fetchAll<any>("albums", "id, name, artist_id", "name"),
-        fetchAll<any>("songs", "id, name, album_id, bpm, tonart, audio_url, generation_status, suno_task_id, created_at", "track_number"),
-      ]);
-
+      // Phase 1: Load Artists
+      setLoadingProgress(prev => ({ 
+        ...prev, 
+        phase: "artists", 
+        phaseStartTime: Date.now() 
+      }));
+      
+      const artistsData = await fetchAllWithProgress<any>(
+        "artists", 
+        "id, name, genre, style, voice_prompt, personality, profile_image_url", 
+        "name",
+        stats.artists,
+        (loaded) => setLoadingProgress(prev => ({ 
+          ...prev, 
+          artistsLoaded: loaded,
+          current: loaded 
+        }))
+      );
       setArtists(artistsData || []);
+      
+      // Phase 2: Load Albums
+      setLoadingProgress(prev => ({ 
+        ...prev, 
+        phase: "albums", 
+        phaseStartTime: Date.now() 
+      }));
+      
+      const albumsData = await fetchAllWithProgress<any>(
+        "albums", 
+        "id, name, artist_id", 
+        "name",
+        stats.albums,
+        (loaded) => setLoadingProgress(prev => ({ 
+          ...prev, 
+          albumsLoaded: loaded,
+          current: prev.artistsLoaded + loaded 
+        }))
+      );
       setAlbums(albumsData || []);
+      
+      // Phase 3: Load Songs
+      setLoadingProgress(prev => ({ 
+        ...prev, 
+        phase: "songs", 
+        phaseStartTime: Date.now() 
+      }));
+      
+      const songsData = await fetchAllWithProgress<any>(
+        "songs", 
+        "id, name, album_id, bpm, tonart, audio_url, generation_status, suno_task_id, created_at", 
+        "track_number",
+        stats.songs,
+        (loaded) => setLoadingProgress(prev => ({ 
+          ...prev, 
+          songsLoaded: loaded,
+          current: prev.artistsLoaded + prev.albumsLoaded + loaded 
+        }))
+      );
+      
+      // Phase 4: Process data
+      setLoadingProgress(prev => ({ 
+        ...prev, 
+        phase: "processing", 
+        phaseStartTime: Date.now() 
+      }));
+      
       setSongs(mapSongsWithDetails(songsData as Song[] | null | undefined, artistsData, albumsData));
+      
+      setLoadingProgress(prev => ({ ...prev, phase: "done" }));
     } catch (error) {
       console.error("Error loading data:", error);
       toast.error("Fehler beim Laden der Daten");
@@ -641,9 +744,7 @@ const AudioGenerator = () => {
                 {/* Selection Tab */}
                 <TabsContent value="select" className="mt-0 space-y-4 pr-4">
                   {loading ? (
-                    <div className="flex items-center justify-center py-12">
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    </div>
+                    <DataLoadingProgress progress={loadingProgress} stats={stats} />
                   ) : (
                     <>
                       {/* Bulk Generation Panel */}
