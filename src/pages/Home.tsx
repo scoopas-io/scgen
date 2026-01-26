@@ -8,16 +8,79 @@ import { useCatalogData, type ArtistWithAlbums, type Song } from "@/hooks/useCat
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { cn } from "@/lib/utils";
 
+// Genre images
+import genreHipHop from "@/assets/genres/hip-hop.jpg";
+import genreSoul from "@/assets/genres/soul.jpg";
+import genreElectronica from "@/assets/genres/electronica.jpg";
+import genreReggae from "@/assets/genres/reggae.jpg";
+import genreAmericana from "@/assets/genres/americana.jpg";
+import genreChamberFolk from "@/assets/genres/chamber-folk.jpg";
+import genrePop from "@/assets/genres/pop.jpg";
+import genreRock from "@/assets/genres/rock.jpg";
+import genreJazz from "@/assets/genres/jazz.jpg";
+import genreRnb from "@/assets/genres/rnb.jpg";
+import genreTechno from "@/assets/genres/techno.jpg";
+import genreClassical from "@/assets/genres/classical.jpg";
+
+// Map genre names to images
+const GENRE_IMAGES: Record<string, string> = {
+  "Hip-Hop": genreHipHop,
+  "Soul": genreSoul,
+  "Electronica": genreElectronica,
+  "Reggae": genreReggae,
+  "Americana": genreAmericana,
+  "Chamber Folk": genreChamberFolk,
+  "Pop": genrePop,
+  "Rock": genreRock,
+  "Jazz": genreJazz,
+  "R&B": genreRnb,
+  "Techno": genreTechno,
+  "Classical": genreClassical,
+  // Fallback mappings for similar genres
+  "Electronic": genreElectronica,
+  "Folk": genreChamberFolk,
+  "Country": genreAmericana,
+  "Blues": genreSoul,
+  "Funk": genreSoul,
+  "Disco": genrePop,
+  "House": genreTechno,
+  "Trap": genreHipHop,
+  "Rap": genreHipHop,
+  "Neo-Soul": genreSoul,
+  "Indie": genreRock,
+  "Alternative": genreRock,
+  "Metal": genreRock,
+  "Punk": genreRock,
+  "Latin": genreReggae,
+  "World": genreReggae,
+  "Afrobeat": genreReggae,
+};
+
+// Get genre image with fuzzy matching
+const getGenreImage = (genre: string): string | null => {
+  // Direct match
+  if (GENRE_IMAGES[genre]) return GENRE_IMAGES[genre];
+  
+  // Partial match
+  const lowerGenre = genre.toLowerCase();
+  for (const [key, image] of Object.entries(GENRE_IMAGES)) {
+    if (lowerGenre.includes(key.toLowerCase()) || key.toLowerCase().includes(lowerGenre)) {
+      return image;
+    }
+  }
+  
+  return null;
+};
+
 interface PlaylistCard {
   id: string;
   title: string;
-  artistCount: number;
   songs: Array<{
     song: Song;
     artist: ArtistWithAlbums;
     albumName: string;
   }>;
-  coverImages: string[];
+  genreImage: string | null;
   accentColor: string;
 }
 
@@ -66,7 +129,7 @@ export default function Home() {
       .slice(0, 8);
   }, [artists]);
 
-  // Generate dynamic playlists based on genres with cover images
+  // Generate dynamic playlists based on genres with genre images
   const playlists = useMemo((): PlaylistCard[] => {
     const genreMap = new Map<string, Array<{ song: Song; artist: ArtistWithAlbums; albumName: string }>>();
     
@@ -81,22 +144,13 @@ export default function Home() {
     return Array.from(genreMap.entries())
       .filter(([_, songs]) => songs.length >= 2)
       .slice(0, 6)
-      .map(([genre, songs], idx) => {
-        const uniqueArtists = [...new Map(songs.map(s => [s.artist.id, s.artist])).values()];
-        const coverImages = uniqueArtists
-          .filter(a => a.profile_image_url)
-          .slice(0, 4)
-          .map(a => a.profile_image_url!);
-
-        return {
-          id: genre,
-          title: genre,
-          artistCount: uniqueArtists.length,
-          songs: songs.slice(0, 25),
-          coverImages,
-          accentColor: ACCENT_COLORS[idx % ACCENT_COLORS.length],
-        };
-      });
+      .map(([genre, songs], idx) => ({
+        id: genre,
+        title: genre,
+        songs: songs.slice(0, 25),
+        genreImage: getGenreImage(genre),
+        accentColor: ACCENT_COLORS[idx % ACCENT_COLORS.length],
+      }));
   }, [allSongsWithAudio]);
 
   // Random mix
@@ -179,7 +233,7 @@ export default function Home() {
             </div>
           </section>
 
-          {/* Genre Playlists - Compact Grid */}
+          {/* Genre Playlists with Genre Images */}
           {playlists.length > 0 && (
             <section>
               <div className="flex items-center justify-between mb-4">
@@ -198,29 +252,27 @@ export default function Home() {
                     onClick={() => handlePlayPlaylist(playlist)}
                     className="group relative overflow-hidden rounded-xl aspect-square transition-all duration-200 hover:scale-[1.03] focus:outline-none focus:ring-2 focus:ring-primary"
                   >
-                    {/* Background */}
-                    {playlist.coverImages.length >= 4 ? (
-                      <div className="absolute inset-0 grid grid-cols-2 grid-rows-2">
-                        {playlist.coverImages.slice(0, 4).map((img, idx) => (
-                          <img key={idx} src={img} alt="" className="w-full h-full object-cover" />
-                        ))}
-                      </div>
-                    ) : playlist.coverImages.length > 0 ? (
-                      <img src={playlist.coverImages[0]} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                    {/* Genre Image or Gradient Fallback */}
+                    {playlist.genreImage ? (
+                      <img 
+                        src={playlist.genreImage} 
+                        alt={playlist.title} 
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
                     ) : (
                       <div className={cn("absolute inset-0 bg-gradient-to-br", playlist.accentColor)} />
                     )}
                     
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                     
                     <div className="absolute inset-0 flex flex-col justify-end p-2.5">
-                      <h3 className="font-semibold text-white text-sm leading-tight truncate">
+                      <h3 className="font-semibold text-white text-sm leading-tight truncate drop-shadow-lg">
                         {playlist.title}
                       </h3>
                     </div>
                     
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30">
-                      <div className="p-2.5 rounded-full bg-primary text-primary-foreground">
+                      <div className="p-2.5 rounded-full bg-primary text-primary-foreground shadow-lg">
                         <Play className="h-4 w-4 ml-0.5" fill="currentColor" />
                       </div>
                     </div>
