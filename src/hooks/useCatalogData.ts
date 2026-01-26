@@ -56,6 +56,18 @@ interface ArtistWithAlbums {
   katalognummer?: string;
   created_at?: string;
   albums: Album[];
+  // Persona fields for generation
+  vocal_gender?: string | null;
+  vocal_texture?: string | null;
+  vocal_range?: string | null;
+  style_tags?: string[];
+  mood_tags?: string[];
+  negative_tags?: string[];
+  default_bpm_min?: number | null;
+  default_bpm_max?: number | null;
+  preferred_keys?: string[];
+  instrumental_only?: boolean | null;
+  persona_active?: boolean | null;
 }
 
 export interface CatalogStats {
@@ -168,6 +180,18 @@ export function useCatalogData() {
         voice_prompt: artist.voice_prompt,
         katalognummer: artist.katalognummer,
         created_at: artist.created_at,
+        // Persona fields for generation
+        vocal_gender: artist.vocal_gender,
+        vocal_texture: artist.vocal_texture,
+        vocal_range: artist.vocal_range,
+        style_tags: artist.style_tags,
+        mood_tags: artist.mood_tags,
+        negative_tags: artist.negative_tags,
+        default_bpm_min: artist.default_bpm_min,
+        default_bpm_max: artist.default_bpm_max,
+        preferred_keys: artist.preferred_keys,
+        instrumental_only: artist.instrumental_only,
+        persona_active: artist.persona_active,
         albums: (albumsByArtist.get(artist.id) || []).map(album => ({
           id: album.id,
           name: album.name,

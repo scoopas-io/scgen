@@ -37,6 +37,19 @@ interface ArtistAlbumsSectionProps {
   personality: string;
   albums: Album[];
   onRefresh?: () => void;
+  // Full artist metadata for generation
+  language?: string;
+  vocalGender?: string | null;
+  vocalTexture?: string | null;
+  vocalRange?: string | null;
+  styleTags?: string[];
+  moodTags?: string[];
+  negativeTags?: string[];
+  defaultBpmMin?: number | null;
+  defaultBpmMax?: number | null;
+  preferredKeys?: string[];
+  instrumentalOnly?: boolean | null;
+  personaActive?: boolean | null;
 }
 
 export const ArtistAlbumsSection = memo(({
@@ -49,6 +62,19 @@ export const ArtistAlbumsSection = memo(({
   personality,
   albums,
   onRefresh,
+  // Full artist metadata
+  language,
+  vocalGender,
+  vocalTexture,
+  vocalRange,
+  styleTags,
+  moodTags,
+  negativeTags,
+  defaultBpmMin,
+  defaultBpmMax,
+  preferredKeys,
+  instrumentalOnly,
+  personaActive,
 }: ArtistAlbumsSectionProps) => {
   const { play, pause, resume, currentTrack, isPlaying, addToQueue, clearQueue } = useAudioPlayer();
   const [expandedAlbums, setExpandedAlbums] = useState<Set<string>>(new Set());
@@ -184,7 +210,19 @@ export const ArtistAlbumsSection = memo(({
             bpm: song.bpm,
             tonart: song.tonart,
             artistName,
-            instrumental: isInstrumentalGenre(genre),
+            instrumental: instrumentalOnly ?? isInstrumentalGenre(genre),
+            // Full artist metadata for generation
+            language,
+            vocalGender: personaActive ? vocalGender : null,
+            vocalTexture: personaActive ? vocalTexture : null,
+            vocalRange: personaActive ? vocalRange : null,
+            styleTags: personaActive ? styleTags : undefined,
+            moodTags: personaActive ? moodTags : undefined,
+            negativeTags: personaActive ? negativeTags : undefined,
+            defaultBpmMin: personaActive ? defaultBpmMin : null,
+            defaultBpmMax: personaActive ? defaultBpmMax : null,
+            preferredKeys: personaActive ? preferredKeys : undefined,
+            instrumentalOnly: personaActive ? instrumentalOnly : undefined,
           }),
         }
       );
