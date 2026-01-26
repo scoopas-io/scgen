@@ -297,6 +297,7 @@ serve(async (req) => {
 
 /**
  * Builds a rich prompt with all artist/song context
+ * IMPORTANT: Language hints are reinforced multiple times to ensure Suno respects them
  */
 function buildPrompt(
   title: string,
@@ -308,7 +309,7 @@ function buildPrompt(
 ): string {
   const parts: string[] = [];
   
-  // Add language hint for vocals
+  // Add language hint for vocals - reinforced for better compliance
   const langHint = language ? LANGUAGE_HINTS[language] || language : null;
   
   if (isInstrumental) {
@@ -316,7 +317,9 @@ function buildPrompt(
     if (style) parts.push(`in ${style} style`);
   } else {
     if (langHint) {
-      parts.push(`A ${genre} song with ${langHint} vocals`);
+      // Reinforce language multiple ways for better Suno compliance
+      parts.push(`A ${genre} song sung entirely in ${langHint}`);
+      parts.push(`with ${langHint} lyrics`);
     } else {
       parts.push(`A ${genre} song`);
     }
@@ -327,6 +330,11 @@ function buildPrompt(
   const mood = extractMoodFromPersonality(personality);
   if (mood) {
     parts.push(`with a ${mood} atmosphere`);
+  }
+  
+  // Final language reinforcement for non-English languages
+  if (langHint && langHint !== "English" && !isInstrumental) {
+    parts.push(`(all vocals must be in ${langHint}, no English)`);
   }
   
   return parts.join(" ");
@@ -397,10 +405,14 @@ function buildStyleTagsWithPersona(
       });
     }
     
-    // Add language hint
+    // Add language hint - reinforced for better compliance
     const langHint = language ? LANGUAGE_HINTS[language] : null;
     if (langHint) {
       tags.push(`${langHint} vocals`);
+      // Add language as style tag for non-English to reinforce
+      if (langHint !== "English") {
+        tags.push(`${langHint} language`);
+      }
     }
   }
   
