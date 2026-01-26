@@ -317,21 +317,48 @@ export function usePersonaBatchUpdate() {
         currentArtist: "Lade Album- und Song-Daten...",
       }));
 
-      // Load all albums and songs for analysis
-      const { data: albums } = await supabase.from("albums").select("id, name, artist_id");
-      const { data: songs } = await supabase.from("songs").select("id, name, bpm, tonart, laenge, version, bemerkungen, album_id");
+      // Load all albums and songs for analysis (recursive for >1000 rows)
+      const allAlbums: Album[] = [];
+      let albumOffset = 0;
+      while (true) {
+        const { data: albumBatch } = await supabase
+          .from("albums")
+          .select("id, name, artist_id")
+          .order("name")
+          .range(albumOffset, albumOffset + 999);
+        
+        if (!albumBatch || albumBatch.length === 0) break;
+        allAlbums.push(...(albumBatch as Album[]));
+        if (albumBatch.length < 1000) break;
+        albumOffset += 1000;
+      }
+
+      const allSongs: Song[] = [];
+      let songOffset = 0;
+      while (true) {
+        const { data: songBatch } = await supabase
+          .from("songs")
+          .select("id, name, bpm, tonart, laenge, version, bemerkungen, album_id")
+          .order("track_number")
+          .range(songOffset, songOffset + 999);
+        
+        if (!songBatch || songBatch.length === 0) break;
+        allSongs.push(...(songBatch as Song[]));
+        if (songBatch.length < 1000) break;
+        songOffset += 1000;
+      }
 
       const albumsByArtist = new Map<string, Album[]>();
-      for (const album of albums || []) {
+      for (const album of allAlbums) {
         const existing = albumsByArtist.get(album.artist_id) || [];
-        existing.push(album as Album);
+        existing.push(album);
         albumsByArtist.set(album.artist_id, existing);
       }
 
       const songsByAlbum = new Map<string, Song[]>();
-      for (const song of songs || []) {
+      for (const song of allSongs) {
         const existing = songsByAlbum.get(song.album_id) || [];
-        existing.push(song as Song);
+        existing.push(song);
         songsByAlbum.set(song.album_id, existing);
       }
 
