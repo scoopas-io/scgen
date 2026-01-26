@@ -212,6 +212,37 @@ export function useCatalogData() {
 
   useEffect(() => {
     loadData();
+
+    // Subscribe to realtime changes for songs table
+    const channel = supabase
+      .channel('catalog-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'songs' },
+        () => {
+          // Reload data when songs change (new audio_url, new songs, etc.)
+          loadData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'artists' },
+        () => {
+          loadData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'albums' },
+        () => {
+          loadData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [loadData]);
 
   const deleteArtist = useCallback(async (artistId: string) => {
