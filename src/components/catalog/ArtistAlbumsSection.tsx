@@ -199,7 +199,7 @@ export const ArtistAlbumsSection = memo(({
         });
 
         toast.success(`"${song.name}" wird abgerufen...`, {
-          description: "Audio wird im Hintergrund generiert (~2-3 Min)",
+          description: "Song wird konvertiert und geladen",
         });
 
         // Start polling for this song
@@ -243,23 +243,21 @@ export const ArtistAlbumsSection = memo(({
         });
 
         if (song.audio_url && song.generation_status === "completed") {
-          toast.success(`"${song.name}" ist fertig!`, {
-            action: {
-              label: "Abspielen",
-              onClick: () => {
-                play({
-                  id: song.id,
-                  title: song.name,
-                  artist: artistName,
-                  artistImageUrl,
-                  album: album.name,
-                  audioUrl: song.audio_url!,
-                  songId: song.id,
-                  artistId,
-                  albumId: album.id,
-                });
-              },
-            },
+          // Automatically add to queue
+          addToQueue({
+            id: song.id,
+            title: song.name,
+            artist: artistName,
+            artistImageUrl,
+            album: album.name,
+            audioUrl: song.audio_url!,
+            songId: song.id,
+            artistId,
+            albumId: album.id,
+          });
+          
+          toast.success(`"${song.name}" bereit`, {
+            description: "Zur Playlist hinzugefügt",
           });
           onRefresh?.();
           return;
