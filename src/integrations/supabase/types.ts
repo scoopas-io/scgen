@@ -70,6 +70,7 @@ export type Database = {
           rechteinhaber_publishing: string | null
           style: string
           style_tags: string[] | null
+          suno_persona_id: string | null
           verlag: string | null
           vocal_gender: string | null
           vocal_range: string | null
@@ -99,6 +100,7 @@ export type Database = {
           rechteinhaber_publishing?: string | null
           style: string
           style_tags?: string[] | null
+          suno_persona_id?: string | null
           verlag?: string | null
           vocal_gender?: string | null
           vocal_range?: string | null
@@ -128,6 +130,7 @@ export type Database = {
           rechteinhaber_publishing?: string | null
           style?: string
           style_tags?: string[] | null
+          suno_persona_id?: string | null
           verlag?: string | null
           vocal_gender?: string | null
           vocal_range?: string | null

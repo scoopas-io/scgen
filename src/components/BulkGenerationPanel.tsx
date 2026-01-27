@@ -46,6 +46,8 @@ interface Song {
   defaultBpmMax?: number | null;
   preferredKeys?: string[];
   instrumentalOnly?: boolean;
+  // Suno persona ID for consistent voice/style
+  sunoPersonaId?: string | null;
 }
 
 interface FailedSong extends Song {
@@ -243,6 +245,8 @@ const BulkGenerationPanel = forwardRef<BulkGenerationPanelRef, BulkGenerationPan
             defaultBpmMax: song.defaultBpmMax,
             preferredKeys: song.preferredKeys,
             instrumentalOnly: song.instrumentalOnly,
+            // Suno persona ID for consistent voice/style
+            sunoPersonaId: song.sunoPersonaId,
           }),
         }
       );
