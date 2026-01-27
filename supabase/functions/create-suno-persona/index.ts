@@ -94,8 +94,9 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         taskId: song.suno_task_id,
+        // Suno requires musicIndex to specify which generated audio to use (0 or 1)
+        musicIndex: 0,
         // Some Suno API variants expect `name`, others `personaName`.
-        // Sending both is harmless and avoids version mismatches.
         name: personaName,
         personaName,
         description: personaDescription,
