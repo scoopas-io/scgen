@@ -19,7 +19,8 @@ import {
   Info,
   FileCheck,
   FileX,
-  Printer
+  Printer,
+  Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -474,11 +475,21 @@ export default function Home() {
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
+              <p className="text-xs text-muted-foreground mb-4">
+                Gesamt: <span className="font-medium text-foreground">{registrationStats.total.toLocaleString('de-DE')}</span> Titel im Katalog
+              </p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* GEMA */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">GEMA</span>
+                    <span className="text-sm font-medium flex items-center gap-1.5">
+                      GEMA
+                      {registrationStats.gema.percent === 100 && (
+                        <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-emerald-500 text-white">
+                          <Check className="h-2.5 w-2.5" />
+                        </span>
+                      )}
+                    </span>
                     <span className="text-xs text-muted-foreground tabular-nums">
                       {registrationStats.gema.registered} / {registrationStats.total}
                     </span>
@@ -489,17 +500,28 @@ export default function Home() {
                       <FileCheck className="h-3 w-3 text-emerald-500" />
                       {registrationStats.gema.registered} registriert
                     </span>
-                    <span className="flex items-center gap-1">
-                      <FileX className="h-3 w-3 text-amber-500" />
-                      {registrationStats.gema.pending} ausstehend
-                    </span>
+                    {registrationStats.gema.pending > 0 ? (
+                      <span className="flex items-center gap-1">
+                        <FileX className="h-3 w-3 text-amber-500" />
+                        {registrationStats.gema.pending} ausstehend
+                      </span>
+                    ) : (
+                      <span className="text-emerald-500 font-medium">100% ✓</span>
+                    )}
                   </div>
                 </div>
 
                 {/* ISRC */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">ISRC</span>
+                    <span className="text-sm font-medium flex items-center gap-1.5">
+                      ISRC
+                      {registrationStats.isrc.percent === 100 && (
+                        <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-emerald-500 text-white">
+                          <Check className="h-2.5 w-2.5" />
+                        </span>
+                      )}
+                    </span>
                     <span className="text-xs text-muted-foreground tabular-nums">
                       {registrationStats.isrc.registered} / {registrationStats.total}
                     </span>
@@ -510,17 +532,28 @@ export default function Home() {
                       <FileCheck className="h-3 w-3 text-emerald-500" />
                       {registrationStats.isrc.registered} registriert
                     </span>
-                    <span className="flex items-center gap-1">
-                      <FileX className="h-3 w-3 text-amber-500" />
-                      {registrationStats.isrc.pending} ausstehend
-                    </span>
+                    {registrationStats.isrc.pending > 0 ? (
+                      <span className="flex items-center gap-1">
+                        <FileX className="h-3 w-3 text-amber-500" />
+                        {registrationStats.isrc.pending} ausstehend
+                      </span>
+                    ) : (
+                      <span className="text-emerald-500 font-medium">100% ✓</span>
+                    )}
                   </div>
                 </div>
 
                 {/* ISWC */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">ISWC</span>
+                    <span className="text-sm font-medium flex items-center gap-1.5">
+                      ISWC
+                      {registrationStats.iswc.percent === 100 && (
+                        <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-emerald-500 text-white">
+                          <Check className="h-2.5 w-2.5" />
+                        </span>
+                      )}
+                    </span>
                     <span className="text-xs text-muted-foreground tabular-nums">
                       {registrationStats.iswc.registered} / {registrationStats.total}
                     </span>
@@ -531,10 +564,14 @@ export default function Home() {
                       <FileCheck className="h-3 w-3 text-emerald-500" />
                       {registrationStats.iswc.registered} registriert
                     </span>
-                    <span className="flex items-center gap-1">
-                      <FileX className="h-3 w-3 text-amber-500" />
-                      {registrationStats.iswc.pending} ausstehend
-                    </span>
+                    {registrationStats.iswc.pending > 0 ? (
+                      <span className="flex items-center gap-1">
+                        <FileX className="h-3 w-3 text-amber-500" />
+                        {registrationStats.iswc.pending} ausstehend
+                      </span>
+                    ) : (
+                      <span className="text-emerald-500 font-medium">100% ✓</span>
+                    )}
                   </div>
                 </div>
               </div>
