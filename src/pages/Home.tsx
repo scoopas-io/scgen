@@ -190,6 +190,13 @@ export default function Home() {
     return songs;
   }, [artists]);
 
+  // Total songs (with and without audio)
+  const totalSongs = useMemo(() => {
+    return artists.reduce((acc, artist) => 
+      acc + artist.albums.reduce((a, album) => a + album.songs.length, 0), 0
+    );
+  }, [artists]);
+
   // Count songs with V2 versions available
   const songsWithV2Count = useMemo(() => {
     let count = 0;
@@ -205,17 +212,18 @@ export default function Home() {
     return count;
   }, [artists]);
 
-  // Total available audio tracks (V1 + V2)
+  // Potential V2 versions = all songs with audio (each V1 can have a V2)
+  const potentialV2Count = allSongsWithAudio.length;
+
+  // Total available audio tracks (existing V1 + existing V2)
   const totalAvailableTracks = useMemo(() => {
     return allSongsWithAudio.length + songsWithV2Count;
   }, [allSongsWithAudio.length, songsWithV2Count]);
 
-  // Total songs (with and without audio)
-  const totalSongs = useMemo(() => {
-    return artists.reduce((acc, artist) => 
-      acc + artist.albums.reduce((a, album) => a + album.songs.length, 0), 0
-    );
-  }, [artists]);
+  // Total potential tracks for valuation (all songs + potential V2 for each song with audio)
+  const totalPotentialTracks = useMemo(() => {
+    return totalSongs + potentialV2Count;
+  }, [totalSongs, potentialV2Count]);
 
   // Recently added songs
   const recentlyAdded = useMemo(() => {
@@ -268,10 +276,10 @@ export default function Home() {
     return Math.round((allSongsWithAudio.length / totalSongs) * 100);
   }, [allSongsWithAudio.length, totalSongs]);
 
-  // Catalog value estimation (Eigeneinschätzung) - includes V2 versions
+  // Catalog value estimation (Eigeneinschätzung) - includes potential V2 versions
   const catalogValuation = useMemo(() => {
-    // Use total available tracks (V1 + V2) for valuation
-    const trackCount = totalAvailableTracks;
+    // Use total songs + potential V2 versions (each song with audio can have V2)
+    const trackCount = totalPotentialTracks;
     const genreCount = genreStats.length;
     const artistCount = stats.artists;
     
@@ -287,12 +295,8 @@ export default function Home() {
     // Rights status bonus (100% Eigenproduktion = full control)
     const rightsBonus = 0.20; // 20% premium for full rights
     
-    // V2 coverage bonus (having alternative versions increases value)
-    const v2CoverageRatio = allSongsWithAudio.length > 0 ? songsWithV2Count / allSongsWithAudio.length : 0;
-    const v2Bonus = v2CoverageRatio * 0.10; // up to 10% bonus for full V2 coverage
-    
-    // Calculate total multiplier
-    const totalMultiplier = 1 + genreDiversityBonus + artistDiversityBonus + rightsBonus + v2Bonus;
+    // Calculate total multiplier (removed separate V2 bonus since V2 is now in base count)
+    const totalMultiplier = 1 + genreDiversityBonus + artistDiversityBonus + rightsBonus;
     
     // Calculate estimated value
     const estimatedValue = Math.round(trackCount * baseValuePerTrack * totalMultiplier);
@@ -303,11 +307,11 @@ export default function Home() {
       genreDiversityBonus: Math.round(genreDiversityBonus * 100),
       artistDiversityBonus: Math.round(artistDiversityBonus * 100),
       rightsBonus: Math.round(rightsBonus * 100),
-      v2Bonus: Math.round(v2Bonus * 100),
       totalMultiplier: Math.round(totalMultiplier * 100),
       trackCount,
+      potentialV2Count,
     };
-  }, [totalAvailableTracks, genreStats.length, stats.artists, allSongsWithAudio.length, songsWithV2Count]);
+  }, [totalPotentialTracks, genreStats.length, stats.artists, potentialV2Count]);
 
   // GEMA/ISRC/ISWC Statistics
   const registrationStats = useMemo(() => {
@@ -441,13 +445,10 @@ export default function Home() {
                 
                 {/* Right: Breakdown */}
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                  <span>{catalogValuation.trackCount.toLocaleString('de-DE')} Tracks × 850 €</span>
+                  <span>{totalSongs.toLocaleString('de-DE')} Songs + {catalogValuation.potentialV2Count} V2 × 850 €</span>
                   <span className="text-emerald-500">+{catalogValuation.genreDiversityBonus}% Genre</span>
                   <span className="text-blue-500">+{catalogValuation.artistDiversityBonus}% Künstler</span>
                   <span className="text-amber-500">+{catalogValuation.rightsBonus}% Vollrechte</span>
-                  {catalogValuation.v2Bonus > 0 && (
-                    <span className="text-purple-500">+{catalogValuation.v2Bonus}% V2</span>
-                  )}
                 </div>
               </div>
             </CardContent>
