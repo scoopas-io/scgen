@@ -257,7 +257,7 @@ function deriveFromSongMetadata(songs: Song[], albumNames: string[]): {
   return { bpmMin, bpmMax, preferredKeys, derivedStyleTags, derivedMoodTags };
 }
 
-// Check if artist needs persona update
+// Check if artist needs persona update - now also checks for mismatches with voice_prompt
 function needsPersonaUpdate(artist: Artist): boolean {
   // Check if key persona fields are empty
   const hasVocalInfo = artist.vocal_gender || artist.vocal_texture || artist.vocal_range;
@@ -270,7 +270,49 @@ function needsPersonaUpdate(artist: Artist): boolean {
   const missingVocalOrStyle = !hasVocalInfo && !hasStyleInfo && !hasMoodInfo;
   const missingTechnical = !hasBpmInfo || !hasKeyInfo;
   
-  return missingVocalOrStyle || missingTechnical;
+  // NEW: Also check if voice_prompt gender doesn't match persona vocal_gender
+  const extractedGender = extractGenderFromVoicePrompt(artist.voice_prompt);
+  const genderMismatch = extractedGender && artist.vocal_gender && extractedGender !== artist.vocal_gender;
+  
+  return missingVocalOrStyle || missingTechnical || genderMismatch;
+}
+
+// Robust gender extraction from voice_prompt - this is the source of truth
+function extractGenderFromVoicePrompt(voicePrompt: string): "m" | "f" | "duo" | null {
+  if (!voicePrompt) return null;
+  
+  const lowerPrompt = voicePrompt.toLowerCase();
+  
+  // Check for explicit artist gender declarations first (highest priority)
+  if (/\b(female artist|female voice|female vocals?|woman voice|woman's voice|she sings|her voice|weibliche stimme|weiblich|sängerin)\b/i.test(lowerPrompt)) {
+    return "f";
+  }
+  if (/\b(male artist|male voice|male vocals?|man voice|man's voice|he sings|his voice|männliche stimme|männlich|sänger(?!in))\b/i.test(lowerPrompt)) {
+    return "m";
+  }
+  
+  // Voice range indicators (soprano/alto = female, tenor/baritone/bass = male)
+  if (/\b(soprano|sopran|mezzo-soprano|mezzosopran|contralto)\b/i.test(lowerPrompt)) {
+    return "f";
+  }
+  if (/\b(tenor|baritone|bariton|bass voice|bass vocals?|basso)\b/i.test(lowerPrompt)) {
+    return "m";
+  }
+  
+  // Duo/mixed indicators
+  if (/\b(duo|duet|mixed|gemischt|both voices|beide stimmen)\b/i.test(lowerPrompt)) {
+    return "duo";
+  }
+  
+  // Fallback - check for pronoun patterns
+  if (/\bshe\b|\bher\b(?! voice)|\bfrau\b/i.test(lowerPrompt)) {
+    return "f";
+  }
+  if (/\bhe\b|\bhis\b(?! voice)|\bmann\b/i.test(lowerPrompt)) {
+    return "m";
+  }
+  
+  return null;
 }
 
 export function usePersonaBatchUpdate() {
@@ -400,14 +442,33 @@ export function usePersonaBatchUpdate() {
           // Derive BPM, keys, and style/mood from song metadata
           const derived = deriveFromSongMetadata(artistSongs, artistAlbumNames);
 
-          // Merge extracted and derived data - ONLY update fields that are empty
+          // Merge extracted and derived data
+          // CRITICAL: voice_prompt is the source of truth - override persona if different
           const updateData: Record<string, any> = {};
 
-          // Only set vocal info if not already present
-          if (!artist.vocal_gender && extracted.vocalGender) updateData.vocal_gender = extracted.vocalGender;
-          if (!artist.vocal_texture && extracted.vocalTexture) updateData.vocal_texture = extracted.vocalTexture;
-          if (!artist.vocal_range && extracted.vocalRange) updateData.vocal_range = extracted.vocalRange;
-          if (!artist.instrumental_only && extracted.instrumentalOnly) updateData.instrumental_only = true;
+          // Vocal gender from voice_prompt ALWAYS takes priority (source of truth)
+          const voicePromptGender = extractGenderFromVoicePrompt(artist.voice_prompt);
+          if (voicePromptGender && artist.vocal_gender !== voicePromptGender) {
+            updateData.vocal_gender = voicePromptGender;
+            console.log(`Fixing vocal_gender for ${artist.name}: ${artist.vocal_gender} -> ${voicePromptGender}`);
+          } else if (!artist.vocal_gender && extracted.vocalGender) {
+            updateData.vocal_gender = extracted.vocalGender;
+          }
+          
+          // Vocal texture from voice_prompt
+          if (!artist.vocal_texture && extracted.vocalTexture) {
+            updateData.vocal_texture = extracted.vocalTexture;
+          }
+          
+          // Vocal range from voice_prompt
+          if (!artist.vocal_range && extracted.vocalRange) {
+            updateData.vocal_range = extracted.vocalRange;
+          }
+          
+          // Instrumental flag
+          if (!artist.instrumental_only && extracted.instrumentalOnly) {
+            updateData.instrumental_only = true;
+          }
           
           // Combine style tags from text extraction AND song metadata - only if empty
           if (!artist.style_tags || artist.style_tags.length === 0) {
