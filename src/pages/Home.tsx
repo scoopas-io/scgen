@@ -145,10 +145,10 @@ export default function Home() {
   // Potential V2 versions = all songs with audio (each V1 can have a V2)
   const potentialV2Count = allSongsWithAudio.length;
 
-  // Total available audio tracks (existing V1 + existing V2)
+  // Total tracks (all songs + existing V2 versions) - this is the main display number
   const totalAvailableTracks = useMemo(() => {
-    return allSongsWithAudio.length + songsWithV2Count;
-  }, [allSongsWithAudio.length, songsWithV2Count]);
+    return totalSongs + songsWithV2Count;
+  }, [totalSongs, songsWithV2Count]);
 
   // Total potential tracks for valuation (all songs + potential V2 for each song with audio)
   const totalPotentialTracks = useMemo(() => {

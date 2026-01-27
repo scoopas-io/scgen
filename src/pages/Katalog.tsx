@@ -173,7 +173,7 @@ const Katalog = () => {
                   </Badge>
                   <Badge variant="secondary" className="gap-1.5">
                     <Music className="h-3 w-3" />
-                    {stats.songs}
+                    {stats.totalTracks}
                   </Badge>
                 </div>
               </div>
@@ -214,8 +214,8 @@ const Katalog = () => {
                 </TabsTrigger>
                 <TabsTrigger value="songs" className="gap-1.5 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4">
                   <Disc className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  <span className="hidden xs:inline">Songs</span>
-                  <span className="text-[10px] sm:text-xs opacity-70">({stats.songs})</span>
+                  <span className="hidden xs:inline">Titel</span>
+                  <span className="text-[10px] sm:text-xs opacity-70">({stats.totalTracks})</span>
                 </TabsTrigger>
               </TabsList>
 

@@ -75,11 +75,13 @@ export interface CatalogStats {
   artists: number;
   albums: number;
   songs: number;
+  songsWithV2: number;
+  totalTracks: number; // songs + songsWithV2
 }
 
 export function useCatalogData() {
   const [artists, setArtists] = useState<ArtistWithAlbums[]>([]);
-  const [stats, setStats] = useState<CatalogStats>({ artists: 0, albums: 0, songs: 0 });
+  const [stats, setStats] = useState<CatalogStats>({ artists: 0, albums: 0, songs: 0, songsWithV2: 0, totalTracks: 0 });
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchAll = useCallback(async <T,>(
@@ -117,15 +119,14 @@ export function useCatalogData() {
       // We therefore:
       // 1) read exact counts via count queries
       // 2) load full catalog data in 1000-row pages
-      const [counts, artistsData, albumsData, songsData] = await Promise.all([
-        (async (): Promise<CatalogStats> => {
+      const [baseCounts, artistsData, albumsData, songsData] = await Promise.all([
+        (async () => {
           const [a, al, s] = await Promise.all([
             supabase.from("artists").select("id", { count: "exact", head: true }),
             supabase.from("albums").select("id", { count: "exact", head: true }),
             supabase.from("songs").select("id", { count: "exact", head: true }),
           ]);
 
-          // If count fails for any reason, fall back to 0 (we'll still render data lists).
           return {
             artists: a.count ?? 0,
             albums: al.count ?? 0,
@@ -151,6 +152,16 @@ export function useCatalogData() {
           ]
         ),
       ]);
+
+      // Count songs with V2 versions
+      const songsWithV2 = songsData.filter((s: any) => s.alternative_audio_url).length;
+      
+      // Build complete stats
+      const counts: CatalogStats = {
+        ...baseCounts,
+        songsWithV2,
+        totalTracks: baseCounts.songs + songsWithV2,
+      };
 
       setStats(counts);
 
