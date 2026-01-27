@@ -33,6 +33,7 @@ interface Song {
   katalogwert?: number;
   bemerkungen?: string;
   audio_url?: string;
+  alternative_audio_url?: string | null;
   generation_status?: string | null;
   suno_task_id?: string | null;
 }
