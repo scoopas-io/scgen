@@ -77,9 +77,6 @@ export function SongInfoDialog({ song, albumName, artistName, open, onOpenChange
               {song.version && song.version !== "Original" && (
                 <Badge variant="secondary">{song.version}</Badge>
               )}
-              {song.ki_generiert === "Ja" && (
-                <Badge variant="outline" className="bg-primary/10 text-primary">KI-generiert</Badge>
-              )}
               {song.verwertungsstatus && (
                 <Badge variant={song.verwertungsstatus === "Aktiv" ? "default" : "secondary"}>
                   {song.verwertungsstatus}
