@@ -155,15 +155,15 @@ export default function Home() {
     return totalSongs + potentialV2Count;
   }, [totalSongs, potentialV2Count]);
 
-  // Recently added songs
-  const recentlyAdded = useMemo(() => {
-    const getGenerationTimestamp = (audioUrl: string): number => {
-      const match = audioUrl.match(/_(\d{13})\.mp3$/);
-      return match ? parseInt(match[1], 10) : 0;
-    };
-    return [...allSongsWithAudio]
-      .sort((a, b) => getGenerationTimestamp(b.song.audio_url || "") - getGenerationTimestamp(a.song.audio_url || ""))
-      .slice(0, 6);
+  // Random song selection for discovery (shuffled from all available)
+  const randomSongSelection = useMemo(() => {
+    // Shuffle algorithm (Fisher-Yates)
+    const shuffled = [...allSongsWithAudio];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled.slice(0, 9); // Show 9 random songs
   }, [allSongsWithAudio]);
 
   // Genre distribution
@@ -231,6 +231,22 @@ export default function Home() {
       songId: item.song.id,
       artistId: item.artist.id,
     });
+  };
+
+  // Play a genre playlist (shuffled songs from that genre)
+  const handlePlayGenre = (genre: string) => {
+    const genreSongs = allSongsWithAudio.filter(s => s.artist.genre === genre);
+    if (genreSongs.length === 0) return;
+    
+    // Shuffle the genre songs
+    const shuffled = [...genreSongs];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    
+    // Play the first song
+    handlePlaySong(shuffled[0]);
   };
 
   if (isLoading) {
@@ -353,11 +369,7 @@ export default function Home() {
                   genre={item.genre}
                   count={item.count}
                   artistCount={item.artistCount}
-                  onClick={() => {
-                    // Find first song of this genre and play it
-                    const genreSong = allSongsWithAudio.find(s => s.artist.genre === item.genre);
-                    if (genreSong) handlePlaySong(genreSong);
-                  }}
+                  onClick={() => handlePlayGenre(item.genre)}
                 />
               ))}
             </div>
@@ -371,11 +383,11 @@ export default function Home() {
                 Musik hören
               </h2>
               <span className="text-xs text-muted-foreground">
-                {recentlyAdded.length} zuletzt hinzugefügt
+                Zufällige Auswahl
               </span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {recentlyAdded.map((item) => (
+              {randomSongSelection.map((item) => (
                 <SongSuggestionCard
                   key={item.song.id}
                   item={item}
@@ -384,7 +396,7 @@ export default function Home() {
                 />
               ))}
             </div>
-            {recentlyAdded.length === 0 && (
+            {randomSongSelection.length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-8">
                 Keine Titel verfügbar
               </p>
