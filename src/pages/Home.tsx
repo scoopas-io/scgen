@@ -412,15 +412,12 @@ export default function Home() {
 
           {/* Genre Discovery Section */}
           <div className="mb-6 md:mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <PieChart className="h-4 w-4 text-primary" />
-                Genres entdecken
-              </h2>
-              <Link to="/katalog" className="text-xs text-muted-foreground hover:text-primary flex items-center gap-0.5">
-                Alle Genres <ChevronRight className="h-3 w-3" />
-              </Link>
-            </div>
+          <div className="flex items-center mb-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <PieChart className="h-4 w-4 text-primary" />
+              Beliebte Genres entdecken
+            </h2>
+          </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
               {genreStats.map((item) => (
                 <GenreCard
