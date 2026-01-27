@@ -5,29 +5,25 @@ import {
   Users, 
   Disc, 
   Music, 
-  TrendingUp, 
   FileText, 
   Download,
-  ExternalLink,
   Play,
-  ChevronRight,
   PieChart,
-  Calendar,
   Building2,
   Shield,
   Coins,
   Info,
-  FileCheck,
-  FileX,
   Printer,
-  Check
+  TrendingUp,
+  ChevronRight,
+  Calendar,
+  ExternalLink
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Progress } from "@/components/ui/progress";
 import { AppHeader } from "@/components/AppHeader";
 import { useCatalogData, type ArtistWithAlbums, type Song } from "@/hooks/useCatalogData";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
@@ -399,164 +395,79 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Catalog Valuation Card */}
-          <Card className="bg-gradient-to-br from-primary/10 via-card/80 to-card border-primary/20 mb-6 md:mb-8">
-            <CardContent className="p-4 md:p-6">
-              <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
-                {/* Left: Value Display */}
-                <div className="flex items-start gap-4">
-                  <div className="p-3 rounded-xl bg-primary/20 text-primary">
-                    <Coins className="h-6 w-6 md:h-8 md:w-8" />
+          {/* Catalog Valuation Card - Premium Design */}
+          <Card className="relative overflow-hidden bg-gradient-to-br from-primary/15 via-primary/5 to-transparent border-primary/30 mb-6 md:mb-8">
+            {/* Background glow effect */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+            
+            <CardContent className="relative p-5 md:p-8">
+              <div className="flex flex-col gap-6">
+                {/* Main Value Display */}
+                <div className="flex items-center gap-5">
+                  <div className="p-4 rounded-2xl bg-primary/20 text-primary shadow-lg shadow-primary/10">
+                    <Coins className="h-8 w-8 md:h-10 md:w-10" />
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-1">Geschätzter Katalogwert</p>
-                    <p className="text-3xl md:text-4xl font-bold text-primary tabular-nums">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2">
+                      Geschätzter Katalogwert
+                    </p>
+                    <p className="text-4xl md:text-5xl font-display font-bold text-primary tabular-nums tracking-tight">
                       {catalogValuation.estimatedValue.toLocaleString('de-DE')} €
                     </p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Basis: {catalogValuation.baseValue.toLocaleString('de-DE')} € • Multiplier: {catalogValuation.totalMultiplier}%
+                  </div>
+                </div>
+
+                {/* Calculation Breakdown */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Left: Base calculation */}
+                  <div className="bg-background/60 backdrop-blur-sm rounded-xl p-4 border border-border/50">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-3">Berechnung</p>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">{totalSongs.toLocaleString('de-DE')} Songs × 850 €</span>
+                        <span className="font-medium tabular-nums">{catalogValuation.baseValue.toLocaleString('de-DE')} €</span>
+                      </div>
+                      <div className="flex justify-between text-emerald-500">
+                        <span>Multiplikator ({catalogValuation.totalMultiplier}%)</span>
+                        <span className="font-medium tabular-nums">
+                          +{(catalogValuation.estimatedValue - catalogValuation.baseValue).toLocaleString('de-DE')} €
+                        </span>
+                      </div>
+                      <Separator className="my-2" />
+                      <div className="flex justify-between font-semibold">
+                        <span>Gesamt</span>
+                        <span className="text-primary tabular-nums">{catalogValuation.estimatedValue.toLocaleString('de-DE')} €</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right: Methodology */}
+                  <div className="bg-background/60 backdrop-blur-sm rounded-xl p-4 border border-border/50">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Info className="h-3.5 w-3.5 text-primary" />
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide">Methodik</p>
+                    </div>
+                    <div className="space-y-1.5 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Basiswert pro Song</span>
+                        <span className="font-medium">850 €</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Genre-Vielfalt</span>
+                        <span className="font-medium text-emerald-500">+{catalogValuation.genreDiversityBonus}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Künstler-Diversität</span>
+                        <span className="font-medium text-blue-500">+{catalogValuation.artistDiversityBonus}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Vollrechte-Premium</span>
+                        <span className="font-medium text-amber-500">+{catalogValuation.rightsBonus}%</span>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground/50 mt-3 pt-2 border-t border-border/30">
+                      Eigeneinschätzung – keine Wirtschaftsprüfung
                     </p>
-                  </div>
-                </div>
-                
-                {/* Right: Methodology */}
-                <div className="flex-1 lg:max-w-md bg-background/50 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Info className="h-4 w-4 text-primary" />
-                    <p className="font-semibold text-sm">Bewertungsmethodik</p>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-xs">
-                    <div className="flex items-start gap-2">
-                      <span className="font-medium text-foreground whitespace-nowrap">Basiswert:</span>
-                      <span className="text-muted-foreground">850 € pro Song</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <span className="font-medium text-foreground whitespace-nowrap">Genre-Vielfalt:</span>
-                      <span className="text-muted-foreground">+2,5%/Genre (max. 25%)</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <span className="font-medium text-foreground whitespace-nowrap">Künstler:</span>
-                      <span className="text-muted-foreground">+0,75%/Künstler (max. 15%)</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <span className="font-medium text-foreground whitespace-nowrap">Vollrechte:</span>
-                      <span className="text-muted-foreground">+20% Eigenproduktion</span>
-                    </div>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground/60 mt-3 pt-2 border-t border-border/50">
-                    Eigeneinschätzung – ersetzt keine professionelle Wirtschaftsprüfung.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Registration Stats (GEMA/ISRC/ISWC) */}
-          <Card className="bg-card/50 border-border/50 mb-6 md:mb-8">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <FileCheck className="h-4 w-4 text-primary" />
-                Registrierungsstatus
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <p className="text-xs text-muted-foreground mb-4">
-                Gesamt: <span className="font-medium text-foreground">{registrationStats.total.toLocaleString('de-DE')}</span> Titel im Katalog
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* GEMA */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium flex items-center gap-1.5">
-                      GEMA
-                      {registrationStats.gema.percent === 100 && (
-                        <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-emerald-500 text-white">
-                          <Check className="h-2.5 w-2.5" />
-                        </span>
-                      )}
-                    </span>
-                    <span className="text-xs text-muted-foreground tabular-nums">
-                      {registrationStats.gema.registered} / {registrationStats.total}
-                    </span>
-                  </div>
-                  <Progress value={registrationStats.gema.percent} className="h-2" />
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <FileCheck className="h-3 w-3 text-emerald-500" />
-                      {registrationStats.gema.registered} registriert
-                    </span>
-                    {registrationStats.gema.pending > 0 ? (
-                      <span className="flex items-center gap-1">
-                        <FileX className="h-3 w-3 text-amber-500" />
-                        {registrationStats.gema.pending} ausstehend
-                      </span>
-                    ) : (
-                      <span className="text-emerald-500 font-medium">100% ✓</span>
-                    )}
-                  </div>
-                </div>
-
-                {/* ISRC */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium flex items-center gap-1.5">
-                      ISRC
-                      {registrationStats.isrc.percent === 100 && (
-                        <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-emerald-500 text-white">
-                          <Check className="h-2.5 w-2.5" />
-                        </span>
-                      )}
-                    </span>
-                    <span className="text-xs text-muted-foreground tabular-nums">
-                      {registrationStats.isrc.registered} / {registrationStats.total}
-                    </span>
-                  </div>
-                  <Progress value={registrationStats.isrc.percent} className="h-2" />
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <FileCheck className="h-3 w-3 text-emerald-500" />
-                      {registrationStats.isrc.registered} registriert
-                    </span>
-                    {registrationStats.isrc.pending > 0 ? (
-                      <span className="flex items-center gap-1">
-                        <FileX className="h-3 w-3 text-amber-500" />
-                        {registrationStats.isrc.pending} ausstehend
-                      </span>
-                    ) : (
-                      <span className="text-emerald-500 font-medium">100% ✓</span>
-                    )}
-                  </div>
-                </div>
-
-                {/* ISWC */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium flex items-center gap-1.5">
-                      ISWC
-                      {registrationStats.iswc.percent === 100 && (
-                        <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-emerald-500 text-white">
-                          <Check className="h-2.5 w-2.5" />
-                        </span>
-                      )}
-                    </span>
-                    <span className="text-xs text-muted-foreground tabular-nums">
-                      {registrationStats.iswc.registered} / {registrationStats.total}
-                    </span>
-                  </div>
-                  <Progress value={registrationStats.iswc.percent} className="h-2" />
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <FileCheck className="h-3 w-3 text-emerald-500" />
-                      {registrationStats.iswc.registered} registriert
-                    </span>
-                    {registrationStats.iswc.pending > 0 ? (
-                      <span className="flex items-center gap-1">
-                        <FileX className="h-3 w-3 text-amber-500" />
-                        {registrationStats.iswc.pending} ausstehend
-                      </span>
-                    ) : (
-                      <span className="text-emerald-500 font-medium">100% ✓</span>
-                    )}
                   </div>
                 </div>
               </div>
