@@ -75,6 +75,32 @@ serve(async (req) => {
       throw new Error("Song has no audio - cannot create persona from ungenerated song");
     }
 
+    // Determine artist_id from join result (can be object or array depending on PostgREST)
+    const songArtistId = (song as any)?.albums?.artist_id ?? (song as any)?.albums?.[0]?.artist_id;
+    if (!songArtistId) {
+      throw new Error("Song is missing albums.artist_id - cannot resolve artist");
+    }
+
+    // Build a list of candidate songs (the requested one first), so we can fallback if Suno
+    // refuses a specific track for persona creation.
+    const { data: fallbackSongs, error: fallbackError } = await supabase
+      .from("songs")
+      .select("id, suno_task_id, audio_url, created_at, albums!inner(artist_id)")
+      .eq("albums.artist_id", songArtistId)
+      .neq("id", songId)
+      .not("audio_url", "is", null)
+      .not("suno_task_id", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(8);
+
+    if (fallbackError) {
+      console.warn("Failed to load fallback songs:", fallbackError.message);
+    }
+
+    const candidates: Array<{ id: string; suno_task_id: string }>
+      = [{ id: song.id, suno_task_id: song.suno_task_id }]
+        .concat((fallbackSongs || []).map((s: any) => ({ id: s.id, suno_task_id: s.suno_task_id })));
+
     // Build persona description from artist data
     const personaDescription = buildPersonaDescription(artist);
     console.log("Persona description:", personaDescription);
@@ -87,7 +113,6 @@ serve(async (req) => {
     // Call Suno API to create persona
     // According to docs: POST /api/v1/generate/generate-persona
     const basePayload = {
-      taskId: song.suno_task_id,
       // Some Suno API variants expect `name`, others `personaName`.
       name: personaName,
       personaName,
@@ -95,19 +120,50 @@ serve(async (req) => {
     };
 
     // Suno requires musicIndex to specify which generated audio to use (0 or 1)
-    // and can intermittently fail on index 0 depending on which render finished.
-    let sunoResult = await callSunoCreatePersona(SUNO_API_KEY, { ...basePayload, musicIndex: 0 });
-    if (!sunoResult.ok) {
-      const msg = sunoResult.msg?.toLowerCase() || "";
-      const shouldRetryAltIndex = sunoResult.status >= 500 || msg.includes("create persona error");
-      if (shouldRetryAltIndex) {
-        console.log("Retrying persona creation with musicIndex=1");
-        sunoResult = await callSunoCreatePersona(SUNO_API_KEY, { ...basePayload, musicIndex: 1 });
+    // and can intermittently fail on a given index or even refuse a specific song.
+    let sunoResult:
+      | { ok: true; status: number; data: any }
+      | { ok: false; status: number; msg?: string; raw?: string }
+      | null = null;
+
+    const isRetryableMusicFailure = (msg?: string) => {
+      const m = (msg || "").toLowerCase();
+      return m.includes("current music failed") || m.includes("create persona error");
+    };
+
+    // Try the preferred song first, then fall back to a few other songs for the same artist.
+    // This prevents the whole batch from failing on a single problematic track.
+    for (let i = 0; i < Math.min(candidates.length, 4); i++) {
+      const candidate = candidates[i];
+      console.log(`Trying persona creation with candidate song ${candidate.id} (taskId ${candidate.suno_task_id})`);
+
+      sunoResult = await callSunoCreatePersona(SUNO_API_KEY, { ...basePayload, taskId: candidate.suno_task_id, musicIndex: 0 });
+      if (!sunoResult.ok) {
+        const msg = sunoResult.msg;
+        const shouldRetryAltIndex = sunoResult.status >= 500 || isRetryableMusicFailure(msg);
+        if (shouldRetryAltIndex) {
+          console.log("Retrying persona creation with musicIndex=1");
+          sunoResult = await callSunoCreatePersona(SUNO_API_KEY, { ...basePayload, taskId: candidate.suno_task_id, musicIndex: 1 });
+        }
+      }
+
+      if (sunoResult.ok) break;
+
+      // If Suno says the current music can't be used for persona, try next candidate.
+      if (!isRetryableMusicFailure(sunoResult.msg)) {
+        break;
       }
     }
 
-    if (!sunoResult.ok) {
-      throw new Error(`Suno API error ${sunoResult.status}${sunoResult.msg ? `: ${sunoResult.msg}` : ""}`);
+    if (!sunoResult || !sunoResult.ok) {
+      const status = sunoResult?.status ?? 500;
+      const msg = sunoResult?.msg;
+      if (isRetryableMusicFailure(msg)) {
+        throw new Error(
+          "Suno konnte aus diesem Track keine Persona ableiten. Bitte wähle einen anderen Song (oder generiere Audio neu) und versuche es erneut."
+        );
+      }
+      throw new Error(`Suno API error ${status}${msg ? `: ${msg}` : ""}`);
     }
 
     const sunoData = sunoResult.data;
