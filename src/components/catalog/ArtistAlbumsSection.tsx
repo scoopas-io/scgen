@@ -21,6 +21,7 @@ interface Song {
   audio_url?: string | null;
   generation_status?: string | null;
   suno_task_id?: string | null;
+  created_at?: string | null;
   // Alternative version (V2)
   alternative_audio_url?: string | null;
   alternative_suno_audio_id?: string | null;
@@ -47,6 +48,21 @@ interface Song {
   jahresumsatz?: number | null;
   katalogwert?: number | null;
   bemerkungen?: string | null;
+}
+
+// V2 can only be fetched for songs created in the last 48 hours (Suno API limitation)
+const SUNO_TASK_EXPIRY_MS = 48 * 60 * 60 * 1000; // 48 hours
+
+function canFetchV2(song: Song): boolean {
+  // Must have a task ID
+  if (!song.suno_task_id) return false;
+  // Must not already have V2
+  if (song.alternative_audio_url) return false;
+  // Must be created within the last 48h
+  if (!song.created_at) return false;
+  const createdAt = new Date(song.created_at).getTime();
+  const now = Date.now();
+  return now - createdAt < SUNO_TASK_EXPIRY_MS;
 }
 
 interface Album {
@@ -683,10 +699,10 @@ export const ArtistAlbumsSection = memo(({
           const remainingProcessingSongs = processingAlbumSongs.get(album.id)?.size || 0;
           const isAlbumBusy = isGeneratingAlbum || hasProcessingSongs;
           
-          // V2 stats
+          // V2 stats - only count songs that can still have V2 fetched (< 48h old)
           const songsWithV2Possible = album.songs.filter(s => {
             const d = getSongDetails(s);
-            return d.audio_url && d.suno_task_id && !d.alternative_audio_url;
+            return d.audio_url && canFetchV2(d);
           }).length;
           const songsWithV2 = album.songs.filter(s => getSongDetails(s).alternative_audio_url).length;
           const isFetchingV2 = fetchingV2Albums.has(album.id);
@@ -885,28 +901,27 @@ export const ArtistAlbumsSection = memo(({
                               >
                                 <Download className="h-3.5 w-3.5" />
                               </Button>
-                              {/* V2 Button - only for Admin */}
-                              {isAdmin && details.suno_task_id && (
-                                details.alternative_audio_url ? (
-                                  <Badge variant="outline" className="text-[10px] text-emerald-500 border-emerald-500/50">
-                                    <Check className="h-2.5 w-2.5 mr-0.5" />
-                                    V2
-                                  </Badge>
-                                ) : (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-6 text-[10px] px-1.5 opacity-0 group-hover:opacity-100"
-                                    onClick={() => fetchAlternativeVersion(details)}
-                                    disabled={fetchingV2Songs.has(song.id)}
-                                  >
-                                    {fetchingV2Songs.has(song.id) ? (
-                                      <Loader2 className="h-3 w-3 animate-spin" />
-                                    ) : (
-                                      <>V2</>
-                                    )}
-                                  </Button>
-                                )
+                              {/* V2 Button - only for Admin, and only if V2 is still fetchable (< 48h) */}
+                              {isAdmin && details.alternative_audio_url && (
+                                <Badge variant="outline" className="text-[10px] text-emerald-500 border-emerald-500/50">
+                                  <Check className="h-2.5 w-2.5 mr-0.5" />
+                                  V2
+                                </Badge>
+                              )}
+                              {isAdmin && !details.alternative_audio_url && canFetchV2(details) && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-6 text-[10px] px-1.5 opacity-0 group-hover:opacity-100"
+                                  onClick={() => fetchAlternativeVersion(details)}
+                                  disabled={fetchingV2Songs.has(song.id)}
+                                >
+                                  {fetchingV2Songs.has(song.id) ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                  ) : (
+                                    <>V2</>
+                                  )}
+                                </Button>
                               )}
                             </>
                           ) : isGenerating ? (
