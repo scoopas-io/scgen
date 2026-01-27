@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/tooltip";
 
 interface AppHeaderProps {
-  stats: { artists: number; albums: number; songs: number };
+  stats: { artists: number; albums: number; songs: number; totalTracks?: number };
 }
 
 export const AppHeader = ({ stats }: AppHeaderProps) => {
@@ -103,9 +103,9 @@ export const AppHeader = ({ stats }: AppHeaderProps) => {
                 <Disc className="h-3.5 w-3.5 text-primary" />
                 <span>{stats.albums}</span>
               </div>
-              <div className="flex items-center gap-1" title="Songs">
+              <div className="flex items-center gap-1" title="Titel (V1+V2)">
                 <Music className="h-3.5 w-3.5 text-primary" />
-                <span>{stats.songs}</span>
+                <span>{stats.totalTracks ?? stats.songs}</span>
               </div>
             </div>
             
@@ -181,8 +181,8 @@ export const AppHeader = ({ stats }: AppHeaderProps) => {
                       </div>
                       <div className="p-2 rounded-lg bg-muted/50">
                         <Music className="h-4 w-4 text-primary mx-auto mb-1" />
-                        <p className="text-sm font-medium">{stats.songs}</p>
-                        <p className="text-xs text-muted-foreground">Songs</p>
+                        <p className="text-sm font-medium">{stats.totalTracks ?? stats.songs}</p>
+                        <p className="text-xs text-muted-foreground">Titel</p>
                       </div>
                     </div>
                     {/* Mobile Logout */}
