@@ -14,7 +14,9 @@ import {
   PieChart,
   Calendar,
   Building2,
-  Shield
+  Shield,
+  Coins,
+  Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -244,6 +246,40 @@ export default function Home() {
     return Math.round((allSongsWithAudio.length / totalSongs) * 100);
   }, [allSongsWithAudio.length, totalSongs]);
 
+  // Catalog value estimation (Eigeneinschätzung)
+  const catalogValuation = useMemo(() => {
+    const songCount = allSongsWithAudio.length;
+    const genreCount = genreStats.length;
+    const artistCount = stats.artists;
+    
+    // Base value per song (in EUR)
+    const baseValuePerSong = 850;
+    
+    // Genre diversity multiplier (more genres = more versatile catalog)
+    const genreDiversityBonus = Math.min(genreCount / 10, 1) * 0.25; // up to 25% bonus
+    
+    // Artist diversity multiplier
+    const artistDiversityBonus = Math.min(artistCount / 20, 1) * 0.15; // up to 15% bonus
+    
+    // Rights status bonus (100% Eigenproduktion = full control)
+    const rightsBonus = 0.20; // 20% premium for full rights
+    
+    // Calculate total multiplier
+    const totalMultiplier = 1 + genreDiversityBonus + artistDiversityBonus + rightsBonus;
+    
+    // Calculate estimated value
+    const estimatedValue = Math.round(songCount * baseValuePerSong * totalMultiplier);
+    
+    return {
+      estimatedValue,
+      baseValue: songCount * baseValuePerSong,
+      genreDiversityBonus: Math.round(genreDiversityBonus * 100),
+      artistDiversityBonus: Math.round(artistDiversityBonus * 100),
+      rightsBonus: Math.round(rightsBonus * 100),
+      totalMultiplier: Math.round(totalMultiplier * 100),
+    };
+  }, [allSongsWithAudio.length, genreStats.length, stats.artists]);
+
   const handlePlaySong = (item: { song: Song; artist: ArtistWithAlbums; albumName: string }) => {
     if (!item.song.audio_url) return;
     play({
@@ -325,6 +361,48 @@ export default function Home() {
               </div>
             </div>
           </div>
+
+          {/* Catalog Valuation Card */}
+          <Card className="bg-gradient-to-br from-primary/10 via-card/80 to-card border-primary/20 mb-6 md:mb-8">
+            <CardContent className="p-4 md:p-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 rounded-xl bg-primary/20 text-primary">
+                    <Coins className="h-6 w-6 md:h-8 md:w-8" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Geschätzter Katalogwert</p>
+                      <span className="text-xs text-muted-foreground/60 flex items-center gap-0.5">
+                        <Info className="h-3 w-3" />
+                        Eigeneinschätzung
+                      </span>
+                    </div>
+                    <p className="text-3xl md:text-4xl font-bold text-primary tabular-nums">
+                      {catalogValuation.estimatedValue.toLocaleString('de-DE')} €
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Basis: {catalogValuation.baseValue.toLocaleString('de-DE')} € • Multiplier: {catalogValuation.totalMultiplier}%
+                    </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-3 md:gap-4 text-center">
+                  <div className="bg-background/50 rounded-lg p-2 md:p-3">
+                    <p className="text-lg md:text-xl font-bold text-emerald-500">+{catalogValuation.genreDiversityBonus}%</p>
+                    <p className="text-xs text-muted-foreground">Genre-Vielfalt</p>
+                  </div>
+                  <div className="bg-background/50 rounded-lg p-2 md:p-3">
+                    <p className="text-lg md:text-xl font-bold text-blue-500">+{catalogValuation.artistDiversityBonus}%</p>
+                    <p className="text-xs text-muted-foreground">Künstler</p>
+                  </div>
+                  <div className="bg-background/50 rounded-lg p-2 md:p-3">
+                    <p className="text-lg md:text-xl font-bold text-amber-500">+{catalogValuation.rightsBonus}%</p>
+                    <p className="text-xs text-muted-foreground">Vollrechte</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Key Metrics */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
