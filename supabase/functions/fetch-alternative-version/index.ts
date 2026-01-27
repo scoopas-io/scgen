@@ -29,9 +29,11 @@ serve(async (req) => {
     const { songId } = await req.json();
 
     if (!songId) {
+      // NOTE: We intentionally return HTTP 200 for user-triggered calls so the frontend can
+      // show a toast without Lovable treating it as a fatal error/blank screen.
       return new Response(
         JSON.stringify({ success: false, error: "Song ID is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -45,21 +47,21 @@ serve(async (req) => {
     if (songError || !song) {
       return new Response(
         JSON.stringify({ success: false, error: "Song not found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     if (!song.suno_task_id) {
       return new Response(
         JSON.stringify({ success: false, error: "No task ID available for this song" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     if (song.alternative_audio_url) {
       return new Response(
         JSON.stringify({ success: false, error: "Alternative version already exists" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -89,13 +91,17 @@ serve(async (req) => {
             error: "Task-Daten abgelaufen (>48h). V2 nur bei neuen Generierungen verfügbar.",
             expired: true
           }),
-          { status: 410, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       
       return new Response(
-        JSON.stringify({ success: false, error: "Suno API Fehler" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({
+          success: false,
+          error: "Suno API Fehler",
+          sunoStatus: statusResponse.status,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -111,7 +117,7 @@ serve(async (req) => {
           success: false, 
           error: "No alternative version available (only 1 version in task data)" 
         }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -122,7 +128,7 @@ serve(async (req) => {
     if (!audioUrl) {
       return new Response(
         JSON.stringify({ success: false, error: "Alternative version has no audio URL" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -192,7 +198,7 @@ serve(async (req) => {
         success: true,
         alternativeAudioUrl: publicUrlData.publicUrl
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
   } catch (error) {
@@ -202,7 +208,8 @@ serve(async (req) => {
         success: false,
         error: error instanceof Error ? error.message : "Unknown error"
       }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      // Keep HTTP 200 to prevent blank-screen error overlays for handled failures.
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
