@@ -126,10 +126,10 @@ export async function exportCatalogAsCSV() {
           textdichter: song.textdichter || artist.name || "",
           verlag: cleanVerlag,
           label: cleanLabel,
-          isrc: song.isrc || "",
-          iswc: song.iswc || "",
+          isrc: "auf Anfrage",
+          iswc: "auf Anfrage",
           gema_status: song.gema_status || "Nicht angemeldet",
-          gema_werknummer: song.gema_werknummer || "",
+          gema_werknummer: "auf Anfrage",
           rechteinhaber_master: cleanRechteMaster,
           rechteinhaber_publishing: cleanRechtePublishing,
           anteil_komponist: song.anteil_komponist || 100,
@@ -242,7 +242,13 @@ export async function exportCatalogAsJSON() {
     const songsByAlbum = new Map<string, any[]>();
     for (const song of songs) {
       const existing = songsByAlbum.get(song.album_id) || [];
-      existing.push(song);
+      // Mask sensitive registration data
+      existing.push({
+        ...song,
+        isrc: "auf Anfrage",
+        iswc: "auf Anfrage",
+        gema_werknummer: "auf Anfrage",
+      });
       songsByAlbum.set(song.album_id, existing);
     }
 
