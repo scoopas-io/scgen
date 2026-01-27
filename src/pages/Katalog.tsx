@@ -13,6 +13,7 @@ import { ArtistTreeRow } from "@/components/catalog/CatalogSongTree";
 import { ArtistWithSocialCard } from "@/components/catalog/ArtistWithSocialCard";
 import { EmptyState } from "@/components/catalog/EmptyState";
 import { LoadingSpinner } from "@/components/catalog/LoadingSpinner";
+import { V2ProgressPanel } from "@/components/catalog/V2ProgressPanel";
 import { exportCatalogAsCSV, exportCatalogAsJSON } from "@/lib/exportCatalog";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { usePlayerHeight } from "@/components/GlobalAudioPlayer";
@@ -196,6 +197,9 @@ const Katalog = () => {
                 </Button>
               </div>
             </div>
+
+            {/* V2 Progress Panel */}
+            <V2ProgressPanel artists={artists} onRefresh={loadData} />
 
             {/* Tabs - Mobile optimized */}
             <Tabs defaultValue="artists" className="flex-1 flex flex-col min-h-0 overflow-hidden">
