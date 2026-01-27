@@ -1,5 +1,5 @@
-import { memo, useState, useEffect } from "react";
-import { ChevronDown, ChevronRight, User, Image as ImageIcon, Video, Instagram, Twitter, Linkedin, Play, Pause, ExternalLink, Settings2, Trash2 } from "lucide-react";
+import { memo, useState, useEffect, useMemo } from "react";
+import { ChevronDown, ChevronRight, User, Image as ImageIcon, Video, Instagram, Twitter, Linkedin, Play, Pause, ExternalLink, Settings2, Trash2, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -8,6 +8,60 @@ import { ArtistManagementDialog } from "@/components/ArtistManagementDialog";
 import { ArtistAlbumsSection } from "@/components/catalog/ArtistAlbumsSection";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
+
+// Helper to detect gender from voice_prompt text
+function detectGenderFromVoicePrompt(voicePrompt: string | undefined): "male" | "female" | "unknown" {
+  if (!voicePrompt) return "unknown";
+  const lower = voicePrompt.toLowerCase();
+  
+  // Female indicators (check first as they're more specific)
+  const femalePatterns = [
+    /\bfemale\b/, /\bwoman\b/, /\bwomen\b/, /\bgirl\b/, /\blady\b/, /\bladies\b/,
+    /\bweiblich\b/, /\bfrau\b/, /\bmädchen\b/, /\bsängerin\b/, /\bkünstlerin\b/,
+    /\bsoprano\b/, /\balto\b/, /\bmezzo\b/, /\bher voice\b/, /\bher vocal\b/,
+    /\bshe sings\b/, /\bshe has\b/
+  ];
+  
+  // Male indicators
+  const malePatterns = [
+    /\bmale\b/, /\bman\b/, /\bmen\b/, /\bboy\b/, /\bguy\b/, /\bgentleman\b/,
+    /\bmännlich\b/, /\bmann\b/, /\bjunge\b/, /\bsänger\b/, /\bkünstler\b/,
+    /\btenor\b/, /\bbaritone\b/, /\bbass\b/, /\bhis voice\b/, /\bhis vocal\b/,
+    /\bhe sings\b/, /\bhe has\b/
+  ];
+  
+  const hasFemale = femalePatterns.some(p => p.test(lower));
+  const hasMale = malePatterns.some(p => p.test(lower));
+  
+  // If both or neither, return unknown
+  if (hasFemale && !hasMale) return "female";
+  if (hasMale && !hasFemale) return "male";
+  return "unknown";
+}
+
+// Check if vocal_gender matches the detected gender from voice_prompt
+function checkGenderMatch(vocalGender: string | null | undefined, voicePrompt: string | undefined): {
+  matches: boolean;
+  detectedGender: "male" | "female" | "unknown";
+  hasGenderSet: boolean;
+} {
+  const detectedGender = detectGenderFromVoicePrompt(voicePrompt);
+  const hasGenderSet = !!vocalGender;
+  
+  // If no gender set or detection is unknown, can't determine match
+  if (!vocalGender || detectedGender === "unknown") {
+    return { matches: true, detectedGender, hasGenderSet };
+  }
+  
+  // Normalize vocal_gender values
+  const normalizedVocalGender = vocalGender.toLowerCase();
+  const isMaleSet = normalizedVocalGender === "male" || normalizedVocalGender === "männlich";
+  const isFemaleSet = normalizedVocalGender === "female" || normalizedVocalGender === "weiblich";
+  
+  const matches = (isMaleSet && detectedGender === "male") || (isFemaleSet && detectedGender === "female");
+  
+  return { matches, detectedGender, hasGenderSet };
+}
 
 interface SocialContent {
   id: string;
@@ -105,6 +159,12 @@ export const ArtistWithSocialCard = memo(({ artist, onDelete, onRefresh }: Artis
 
   const langInfo = artist.language ? LANGUAGE_FLAGS[artist.language] : null;
   const totalSongs = artist.albums.reduce((acc, album) => acc + album.songs.length, 0);
+  
+  // Check gender match between vocal_gender and voice_prompt
+  const genderCheck = useMemo(() => 
+    checkGenderMatch(artist.vocal_gender, artist.voice_prompt), 
+    [artist.vocal_gender, artist.voice_prompt]
+  );
 
   useEffect(() => {
     if (isExpanded && socialContent.length === 0) {
@@ -181,6 +241,26 @@ export const ArtistWithSocialCard = memo(({ artist, onDelete, onRefresh }: Artis
                 <span className="text-[10px] sm:text-xs text-muted-foreground font-mono shrink-0 hidden sm:inline">
                   {artist.katalognummer}
                 </span>
+              )}
+              {/* Gender Match Indicator - Admin Only */}
+              {isAdmin && genderCheck.hasGenderSet && genderCheck.detectedGender !== "unknown" && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="shrink-0">
+                      {genderCheck.matches ? (
+                        <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-500" />
+                      ) : (
+                        <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-500" />
+                      )}
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {genderCheck.matches 
+                      ? `Stimmgeschlecht passt (${artist.vocal_gender})`
+                      : `Mismatch: ${artist.vocal_gender} gesetzt, aber "${genderCheck.detectedGender}" im Voice-Prompt erkannt`
+                    }
+                  </TooltipContent>
+                </Tooltip>
               )}
             </div>
             <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 sm:mt-1 flex-wrap">
