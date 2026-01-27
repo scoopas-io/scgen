@@ -26,7 +26,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 import { AppHeader } from "@/components/AppHeader";
 import { useCatalogData, type ArtistWithAlbums, type Song } from "@/hooks/useCatalogData";
@@ -400,64 +399,71 @@ export default function Home() {
           </div>
 
           {/* Catalog Valuation Card */}
-          <TooltipProvider delayDuration={0}>
-            <Card className="bg-gradient-to-br from-primary/10 via-card/80 to-card border-primary/20 mb-6 md:mb-8">
-              <CardContent className="p-4 md:p-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex items-start gap-4">
-                    <div className="p-3 rounded-xl bg-primary/20 text-primary">
-                      <Coins className="h-6 w-6 md:h-8 md:w-8" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Geschätzter Katalogwert</p>
-                        <Tooltip delayDuration={0}>
-                          <TooltipTrigger asChild>
-                            <button className="text-muted-foreground/60 hover:text-primary transition-colors flex items-center gap-0.5">
-                              <Info className="h-3.5 w-3.5" />
-                              <span className="text-xs">Methodik</span>
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="bottom" className="max-w-sm p-4 text-left">
-                            <p className="font-semibold mb-2">Bewertungsmethodik</p>
-                            <ul className="text-xs space-y-1.5 text-muted-foreground">
-                              <li><strong className="text-foreground">Basiswert:</strong> 850 € pro Song (Branchendurchschnitt für Eigenproduktionen)</li>
-                              <li><strong className="text-foreground">Genre-Vielfalt:</strong> +2,5% pro Genre (max. 25%) für diversifiziertes Portfolio</li>
-                              <li><strong className="text-foreground">Künstler-Diversität:</strong> +0,75% pro Künstler (max. 15%) für breitere Marktabdeckung</li>
-                              <li><strong className="text-foreground">Vollrechte-Premium:</strong> +20% für 100% Eigenproduktion ohne Lizenzpflichten</li>
-                            </ul>
-                            <p className="text-xs text-muted-foreground/80 mt-3 pt-2 border-t border-border">
-                              Hinweis: Eigeneinschätzung – ersetzt keine professionelle Wirtschaftsprüfung.
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                      <p className="text-3xl md:text-4xl font-bold text-primary tabular-nums">
-                        {catalogValuation.estimatedValue.toLocaleString('de-DE')} €
-                      </p>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Basis: {catalogValuation.baseValue.toLocaleString('de-DE')} € • Multiplier: {catalogValuation.totalMultiplier}%
-                      </p>
-                    </div>
+          <Card className="bg-gradient-to-br from-primary/10 via-card/80 to-card border-primary/20 mb-6 md:mb-8">
+            <CardContent className="p-4 md:p-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 rounded-xl bg-primary/20 text-primary">
+                    <Coins className="h-6 w-6 md:h-8 md:w-8" />
                   </div>
-                  <div className="grid grid-cols-3 gap-3 md:gap-4 text-center">
-                    <div className="bg-background/50 rounded-lg p-2 md:p-3">
-                      <p className="text-lg md:text-xl font-bold text-emerald-500">+{catalogValuation.genreDiversityBonus}%</p>
-                      <p className="text-xs text-muted-foreground">Genre-Vielfalt</p>
-                    </div>
-                    <div className="bg-background/50 rounded-lg p-2 md:p-3">
-                      <p className="text-lg md:text-xl font-bold text-blue-500">+{catalogValuation.artistDiversityBonus}%</p>
-                      <p className="text-xs text-muted-foreground">Künstler</p>
-                    </div>
-                    <div className="bg-background/50 rounded-lg p-2 md:p-3">
-                      <p className="text-lg md:text-xl font-bold text-amber-500">+{catalogValuation.rightsBonus}%</p>
-                      <p className="text-xs text-muted-foreground">Vollrechte</p>
-                    </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-1">Geschätzter Katalogwert</p>
+                    <p className="text-3xl md:text-4xl font-bold text-primary tabular-nums">
+                      {catalogValuation.estimatedValue.toLocaleString('de-DE')} €
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Basis: {catalogValuation.baseValue.toLocaleString('de-DE')} € • Multiplier: {catalogValuation.totalMultiplier}%
+                    </p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </TooltipProvider>
+                <div className="grid grid-cols-3 gap-3 md:gap-4 text-center">
+                  <div className="bg-background/50 rounded-lg p-2 md:p-3">
+                    <p className="text-lg md:text-xl font-bold text-emerald-500">+{catalogValuation.genreDiversityBonus}%</p>
+                    <p className="text-xs text-muted-foreground">Genre-Vielfalt</p>
+                  </div>
+                  <div className="bg-background/50 rounded-lg p-2 md:p-3">
+                    <p className="text-lg md:text-xl font-bold text-blue-500">+{catalogValuation.artistDiversityBonus}%</p>
+                    <p className="text-xs text-muted-foreground">Künstler</p>
+                  </div>
+                  <div className="bg-background/50 rounded-lg p-2 md:p-3">
+                    <p className="text-lg md:text-xl font-bold text-amber-500">+{catalogValuation.rightsBonus}%</p>
+                    <p className="text-xs text-muted-foreground">Vollrechte</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+            
+            {/* Methodology Info Panel */}
+            <div className="border-t border-primary/10 bg-primary/5 px-4 md:px-6 py-4">
+              <div className="flex items-start gap-3">
+                <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                <div className="space-y-3">
+                  <p className="font-semibold text-sm">Bewertungsmethodik</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs">
+                    <div className="flex items-start gap-2">
+                      <span className="font-medium text-foreground whitespace-nowrap">Basiswert:</span>
+                      <span className="text-muted-foreground">850 € pro Song (Branchendurchschnitt)</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="font-medium text-foreground whitespace-nowrap">Genre-Vielfalt:</span>
+                      <span className="text-muted-foreground">+2,5% pro Genre (max. 25%)</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="font-medium text-foreground whitespace-nowrap">Künstler-Diversität:</span>
+                      <span className="text-muted-foreground">+0,75% pro Künstler (max. 15%)</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="font-medium text-foreground whitespace-nowrap">Vollrechte-Premium:</span>
+                      <span className="text-muted-foreground">+20% für 100% Eigenproduktion</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground/70 pt-2 border-t border-primary/10">
+                    Hinweis: Eigeneinschätzung – ersetzt keine professionelle Wirtschaftsprüfung.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </Card>
 
           {/* Registration Stats (GEMA/ISRC/ISWC) */}
           <Card className="bg-card/50 border-border/50 mb-6 md:mb-8">
