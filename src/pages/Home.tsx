@@ -400,7 +400,7 @@ export default function Home() {
           </div>
 
           {/* Catalog Valuation Card */}
-          <TooltipProvider>
+          <TooltipProvider delayDuration={0}>
             <Card className="bg-gradient-to-br from-primary/10 via-card/80 to-card border-primary/20 mb-6 md:mb-8">
               <CardContent className="p-4 md:p-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -409,9 +409,9 @@ export default function Home() {
                       <Coins className="h-6 w-6 md:h-8 md:w-8" />
                     </div>
                     <div>
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Geschätzter Katalogwert</p>
-                        <Tooltip>
+                        <Tooltip delayDuration={0}>
                           <TooltipTrigger asChild>
                             <button className="text-muted-foreground/60 hover:text-primary transition-colors flex items-center gap-0.5">
                               <Info className="h-3.5 w-3.5" />
