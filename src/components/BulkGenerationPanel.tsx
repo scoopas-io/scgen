@@ -464,7 +464,10 @@ const BulkGenerationPanel = forwardRef<BulkGenerationPanelRef, BulkGenerationPan
           <div>
             <h3 className="font-medium">Bulk-Generierung</h3>
             <p className="text-xs text-muted-foreground">
-              {selectedSongIds.size} von {pendingSongs.length} Songs ausgewählt
+              {selectedSongIds.size} von {pendingSongs.length} Songs zur Konvertierung ausgewählt
+            </p>
+            <p className="text-[11px] text-muted-foreground/70">
+              Gesamt im Katalog: {songs.length}
             </p>
           </div>
         </div>
