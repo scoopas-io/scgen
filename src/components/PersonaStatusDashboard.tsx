@@ -244,29 +244,30 @@ export function PersonaStatusDashboard() {
     : 0;
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className={cn(
-                "gap-1.5 h-7 px-2 text-xs hidden sm:flex",
-                artistsWithPersona.length === artists.length && artists.length > 0
-                  ? "text-green-500"
-                  : artistsWithPersona.length > 0
-                    ? "text-yellow-500"
-                    : "text-muted-foreground"
-              )}
-            >
-              <UserCircle className="h-3.5 w-3.5" />
-              <span>{artistsWithPersona.length}/{artists.length}</span>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Suno Persona Status</TooltipContent>
-        </Tooltip>
-      </DialogTrigger>
+    <>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => setOpen(true)}
+            className={cn(
+              "gap-1.5 h-7 px-2 text-xs hidden sm:flex",
+              artistsWithPersona.length === artists.length && artists.length > 0
+                ? "text-green-500"
+                : artistsWithPersona.length > 0
+                  ? "text-yellow-500"
+                  : "text-muted-foreground"
+            )}
+          >
+            <UserCircle className="h-3.5 w-3.5" />
+            <span>{artistsWithPersona.length}/{artists.length}</span>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Suno Persona Status</TooltipContent>
+      </Tooltip>
+      
+      <Dialog open={open} onOpenChange={setOpen}>
       
       <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
         <DialogHeader>
@@ -414,5 +415,6 @@ export function PersonaStatusDashboard() {
         )}
       </DialogContent>
     </Dialog>
+    </>
   );
 }
