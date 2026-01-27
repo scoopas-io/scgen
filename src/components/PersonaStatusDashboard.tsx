@@ -268,8 +268,7 @@ export function PersonaStatusDashboard() {
       </Tooltip>
       
       <Dialog open={open} onOpenChange={setOpen}>
-      
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+        <DialogContent className="max-w-2xl h-[85vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserCircle className="h-5 w-5 text-primary" />
@@ -282,7 +281,7 @@ export function PersonaStatusDashboard() {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
-          <div className="flex-1 flex flex-col min-h-0 space-y-4">
+          <div className="flex-1 flex flex-col min-h-0 space-y-4 overflow-hidden">
             {/* Summary */}
             <div className="grid grid-cols-3 gap-3 text-center">
               <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
