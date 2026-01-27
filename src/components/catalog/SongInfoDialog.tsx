@@ -125,7 +125,7 @@ export function SongInfoDialog({ song, albumName, artistName, open, onOpenChange
               <InfoRow icon={Calendar} label="Vertragsende" value={song.vertragsende} />
               <InfoRow icon={DollarSign} label="Einnahmequelle" value={song.einnahmequelle} />
               <InfoRow icon={DollarSign} label="Jahresumsatz" value={song.jahresumsatz ? `${song.jahresumsatz} €` : null} />
-              <InfoRow icon={DollarSign} label="Katalogwert" value={song.katalogwert ? `${song.katalogwert} €` : null} />
+              <InfoRow icon={DollarSign} label="Rechnerischer Katalogwert" value={song.katalogwert ? `${song.katalogwert} €` : null} />
             </div>
           </div>
 

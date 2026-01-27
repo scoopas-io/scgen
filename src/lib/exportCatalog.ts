@@ -163,7 +163,7 @@ export async function exportCatalogAsCSV() {
       "Rechteinhaber Master", "Rechteinhaber Publishing", "Anteil Komponist (%)",
       "Anteil Text (%)", "Anteil Verlag (%)", "Anteile gesamt (%)", "Exklusivität",
       "Genre", "BPM", "Tonart", "Länge", "Release-Datum", "Version",
-      "Verwertungsstatus", "Einnahmequelle", "Jahresumsatz (€)", "Katalogwert (€)",
+      "Verwertungsstatus", "Einnahmequelle", "Jahresumsatz (€)", "Rechnerischer Katalogwert (€)",
       "Vertragsart", "Vertragsbeginn", "Vertragsende", "Bemerkungen"
     ];
 

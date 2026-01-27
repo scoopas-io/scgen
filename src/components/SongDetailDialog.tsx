@@ -460,7 +460,7 @@ export function SongDetailDialog({ song, albumName, artistName, open, onOpenChan
                 />
               </div>
               <div>
-                <Label htmlFor="katalogwert">Katalogwert (€)</Label>
+                <Label htmlFor="katalogwert">Rechnerischer Katalogwert (€)</Label>
                 <Input
                   id="katalogwert"
                   type="number"

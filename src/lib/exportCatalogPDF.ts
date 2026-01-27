@@ -196,7 +196,7 @@ export async function exportCatalogAsPDF(): Promise<void> {
     y += 6;
 
     // Catalog Valuation Section
-    y = addText("GESCHÄTZTER KATALOGWERT", margin, y, { fontSize: 14, fontStyle: "bold" });
+    y = addText("RECHNERISCHER KATALOGWERT", margin, y, { fontSize: 14, fontStyle: "bold" });
     y += 6;
     
     doc.setFillColor(249, 250, 251);
