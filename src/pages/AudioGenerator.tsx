@@ -312,12 +312,47 @@ const AudioGenerator = () => {
     }
 
     try {
-      const { data: songsData } = await supabase
-        .from("songs")
-        .select("id, name, album_id, bpm, tonart, audio_url, generation_status, suno_task_id, created_at")
-        .order("track_number");
+      // IMPORTANT: never replace the entire songs list here.
+      // This function runs periodically and must not hit the 1000-row default limit.
+      // We only refresh in-flight items and merge updates into existing state.
+      const inFlightIds = songs
+        .filter((s) => {
+          if (s.audio_url) return false;
+          const status = s.generation_status;
+          if (status === "completed" || status === "error") return false;
+          return Boolean(s.suno_task_id) || status === "processing" || status === "generating" || status === "pending";
+        })
+        .map((s) => s.id);
 
-      setSongs(mapSongsWithDetails(songsData as Song[] | null | undefined, artists, albums));
+      if (inFlightIds.length === 0) return;
+
+      const updatedRows: Song[] = [];
+      const chunkSize = 200;
+      for (let i = 0; i < inFlightIds.length; i += chunkSize) {
+        const chunk = inFlightIds.slice(i, i + chunkSize);
+        const { data, error } = await supabase
+          .from("songs")
+          .select("id, name, album_id, bpm, tonart, audio_url, generation_status, suno_task_id, created_at")
+          .in("id", chunk);
+
+        if (error) throw error;
+        if (data?.length) updatedRows.push(...(data as Song[]));
+      }
+
+      if (updatedRows.length === 0) return;
+
+      const updateMap = new Map(updatedRows.map((row) => [row.id, row] as const));
+      setSongs((prev) =>
+        prev.map((s) => {
+          const u = updateMap.get(s.id);
+          if (!u) return s;
+          // Merge only DB fields; keep artist/album mapping fields intact.
+          return {
+            ...s,
+            ...u,
+          };
+        })
+      );
     } catch (error) {
       console.error("Error refreshing songs:", error);
       if (!opts?.silent) toast.error("Fehler beim Aktualisieren der Songs");
