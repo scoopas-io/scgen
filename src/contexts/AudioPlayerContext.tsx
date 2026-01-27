@@ -13,6 +13,8 @@ export interface Track {
   songId?: string;
   artistId?: string;
   albumId?: string;
+  // Alternative version support
+  alternativeAudioUrl?: string;
 }
 
 export type RepeatMode = 'off' | 'one' | 'all';

@@ -240,7 +240,8 @@ const SidePanel: React.FC = () => {
     playPrevious,
     clearQueue,
     toggleRepeatMode,
-    toggleShuffle
+    toggleShuffle,
+    play
   } = useAudioPlayer();
 
   const { isAdmin } = useAuth();
@@ -249,17 +250,19 @@ const SidePanel: React.FC = () => {
   const [infoDialogOpen, setInfoDialogOpen] = useState(false);
   const [songMetadata, setSongMetadata] = useState<any>(null);
   const [albumName, setAlbumName] = useState<string>("");
+  const [isPlayingV2, setIsPlayingV2] = useState(false);
 
   useEffect(() => {
     if (currentTrack) {
       setLocalTrack(currentTrack);
+      setIsPlayingV2(false); // Reset to V1 when track changes
     }
   }, [currentTrack]);
 
-  // Load full song metadata for info dialog
+  // Load full song metadata for info dialog and V2 support
   useEffect(() => {
     const loadSongMetadata = async () => {
-      if (!localTrack?.songId || isAdmin) return;
+      if (!localTrack?.songId) return;
       
       const { data: songData } = await supabase
         .from("songs")
@@ -270,11 +273,18 @@ const SidePanel: React.FC = () => {
       if (songData) {
         setSongMetadata(songData);
         setAlbumName((songData.albums as any)?.name || localTrack.album || "");
+        // Update track with alternative URL if available
+        if (songData.alternative_audio_url && !localTrack.alternativeAudioUrl) {
+          setLocalTrack(prev => prev ? { 
+            ...prev, 
+            alternativeAudioUrl: songData.alternative_audio_url 
+          } : null);
+        }
       }
     };
     
     loadSongMetadata();
-  }, [localTrack?.songId, isAdmin, localTrack?.album]);
+  }, [localTrack?.songId, localTrack?.album, localTrack?.alternativeAudioUrl]);
 
   const handleTrackUpdated = useCallback((updates: Partial<Track>) => {
     setLocalTrack(prev => prev ? { ...prev, ...updates } : null);
@@ -334,6 +344,7 @@ const SidePanel: React.FC = () => {
             <div className="text-center space-y-1.5 px-2">
               <h3 className="text-xl font-bold truncate leading-tight">
                 {localTrack?.title || 'Kein Track'}
+                {isPlayingV2 && <span className="text-primary text-sm ml-1">(V2)</span>}
               </h3>
               <p className="text-muted-foreground truncate">
                 {localTrack?.artist || 'Unbekannt'}
@@ -342,6 +353,49 @@ const SidePanel: React.FC = () => {
                 <p className="text-xs text-muted-foreground/60 truncate">
                   {localTrack.album}
                 </p>
+              )}
+              
+              {/* Version Toggle - only show when alternative version exists */}
+              {localTrack?.alternativeAudioUrl && (
+                <div className="flex items-center justify-center gap-2 mt-2">
+                  <Button
+                    variant={!isPlayingV2 ? "default" : "outline"}
+                    size="sm"
+                    className="h-7 text-xs px-3"
+                    onClick={() => {
+                      if (isPlayingV2 && localTrack) {
+                        // Switch to V1
+                        setIsPlayingV2(false);
+                        // Re-play with original URL
+                        play({
+                          ...localTrack,
+                          audioUrl: currentTrack?.audioUrl || localTrack.audioUrl,
+                        });
+                      }
+                    }}
+                    disabled={!isPlayingV2}
+                  >
+                    V1
+                  </Button>
+                  <Button
+                    variant={isPlayingV2 ? "default" : "outline"}
+                    size="sm"
+                    className="h-7 text-xs px-3"
+                    onClick={() => {
+                      if (!isPlayingV2 && localTrack?.alternativeAudioUrl) {
+                        // Switch to V2
+                        setIsPlayingV2(true);
+                        play({
+                          ...localTrack,
+                          audioUrl: localTrack.alternativeAudioUrl,
+                        });
+                      }
+                    }}
+                    disabled={isPlayingV2}
+                  >
+                    V2
+                  </Button>
+                </div>
               )}
             </div>
 
