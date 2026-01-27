@@ -162,7 +162,7 @@ export async function exportCatalogAsCSV() {
       "Verlag", "Label", "ISRC", "ISWC", "GEMA-Status", "GEMA-Werknummer",
       "Rechteinhaber Master", "Rechteinhaber Publishing", "Anteil Komponist (%)",
       "Anteil Text (%)", "Anteil Verlag (%)", "Anteile gesamt (%)", "Exklusivität",
-      "Genre", "BPM", "Tonart", "Länge", "Release-Datum", "Version", "KI-generiert",
+      "Genre", "BPM", "Tonart", "Länge", "Release-Datum", "Version",
       "Verwertungsstatus", "Einnahmequelle", "Jahresumsatz (€)", "Katalogwert (€)",
       "Vertragsart", "Vertragsbeginn", "Vertragsende", "Bemerkungen"
     ];
@@ -196,7 +196,6 @@ export async function exportCatalogAsCSV() {
         entry.laenge,
         entry.release_datum,
         entry.version,
-        entry.ki_generiert,
         entry.verwertungsstatus,
         entry.einnahmequelle,
         entry.jahresumsatz,
