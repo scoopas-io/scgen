@@ -395,80 +395,29 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Catalog Valuation Card - Premium Design */}
-          <Card className="relative overflow-hidden bg-gradient-to-br from-primary/15 via-primary/5 to-transparent border-primary/30 mb-6 md:mb-8">
-            {/* Background glow effect */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-            
-            <CardContent className="relative p-5 md:p-8">
-              <div className="flex flex-col gap-6">
-                {/* Main Value Display */}
-                <div className="flex items-center gap-5">
-                  <div className="p-4 rounded-2xl bg-primary/20 text-primary shadow-lg shadow-primary/10">
-                    <Coins className="h-8 w-8 md:h-10 md:w-10" />
+          {/* Catalog Valuation - Compact */}
+          <Card className="bg-card/50 border-border/50 mb-6 md:mb-8">
+            <CardContent className="p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                {/* Left: Value */}
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                    <Coins className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2">
-                      Geschätzter Katalogwert
-                    </p>
-                    <p className="text-4xl md:text-5xl font-display font-bold text-primary tabular-nums tracking-tight">
+                    <p className="text-xs text-muted-foreground">Geschätzter Katalogwert</p>
+                    <p className="text-xl font-bold text-primary tabular-nums">
                       {catalogValuation.estimatedValue.toLocaleString('de-DE')} €
                     </p>
                   </div>
                 </div>
-
-                {/* Calculation Breakdown */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Left: Base calculation */}
-                  <div className="bg-background/60 backdrop-blur-sm rounded-xl p-4 border border-border/50">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-3">Berechnung</p>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">{totalSongs.toLocaleString('de-DE')} Songs × 850 €</span>
-                        <span className="font-medium tabular-nums">{catalogValuation.baseValue.toLocaleString('de-DE')} €</span>
-                      </div>
-                      <div className="flex justify-between text-emerald-500">
-                        <span>Multiplikator ({catalogValuation.totalMultiplier}%)</span>
-                        <span className="font-medium tabular-nums">
-                          +{(catalogValuation.estimatedValue - catalogValuation.baseValue).toLocaleString('de-DE')} €
-                        </span>
-                      </div>
-                      <Separator className="my-2" />
-                      <div className="flex justify-between font-semibold">
-                        <span>Gesamt</span>
-                        <span className="text-primary tabular-nums">{catalogValuation.estimatedValue.toLocaleString('de-DE')} €</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right: Methodology */}
-                  <div className="bg-background/60 backdrop-blur-sm rounded-xl p-4 border border-border/50">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Info className="h-3.5 w-3.5 text-primary" />
-                      <p className="text-xs text-muted-foreground uppercase tracking-wide">Methodik</p>
-                    </div>
-                    <div className="space-y-1.5 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Basiswert pro Song</span>
-                        <span className="font-medium">850 €</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Genre-Vielfalt</span>
-                        <span className="font-medium text-emerald-500">+{catalogValuation.genreDiversityBonus}%</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Künstler-Diversität</span>
-                        <span className="font-medium text-blue-500">+{catalogValuation.artistDiversityBonus}%</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Vollrechte-Premium</span>
-                        <span className="font-medium text-amber-500">+{catalogValuation.rightsBonus}%</span>
-                      </div>
-                    </div>
-                    <p className="text-[10px] text-muted-foreground/50 mt-3 pt-2 border-t border-border/30">
-                      Eigeneinschätzung – keine Wirtschaftsprüfung
-                    </p>
-                  </div>
+                
+                {/* Right: Breakdown */}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                  <span>{totalSongs.toLocaleString('de-DE')} Songs × 850 €</span>
+                  <span className="text-emerald-500">+{catalogValuation.genreDiversityBonus}% Genre</span>
+                  <span className="text-blue-500">+{catalogValuation.artistDiversityBonus}% Künstler</span>
+                  <span className="text-amber-500">+{catalogValuation.rightsBonus}% Vollrechte</span>
                 </div>
               </div>
             </CardContent>
