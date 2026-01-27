@@ -109,9 +109,9 @@ export function SongInfoDialog({ song, albumName, artistName, open, onOpenChange
             <div className="grid grid-cols-1 gap-x-4 bg-card rounded-lg border border-border p-3">
               <InfoRow icon={User} label="Komponist" value={song.komponist} />
               <InfoRow icon={User} label="Textdichter" value={song.textdichter} />
-              <InfoRow icon={FileCheck} label="ISRC" value={song.isrc} />
-              <InfoRow icon={FileCheck} label="ISWC" value={song.iswc} />
-              <InfoRow icon={Building2} label="GEMA-Werknummer" value={song.gema_werknummer} />
+              <InfoRow icon={FileCheck} label="ISRC" value="auf Anfrage" />
+              <InfoRow icon={FileCheck} label="ISWC" value="auf Anfrage" />
+              <InfoRow icon={Building2} label="GEMA-Werknummer" value="auf Anfrage" />
               <InfoRow icon={Shield} label="GEMA-Status" value={song.gema_status} />
             </div>
           </div>
