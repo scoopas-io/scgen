@@ -117,6 +117,7 @@ export async function exportCatalogAsCSV() {
         const cleanRechtePublishing = (artist.rechteinhaber_publishing || "Eigenverlag").replace(/KI-|AI-|AI |KI /gi, "");
         const cleanBemerkungen = (song.bemerkungen || "").replace(/KI-generierter Inhalt|AI-generiert|KI-generiert/gi, "Maschinell erstellt");
 
+        // Add V1 entry
         catalogEntries.push({
           katalognummer: artist.katalognummer || "",
           song_id: song.song_id || "",
@@ -153,6 +154,46 @@ export async function exportCatalogAsCSV() {
           vertragsende: song.vertragsende || "",
           bemerkungen: cleanBemerkungen || "",
         });
+
+        // Add V2 entry if alternative audio exists
+        if (song.alternative_audio_url) {
+          catalogEntries.push({
+            katalognummer: artist.katalognummer || "",
+            song_id: song.song_id ? `${song.song_id}-V2` : "",
+            songtitel: `${song.name || ""} (V2)`,
+            kuenstler: artist.name || "",
+            komponist: song.komponist || artist.name || "",
+            textdichter: song.textdichter || artist.name || "",
+            verlag: cleanVerlag,
+            label: cleanLabel,
+            isrc: "auf Anfrage",
+            iswc: "auf Anfrage",
+            gema_status: song.gema_status || "Nicht angemeldet",
+            gema_werknummer: "auf Anfrage",
+            rechteinhaber_master: cleanRechteMaster,
+            rechteinhaber_publishing: cleanRechtePublishing,
+            anteil_komponist: song.anteil_komponist || 100,
+            anteil_text: song.anteil_text || 0,
+            anteil_verlag: song.anteil_verlag || 0,
+            anteile_gesamt: (song.anteil_komponist || 100) + (song.anteil_text || 0) + (song.anteil_verlag || 0),
+            exklusivitaet: song.exklusivitaet || "Exklusiv",
+            genre: artist.genre || "",
+            bpm: song.bpm || 120,
+            tonart: song.tonart || "C-Dur",
+            laenge: song.laenge || "03:30",
+            release_datum: album.release_date || new Date().toISOString().split("T")[0],
+            version: "V2 Alternative",
+            ki_generiert: "Ja",
+            verwertungsstatus: song.verwertungsstatus || "Aktiv",
+            einnahmequelle: song.einnahmequelle || "Streaming",
+            jahresumsatz: song.jahresumsatz || 0,
+            katalogwert: song.katalogwert || 0,
+            vertragsart: song.vertragsart || "Eigenproduktion",
+            vertragsbeginn: song.vertragsbeginn || new Date().toISOString().split("T")[0],
+            vertragsende: song.vertragsende || "",
+            bemerkungen: cleanBemerkungen || "",
+          });
+        }
       }
     }
 
