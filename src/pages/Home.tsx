@@ -16,13 +16,18 @@ import {
   Building2,
   Shield,
   Coins,
-  Info
+  Info,
+  FileCheck,
+  FileX,
+  Printer
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Progress } from "@/components/ui/progress";
 import { AppHeader } from "@/components/AppHeader";
 import { useCatalogData, type ArtistWithAlbums, type Song } from "@/hooks/useCatalogData";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
@@ -30,6 +35,7 @@ import { usePlayerHeight } from "@/components/GlobalAudioPlayer";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { exportCatalogAsCSV, exportCatalogAsJSON } from "@/lib/exportCatalog";
+import { exportCatalogAsPDF } from "@/lib/exportCatalogPDF";
 
 // Compact stat card for key metrics
 const StatCard = ({ 
@@ -280,6 +286,28 @@ export default function Home() {
     };
   }, [allSongsWithAudio.length, genreStats.length, stats.artists]);
 
+  // GEMA/ISRC/ISWC Statistics
+  const registrationStats = useMemo(() => {
+    const allSongs: Song[] = [];
+    artists.forEach(artist => {
+      artist.albums.forEach(album => {
+        album.songs.forEach(song => allSongs.push(song));
+      });
+    });
+
+    const total = allSongs.length;
+    const gemaRegistered = allSongs.filter(s => s.gema_werknummer && s.gema_werknummer.trim() !== "").length;
+    const isrcRegistered = allSongs.filter(s => s.isrc && s.isrc.trim() !== "").length;
+    const iswcRegistered = allSongs.filter(s => s.iswc && s.iswc.trim() !== "").length;
+
+    return {
+      total,
+      gema: { registered: gemaRegistered, pending: total - gemaRegistered, percent: total > 0 ? Math.round((gemaRegistered / total) * 100) : 0 },
+      isrc: { registered: isrcRegistered, pending: total - isrcRegistered, percent: total > 0 ? Math.round((isrcRegistered / total) * 100) : 0 },
+      iswc: { registered: iswcRegistered, pending: total - iswcRegistered, percent: total > 0 ? Math.round((iswcRegistered / total) * 100) : 0 },
+    };
+  }, [artists]);
+
   const handlePlaySong = (item: { song: Song; artist: ArtistWithAlbums; albumName: string }) => {
     if (!item.song.audio_url) return;
     play({
@@ -333,7 +361,16 @@ export default function Home() {
                   Stand: {new Date().toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' })}
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-2"
+                  onClick={() => exportCatalogAsPDF()}
+                >
+                  <Printer className="h-4 w-4" />
+                  <span className="hidden sm:inline">PDF-Report</span>
+                </Button>
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -363,41 +400,135 @@ export default function Home() {
           </div>
 
           {/* Catalog Valuation Card */}
-          <Card className="bg-gradient-to-br from-primary/10 via-card/80 to-card border-primary/20 mb-6 md:mb-8">
-            <CardContent className="p-4 md:p-6">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-start gap-4">
-                  <div className="p-3 rounded-xl bg-primary/20 text-primary">
-                    <Coins className="h-6 w-6 md:h-8 md:w-8" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Geschätzter Katalogwert</p>
-                      <span className="text-xs text-muted-foreground/60 flex items-center gap-0.5">
-                        <Info className="h-3 w-3" />
-                        Eigeneinschätzung
-                      </span>
+          <TooltipProvider>
+            <Card className="bg-gradient-to-br from-primary/10 via-card/80 to-card border-primary/20 mb-6 md:mb-8">
+              <CardContent className="p-4 md:p-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 rounded-xl bg-primary/20 text-primary">
+                      <Coins className="h-6 w-6 md:h-8 md:w-8" />
                     </div>
-                    <p className="text-3xl md:text-4xl font-bold text-primary tabular-nums">
-                      {catalogValuation.estimatedValue.toLocaleString('de-DE')} €
-                    </p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Basis: {catalogValuation.baseValue.toLocaleString('de-DE')} € • Multiplier: {catalogValuation.totalMultiplier}%
-                    </p>
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Geschätzter Katalogwert</p>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button className="text-muted-foreground/60 hover:text-primary transition-colors flex items-center gap-0.5">
+                              <Info className="h-3.5 w-3.5" />
+                              <span className="text-xs">Methodik</span>
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="max-w-sm p-4 text-left">
+                            <p className="font-semibold mb-2">Bewertungsmethodik</p>
+                            <ul className="text-xs space-y-1.5 text-muted-foreground">
+                              <li><strong className="text-foreground">Basiswert:</strong> 850 € pro Song (Branchendurchschnitt für Eigenproduktionen)</li>
+                              <li><strong className="text-foreground">Genre-Vielfalt:</strong> +2,5% pro Genre (max. 25%) für diversifiziertes Portfolio</li>
+                              <li><strong className="text-foreground">Künstler-Diversität:</strong> +0,75% pro Künstler (max. 15%) für breitere Marktabdeckung</li>
+                              <li><strong className="text-foreground">Vollrechte-Premium:</strong> +20% für 100% Eigenproduktion ohne Lizenzpflichten</li>
+                            </ul>
+                            <p className="text-xs text-muted-foreground/80 mt-3 pt-2 border-t border-border">
+                              Hinweis: Eigeneinschätzung – ersetzt keine professionelle Wirtschaftsprüfung.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <p className="text-3xl md:text-4xl font-bold text-primary tabular-nums">
+                        {catalogValuation.estimatedValue.toLocaleString('de-DE')} €
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Basis: {catalogValuation.baseValue.toLocaleString('de-DE')} € • Multiplier: {catalogValuation.totalMultiplier}%
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3 md:gap-4 text-center">
+                    <div className="bg-background/50 rounded-lg p-2 md:p-3">
+                      <p className="text-lg md:text-xl font-bold text-emerald-500">+{catalogValuation.genreDiversityBonus}%</p>
+                      <p className="text-xs text-muted-foreground">Genre-Vielfalt</p>
+                    </div>
+                    <div className="bg-background/50 rounded-lg p-2 md:p-3">
+                      <p className="text-lg md:text-xl font-bold text-blue-500">+{catalogValuation.artistDiversityBonus}%</p>
+                      <p className="text-xs text-muted-foreground">Künstler</p>
+                    </div>
+                    <div className="bg-background/50 rounded-lg p-2 md:p-3">
+                      <p className="text-lg md:text-xl font-bold text-amber-500">+{catalogValuation.rightsBonus}%</p>
+                      <p className="text-xs text-muted-foreground">Vollrechte</p>
+                    </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-3 md:gap-4 text-center">
-                  <div className="bg-background/50 rounded-lg p-2 md:p-3">
-                    <p className="text-lg md:text-xl font-bold text-emerald-500">+{catalogValuation.genreDiversityBonus}%</p>
-                    <p className="text-xs text-muted-foreground">Genre-Vielfalt</p>
+              </CardContent>
+            </Card>
+          </TooltipProvider>
+
+          {/* Registration Stats (GEMA/ISRC/ISWC) */}
+          <Card className="bg-card/50 border-border/50 mb-6 md:mb-8">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <FileCheck className="h-4 w-4 text-primary" />
+                Registrierungsstatus
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* GEMA */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">GEMA</span>
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      {registrationStats.gema.registered} / {registrationStats.total}
+                    </span>
                   </div>
-                  <div className="bg-background/50 rounded-lg p-2 md:p-3">
-                    <p className="text-lg md:text-xl font-bold text-blue-500">+{catalogValuation.artistDiversityBonus}%</p>
-                    <p className="text-xs text-muted-foreground">Künstler</p>
+                  <Progress value={registrationStats.gema.percent} className="h-2" />
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <FileCheck className="h-3 w-3 text-emerald-500" />
+                      {registrationStats.gema.registered} registriert
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <FileX className="h-3 w-3 text-amber-500" />
+                      {registrationStats.gema.pending} ausstehend
+                    </span>
                   </div>
-                  <div className="bg-background/50 rounded-lg p-2 md:p-3">
-                    <p className="text-lg md:text-xl font-bold text-amber-500">+{catalogValuation.rightsBonus}%</p>
-                    <p className="text-xs text-muted-foreground">Vollrechte</p>
+                </div>
+
+                {/* ISRC */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">ISRC</span>
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      {registrationStats.isrc.registered} / {registrationStats.total}
+                    </span>
+                  </div>
+                  <Progress value={registrationStats.isrc.percent} className="h-2" />
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <FileCheck className="h-3 w-3 text-emerald-500" />
+                      {registrationStats.isrc.registered} registriert
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <FileX className="h-3 w-3 text-amber-500" />
+                      {registrationStats.isrc.pending} ausstehend
+                    </span>
+                  </div>
+                </div>
+
+                {/* ISWC */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">ISWC</span>
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      {registrationStats.iswc.registered} / {registrationStats.total}
+                    </span>
+                  </div>
+                  <Progress value={registrationStats.iswc.percent} className="h-2" />
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <FileCheck className="h-3 w-3 text-emerald-500" />
+                      {registrationStats.iswc.registered} registriert
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <FileX className="h-3 w-3 text-amber-500" />
+                      {registrationStats.iswc.pending} ausstehend
+                    </span>
                   </div>
                 </div>
               </div>
