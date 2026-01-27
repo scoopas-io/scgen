@@ -115,10 +115,23 @@ export default function Home() {
     return songs;
   }, [artists]);
 
-  // Recently added songs - sorted by song created_at
+  // Recently added songs - sorted by actual generation timestamp extracted from audio_url
   const recentlyAdded = useMemo(() => {
+    // Extract generation timestamp from audio_url (format: ...filename_TIMESTAMP.mp3)
+    const getGenerationTimestamp = (audioUrl: string): number => {
+      const match = audioUrl.match(/_(\d{13})\.mp3$/);
+      if (match) {
+        return parseInt(match[1], 10);
+      }
+      return 0;
+    };
+
     return [...allSongsWithAudio]
-      .sort((a, b) => new Date(b.song.created_at).getTime() - new Date(a.song.created_at).getTime())
+      .sort((a, b) => {
+        const aTimestamp = getGenerationTimestamp(a.song.audio_url || "");
+        const bTimestamp = getGenerationTimestamp(b.song.audio_url || "");
+        return bTimestamp - aTimestamp;
+      })
       .slice(0, 6);
   }, [allSongsWithAudio]);
 
