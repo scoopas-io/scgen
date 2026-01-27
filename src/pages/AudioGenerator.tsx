@@ -86,6 +86,8 @@ interface SongWithDetails extends Song {
   defaultBpmMax?: number | null;
   preferredKeys?: string[];
   instrumentalOnly?: boolean;
+  // Suno persona ID for consistent voice/style
+  sunoPersonaId?: string | null;
 }
 
 type SortOption = "name" | "artist" | "genre" | "date";
@@ -301,6 +303,8 @@ const AudioGenerator = () => {
         defaultBpmMax: personaActive ? artist?.default_bpm_max : null,
         preferredKeys: personaActive ? artist?.preferred_keys : undefined,
         instrumentalOnly: personaActive ? artist?.instrumental_only : undefined,
+        // Suno persona ID for consistent voice/style across all songs
+        sunoPersonaId: (artist as any)?.suno_persona_id || null,
       };
     });
   };
@@ -692,6 +696,8 @@ const AudioGenerator = () => {
               defaultBpmMax: song.defaultBpmMax,
               preferredKeys: song.preferredKeys,
               instrumentalOnly: song.instrumentalOnly,
+              // Suno persona ID for consistent voice/style
+              sunoPersonaId: song.sunoPersonaId,
             }),
           }
         );

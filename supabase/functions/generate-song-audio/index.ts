@@ -29,6 +29,8 @@ interface GenerateSongRequest {
   defaultBpmMax?: number | null;
   preferredKeys?: string[];
   instrumentalOnly?: boolean;
+  // Suno persona ID for consistent voice/style
+  sunoPersonaId?: string | null;
 }
 
 // Genres that should be generated as instrumental-only
@@ -94,10 +96,11 @@ serve(async (req) => {
       defaultBpmMax,
       preferredKeys,
       instrumentalOnly,
+      sunoPersonaId,
     } = requestData;
 
     console.log(`Starting Suno generation for: ${title} by ${artistName}`);
-    console.log(`Request data:`, JSON.stringify({ genre, style, language, instrumental, personaVocalGender, vocalTexture }));
+    console.log(`Request data:`, JSON.stringify({ genre, style, language, instrumental, personaVocalGender, vocalTexture, sunoPersonaId }));
 
     // Determine if instrumental based on: persona setting > explicit flag > genre detection
     const isInstrumental = instrumentalOnly ?? instrumental ?? INSTRUMENTAL_GENRES.some(
@@ -150,6 +153,12 @@ serve(async (req) => {
       instrumental: isInstrumental,
       callBackUrl: callbackUrl,
     };
+
+    // CRITICAL: If artist has a Suno persona ID, use it for consistent voice/style
+    if (sunoPersonaId) {
+      apiRequestBody.personaId = sunoPersonaId;
+      console.log(`Using Suno personaId: ${sunoPersonaId}`);
+    }
 
     // CRITICAL: Add vocal gender for non-instrumental tracks
     // This parameter is essential for Suno to use the correct voice
