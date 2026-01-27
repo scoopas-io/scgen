@@ -321,7 +321,7 @@ export default function Home() {
                   Willkommen bei scoopas
                 </h1>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Entdecke {totalSongs.toLocaleString('de-DE')} Titel von {stats.artists} Künstlern
+                  Entdecke {totalAvailableTracks.toLocaleString('de-DE')} Titel von {stats.artists} Künstlern
                 </p>
               </div>
               <Button size="sm" className="gap-2" asChild>
@@ -353,12 +353,12 @@ export default function Home() {
                 {/* Right: Key Stats Grid */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 lg:gap-6">
                   <div className="text-center lg:text-right">
-                    <p className="text-xl md:text-2xl font-bold tabular-nums">{totalSongs.toLocaleString('de-DE')}</p>
-                    <p className="text-xs text-muted-foreground">Titel</p>
+                    <p className="text-xl md:text-2xl font-bold tabular-nums">{totalAvailableTracks.toLocaleString('de-DE')}</p>
+                    <p className="text-xs text-muted-foreground">Titel (V1+V2)</p>
                   </div>
                   <div className="text-center lg:text-right">
-                    <p className="text-xl md:text-2xl font-bold tabular-nums">{totalAvailableTracks.toLocaleString('de-DE')}</p>
-                    <p className="text-xs text-muted-foreground">Tracks (V1+V2)</p>
+                    <p className="text-xl md:text-2xl font-bold tabular-nums">{songsWithV2Count.toLocaleString('de-DE')}</p>
+                    <p className="text-xs text-muted-foreground">V2-Versionen</p>
                   </div>
                   <div className="text-center lg:text-right">
                     <p className="text-xl md:text-2xl font-bold tabular-nums">{stats.artists}</p>
