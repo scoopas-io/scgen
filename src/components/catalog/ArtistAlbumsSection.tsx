@@ -536,6 +536,11 @@ export const ArtistAlbumsSection = memo(({
         });
 
         toast.success(`V2 von "${song.name}" geladen`);
+      } else if (result.expired) {
+        // Task data expired - V2 not available anymore
+        toast.warning(`V2 nicht mehr verfügbar (>48h)`, {
+          description: "Nur bei neuen Generierungen möglich"
+        });
       } else {
         toast.error(result.error || "Fehler beim Laden der V2");
       }

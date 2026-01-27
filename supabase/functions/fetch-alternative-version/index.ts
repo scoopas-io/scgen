@@ -80,8 +80,21 @@ serve(async (req) => {
     if (!statusResponse.ok) {
       const errorText = await statusResponse.text();
       console.error("Suno API error:", errorText);
+      
+      // 404 means task data has expired (typically 24-48h after generation)
+      if (statusResponse.status === 404) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: "Task-Daten abgelaufen (>48h). V2 nur bei neuen Generierungen verfügbar.",
+            expired: true
+          }),
+          { status: 410, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
       return new Response(
-        JSON.stringify({ success: false, error: "Failed to fetch task status from Suno API" }),
+        JSON.stringify({ success: false, error: "Suno API Fehler" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
