@@ -51,12 +51,45 @@ export function PersonaStatusDashboard() {
   const [creating, setCreating] = useState<string | null>(null);
   const [batchCreating, setBatchCreating] = useState(false);
   const [batchProgress, setBatchProgress] = useState(0);
+  const [initialLoaded, setInitialLoaded] = useState(false);
 
+  // Load data on mount for the status indicator
   useEffect(() => {
-    if (open) {
+    if (!initialLoaded) {
+      loadInitialStats();
+    }
+  }, []);
+
+  // Full load when dialog opens
+  useEffect(() => {
+    if (open && !loading) {
       loadData();
     }
   }, [open]);
+
+  const loadInitialStats = async () => {
+    try {
+      // Quick load just for the badge count
+      const { data: artistsData } = await supabase
+        .from("artists")
+        .select("id, suno_persona_id" as any);
+
+      if (artistsData) {
+        const mapped: Artist[] = artistsData.map((a: any) => ({
+          id: a.id,
+          name: "",
+          genre: "",
+          profile_image_url: null,
+          vocal_gender: null,
+          suno_persona_id: a.suno_persona_id || null,
+        }));
+        setArtists(mapped);
+        setInitialLoaded(true);
+      }
+    } catch (error) {
+      console.error("Error loading initial stats:", error);
+    }
+  };
 
   const loadData = async () => {
     setLoading(true);
