@@ -79,6 +79,11 @@ serve(async (req) => {
     const personaDescription = buildPersonaDescription(artist);
     console.log("Persona description:", personaDescription);
 
+    // Suno requires a non-empty name field. Use a robust fallback.
+    const personaName = String(artist.persona_name || artist.name || "").trim() ||
+      `Artist ${String(artistId).slice(0, 8)}`;
+    console.log("Persona name:", personaName);
+
     // Call Suno API to create persona
     // According to docs: POST /api/v1/generate/generate-persona
     const sunoResponse = await fetch("https://api.sunoapi.org/api/v1/generate/generate-persona", {
@@ -89,7 +94,10 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         taskId: song.suno_task_id,
-        name: artist.name,
+        // Some Suno API variants expect `name`, others `personaName`.
+        // Sending both is harmless and avoids version mismatches.
+        name: personaName,
+        personaName,
         description: personaDescription,
       }),
     });
@@ -102,6 +110,11 @@ serve(async (req) => {
 
     const sunoData = await sunoResponse.json();
     console.log("Suno persona response:", JSON.stringify(sunoData));
+
+    // Suno sometimes returns HTTP 200 with an error code in JSON.
+    if (typeof sunoData?.code === "number" && sunoData.code !== 200) {
+      throw new Error(`Suno API error ${sunoData.code}: ${sunoData.msg || "Unknown error"}`);
+    }
 
     // Extract persona ID from response
     const personaId = sunoData.data?.personaId || sunoData.personaId || sunoData.data?.id || sunoData.id;
