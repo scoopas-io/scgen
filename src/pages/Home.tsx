@@ -102,7 +102,7 @@ const SongSuggestionCard = ({
 
 export default function Home() {
   const { artists, stats, isLoading } = useCatalogData();
-  const { play, currentTrack } = useAudioPlayer();
+  const { play, currentTrack, addToQueue, clearQueue } = useAudioPlayer();
   const playerHeight = usePlayerHeight();
 
   // All songs with audio (V1)
@@ -233,6 +233,19 @@ export default function Home() {
     });
   };
 
+  // Convert song item to Track format
+  const itemToTrack = (item: { song: Song; artist: ArtistWithAlbums; albumName: string }) => ({
+    id: item.song.id,
+    title: item.song.name,
+    artist: item.artist.name,
+    album: item.albumName,
+    audioUrl: item.song.audio_url!,
+    coverUrl: item.artist.profile_image_url,
+    artistImageUrl: item.artist.profile_image_url,
+    songId: item.song.id,
+    artistId: item.artist.id,
+  });
+
   // Play a genre playlist (shuffled songs from that genre)
   const handlePlayGenre = (genre: string) => {
     const genreSongs = allSongsWithAudio.filter(s => s.artist.genre === genre);
@@ -245,8 +258,32 @@ export default function Home() {
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
     
-    // Play the first song
-    handlePlaySong(shuffled[0]);
+    // Clear existing queue and add all songs
+    clearQueue();
+    
+    // Play the first song immediately
+    play(itemToTrack(shuffled[0]));
+    
+    // Add remaining songs to queue
+    shuffled.slice(1).forEach(item => {
+      addToQueue(itemToTrack(item));
+    });
+  };
+  
+  // Play random selection as playlist
+  const handlePlayRandomSelection = () => {
+    if (randomSongSelection.length === 0) return;
+    
+    // Clear existing queue
+    clearQueue();
+    
+    // Play first song
+    play(itemToTrack(randomSongSelection[0]));
+    
+    // Add rest to queue
+    randomSongSelection.slice(1).forEach(item => {
+      addToQueue(itemToTrack(item));
+    });
   };
 
   if (isLoading) {
@@ -382,9 +419,16 @@ export default function Home() {
                 <Play className="h-4 w-4 text-primary" />
                 Musik hören
               </h2>
-              <span className="text-xs text-muted-foreground">
-                Zufällige Auswahl
-              </span>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="gap-2"
+                onClick={handlePlayRandomSelection}
+                disabled={randomSongSelection.length === 0}
+              >
+                <Play className="h-3 w-3" />
+                Alle abspielen
+              </Button>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {randomSongSelection.map((item) => (
