@@ -175,7 +175,7 @@ export default function Home() {
   const playerHeight = usePlayerHeight();
   const { isAdmin } = useAuth();
 
-  // All songs with audio
+  // All songs with audio (V1)
   const allSongsWithAudio = useMemo(() => {
     const songs: Array<{ song: Song; artist: ArtistWithAlbums; albumName: string }> = [];
     artists.forEach(artist => {
@@ -189,6 +189,26 @@ export default function Home() {
     });
     return songs;
   }, [artists]);
+
+  // Count songs with V2 versions available
+  const songsWithV2Count = useMemo(() => {
+    let count = 0;
+    artists.forEach(artist => {
+      artist.albums.forEach(album => {
+        album.songs.forEach(song => {
+          if (song.alternative_audio_url) {
+            count++;
+          }
+        });
+      });
+    });
+    return count;
+  }, [artists]);
+
+  // Total available audio tracks (V1 + V2)
+  const totalAvailableTracks = useMemo(() => {
+    return allSongsWithAudio.length + songsWithV2Count;
+  }, [allSongsWithAudio.length, songsWithV2Count]);
 
   // Total songs (with and without audio)
   const totalSongs = useMemo(() => {
@@ -442,7 +462,7 @@ export default function Home() {
               icon={Disc}
               label="Alben"
               value={stats.albums}
-              subValue="im Katalog"
+              subValue={songsWithV2Count > 0 ? `+${songsWithV2Count} V2-Versionen` : "im Katalog"}
             />
             <StatCard 
               icon={Shield}
