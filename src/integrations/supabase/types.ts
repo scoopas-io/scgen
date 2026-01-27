@@ -271,6 +271,7 @@ export type Database = {
           laenge: string | null
           name: string
           song_id: string | null
+          suno_audio_id: string | null
           suno_task_id: string | null
           textdichter: string | null
           tonart: string | null
@@ -305,6 +306,7 @@ export type Database = {
           laenge?: string | null
           name: string
           song_id?: string | null
+          suno_audio_id?: string | null
           suno_task_id?: string | null
           textdichter?: string | null
           tonart?: string | null
@@ -339,6 +341,7 @@ export type Database = {
           laenge?: string | null
           name?: string
           song_id?: string | null
+          suno_audio_id?: string | null
           suno_task_id?: string | null
           textdichter?: string | null
           tonart?: string | null
