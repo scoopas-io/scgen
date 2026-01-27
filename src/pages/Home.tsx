@@ -584,8 +584,8 @@ export default function Home() {
               icon={Music}
               label="Verfügbare Titel"
               value={allSongsWithAudio.length.toLocaleString('de-DE')}
-              subValue={`${coveragePercent}% Abdeckung`}
-              trend="up"
+              subValue={coveragePercent === 100 ? "100% Abdeckung ✓" : `${coveragePercent}% Abdeckung (${totalSongs.toLocaleString('de-DE')} gesamt)`}
+              trend={coveragePercent === 100 ? "up" : undefined}
             />
             <StatCard 
               icon={Users}
