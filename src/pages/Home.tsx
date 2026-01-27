@@ -343,7 +343,7 @@ export default function Home() {
                     <Coins className="h-6 w-6" />
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Katalogwert</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Rechnerischer Katalogwert</p>
                     <p className="text-2xl md:text-3xl font-bold text-primary tabular-nums">
                       {catalogValuation.estimatedValue.toLocaleString('de-DE')} €
                     </p>
