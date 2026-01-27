@@ -268,14 +268,15 @@ export default function Home() {
     return Math.round((allSongsWithAudio.length / totalSongs) * 100);
   }, [allSongsWithAudio.length, totalSongs]);
 
-  // Catalog value estimation (Eigeneinschätzung)
+  // Catalog value estimation (Eigeneinschätzung) - includes V2 versions
   const catalogValuation = useMemo(() => {
-    const songCount = totalSongs; // All songs, not just with audio
+    // Use total available tracks (V1 + V2) for valuation
+    const trackCount = totalAvailableTracks;
     const genreCount = genreStats.length;
     const artistCount = stats.artists;
     
-    // Base value per song (in EUR)
-    const baseValuePerSong = 850;
+    // Base value per track (in EUR)
+    const baseValuePerTrack = 850;
     
     // Genre diversity multiplier (more genres = more versatile catalog)
     const genreDiversityBonus = Math.min(genreCount / 10, 1) * 0.25; // up to 25% bonus
@@ -286,21 +287,27 @@ export default function Home() {
     // Rights status bonus (100% Eigenproduktion = full control)
     const rightsBonus = 0.20; // 20% premium for full rights
     
+    // V2 coverage bonus (having alternative versions increases value)
+    const v2CoverageRatio = allSongsWithAudio.length > 0 ? songsWithV2Count / allSongsWithAudio.length : 0;
+    const v2Bonus = v2CoverageRatio * 0.10; // up to 10% bonus for full V2 coverage
+    
     // Calculate total multiplier
-    const totalMultiplier = 1 + genreDiversityBonus + artistDiversityBonus + rightsBonus;
+    const totalMultiplier = 1 + genreDiversityBonus + artistDiversityBonus + rightsBonus + v2Bonus;
     
     // Calculate estimated value
-    const estimatedValue = Math.round(songCount * baseValuePerSong * totalMultiplier);
+    const estimatedValue = Math.round(trackCount * baseValuePerTrack * totalMultiplier);
     
     return {
       estimatedValue,
-      baseValue: songCount * baseValuePerSong,
+      baseValue: trackCount * baseValuePerTrack,
       genreDiversityBonus: Math.round(genreDiversityBonus * 100),
       artistDiversityBonus: Math.round(artistDiversityBonus * 100),
       rightsBonus: Math.round(rightsBonus * 100),
+      v2Bonus: Math.round(v2Bonus * 100),
       totalMultiplier: Math.round(totalMultiplier * 100),
+      trackCount,
     };
-  }, [totalSongs, genreStats.length, stats.artists]);
+  }, [totalAvailableTracks, genreStats.length, stats.artists, allSongsWithAudio.length, songsWithV2Count]);
 
   // GEMA/ISRC/ISWC Statistics
   const registrationStats = useMemo(() => {
@@ -434,23 +441,33 @@ export default function Home() {
                 
                 {/* Right: Breakdown */}
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                  <span>{totalSongs.toLocaleString('de-DE')} Songs × 850 €</span>
+                  <span>{catalogValuation.trackCount.toLocaleString('de-DE')} Tracks × 850 €</span>
                   <span className="text-emerald-500">+{catalogValuation.genreDiversityBonus}% Genre</span>
                   <span className="text-blue-500">+{catalogValuation.artistDiversityBonus}% Künstler</span>
                   <span className="text-amber-500">+{catalogValuation.rightsBonus}% Vollrechte</span>
+                  {catalogValuation.v2Bonus > 0 && (
+                    <span className="text-purple-500">+{catalogValuation.v2Bonus}% V2</span>
+                  )}
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Key Metrics */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4 mb-6 md:mb-8">
             <StatCard 
               icon={Music}
               label="Titel im Katalog"
               value={totalSongs.toLocaleString('de-DE')}
               subValue={coveragePercent === 100 ? "100% mit Audio ✓" : `${allSongsWithAudio.length.toLocaleString('de-DE')} mit Audio (${coveragePercent}%)`}
               trend={coveragePercent === 100 ? "up" : undefined}
+            />
+            <StatCard 
+              icon={Disc}
+              label="Verfügbare Tracks"
+              value={totalAvailableTracks.toLocaleString('de-DE')}
+              subValue={songsWithV2Count > 0 ? `inkl. ${songsWithV2Count} V2-Versionen` : "V1 Versionen"}
+              trend={songsWithV2Count > 0 ? "up" : undefined}
             />
             <StatCard 
               icon={Users}
@@ -462,7 +479,7 @@ export default function Home() {
               icon={Disc}
               label="Alben"
               value={stats.albums}
-              subValue={songsWithV2Count > 0 ? `+${songsWithV2Count} V2-Versionen` : "im Katalog"}
+              subValue="im Katalog"
             />
             <StatCard 
               icon={Shield}
