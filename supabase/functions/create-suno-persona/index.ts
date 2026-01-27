@@ -89,6 +89,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         taskId: song.suno_task_id,
+        name: artist.name,
         description: personaDescription,
       }),
     });
