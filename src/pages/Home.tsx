@@ -254,7 +254,7 @@ export default function Home() {
 
   // Catalog value estimation (Eigeneinschätzung)
   const catalogValuation = useMemo(() => {
-    const songCount = allSongsWithAudio.length;
+    const songCount = totalSongs; // All songs, not just with audio
     const genreCount = genreStats.length;
     const artistCount = stats.artists;
     
@@ -284,7 +284,7 @@ export default function Home() {
       rightsBonus: Math.round(rightsBonus * 100),
       totalMultiplier: Math.round(totalMultiplier * 100),
     };
-  }, [allSongsWithAudio.length, genreStats.length, stats.artists]);
+  }, [totalSongs, genreStats.length, stats.artists]);
 
   // GEMA/ISRC/ISWC Statistics
   const registrationStats = useMemo(() => {
