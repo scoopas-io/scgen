@@ -143,18 +143,43 @@ serve(async (req) => {
       const candidate = candidates[i];
       console.log(`Trying persona creation with candidate song ${candidate.id} (taskId ${candidate.suno_task_id}, audioId: ${candidate.suno_audio_id || 'none'})`);
 
-      // Prefer audioId if available (more stable), otherwise fall back to taskId + musicIndex
+      // The Suno API may accept different parameter names for audio identification.
+      // Try audioId first if available, then fall back to taskId + musicIndex.
+      // If audioId fails with "task_id cannot be blank", it means the API expects taskId format.
+      
       if (candidate.suno_audio_id) {
-        console.log("Using stable audioId for persona creation");
-        sunoResult = await callSunoCreatePersona(SUNO_API_KEY, { ...basePayload, audioId: candidate.suno_audio_id });
+        console.log("Trying with suno_audio_id first");
+        // Try audio_id format first
+        sunoResult = await callSunoCreatePersona(SUNO_API_KEY, { ...basePayload, audio_id: candidate.suno_audio_id });
+        
+        // If that fails with task_id error, try audioId format
+        if (!sunoResult.ok && sunoResult.msg?.includes("task_id cannot be blank")) {
+          console.log("audio_id format failed, trying audioId format");
+          sunoResult = await callSunoCreatePersona(SUNO_API_KEY, { ...basePayload, audioId: candidate.suno_audio_id });
+        }
+        
+        // If audioId formats fail, fall back to taskId + musicIndex
+        if (!sunoResult.ok && (sunoResult.msg?.includes("task_id cannot be blank") || sunoResult.msg?.includes("audio"))) {
+          console.log("audioId formats failed, falling back to taskId + musicIndex approach");
+          sunoResult = await callSunoCreatePersona(SUNO_API_KEY, { ...basePayload, taskId: candidate.suno_task_id, musicIndex: 0 });
+          if (!sunoResult.ok) {
+            const msg = sunoResult.msg;
+            const shouldRetryAltIndex = sunoResult.status >= 500 || isRetryableMusicFailure(msg);
+            if (shouldRetryAltIndex) {
+              console.log("Retrying with musicIndex=1");
+              sunoResult = await callSunoCreatePersona(SUNO_API_KEY, { ...basePayload, taskId: candidate.suno_task_id, musicIndex: 1 });
+            }
+          }
+        }
       } else {
-        // Fallback to taskId + musicIndex approach
+        // No audioId available, use taskId + musicIndex approach
+        console.log("No audioId, using taskId + musicIndex approach");
         sunoResult = await callSunoCreatePersona(SUNO_API_KEY, { ...basePayload, taskId: candidate.suno_task_id, musicIndex: 0 });
         if (!sunoResult.ok) {
           const msg = sunoResult.msg;
           const shouldRetryAltIndex = sunoResult.status >= 500 || isRetryableMusicFailure(msg);
           if (shouldRetryAltIndex) {
-            console.log("Retrying persona creation with musicIndex=1");
+            console.log("Retrying with musicIndex=1");
             sunoResult = await callSunoCreatePersona(SUNO_API_KEY, { ...basePayload, taskId: candidate.suno_task_id, musicIndex: 1 });
           }
         }
