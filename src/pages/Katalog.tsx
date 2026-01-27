@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppHeader } from "@/components/AppHeader";
 import { SongDetailDialog } from "@/components/SongDetailDialog";
+import { SongInfoDialog } from "@/components/catalog/SongInfoDialog";
 import { Pagination } from "@/components/Pagination";
 import { ArtistTreeRow } from "@/components/catalog/CatalogSongTree";
 import { ArtistWithSocialCard } from "@/components/catalog/ArtistWithSocialCard";
@@ -17,6 +18,7 @@ import { V2ProgressPanel } from "@/components/catalog/V2ProgressPanel";
 import { exportCatalogAsCSV, exportCatalogAsJSON } from "@/lib/exportCatalog";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { usePlayerHeight } from "@/components/GlobalAudioPlayer";
+import { useAuth } from "@/contexts/AuthContext";
 import { 
   useCatalogData, 
   useFilteredCatalog, 
@@ -30,6 +32,7 @@ const Katalog = () => {
   const { artists, stats, isLoading, loadData, deleteArtist } = useCatalogData();
   const { play, currentTrack, isPlaying, pause, resume } = useAudioPlayer();
   const playerHeight = usePlayerHeight();
+  const { isAdmin } = useAuth();
   
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedArtists, setExpandedArtists] = useState<Set<string>>(new Set());
@@ -322,7 +325,7 @@ const Katalog = () => {
         </div>
       </main>
 
-      {selectedSong && (
+      {selectedSong && isAdmin && (
         <SongDetailDialog
           open={!!selectedSong}
           onOpenChange={() => setSelectedSong(null)}
@@ -333,6 +336,16 @@ const Katalog = () => {
           artistName={selectedSong.artistName}
           albumName={selectedSong.albumName}
           onSaved={loadData}
+        />
+      )}
+      
+      {selectedSong && !isAdmin && (
+        <SongInfoDialog
+          open={!!selectedSong}
+          onOpenChange={() => setSelectedSong(null)}
+          song={selectedSong.song}
+          artistName={selectedSong.artistName}
+          albumName={selectedSong.albumName}
         />
       )}
     </div>
