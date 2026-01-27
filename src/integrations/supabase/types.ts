@@ -249,6 +249,8 @@ export type Database = {
       songs: {
         Row: {
           album_id: string
+          alternative_audio_url: string | null
+          alternative_suno_audio_id: string | null
           anteil_komponist: number | null
           anteil_text: number | null
           anteil_verlag: number | null
@@ -284,6 +286,8 @@ export type Database = {
         }
         Insert: {
           album_id: string
+          alternative_audio_url?: string | null
+          alternative_suno_audio_id?: string | null
           anteil_komponist?: number | null
           anteil_text?: number | null
           anteil_verlag?: number | null
@@ -319,6 +323,8 @@ export type Database = {
         }
         Update: {
           album_id?: string
+          alternative_audio_url?: string | null
+          alternative_suno_audio_id?: string | null
           anteil_komponist?: number | null
           anteil_text?: number | null
           anteil_verlag?: number | null

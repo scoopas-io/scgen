@@ -1,5 +1,5 @@
 import { memo, useState, useCallback, useMemo } from "react";
-import { Disc, Play, Pause, Loader2, Download, ChevronRight, Info } from "lucide-react";
+import { Disc, Play, Pause, Loader2, Download, ChevronRight, Info, RefreshCw, Check } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +21,9 @@ interface Song {
   audio_url?: string | null;
   generation_status?: string | null;
   suno_task_id?: string | null;
+  // Alternative version (V2)
+  alternative_audio_url?: string | null;
+  alternative_suno_audio_id?: string | null;
   // Extended metadata
   song_id?: string | null;
   komponist?: string | null;
@@ -110,6 +113,10 @@ export const ArtistAlbumsSection = memo(({
   const [albumProgress, setAlbumProgress] = useState<Map<string, { current: number; total: number }>>(new Map());
   const [detailedSongs, setDetailedSongs] = useState<Map<string, Song>>(new Map());
   const [processingAlbumSongs, setProcessingAlbumSongs] = useState<Map<string, Set<string>>>(new Map());
+  
+  // V2 fetching state
+  const [fetchingV2Songs, setFetchingV2Songs] = useState<Set<string>>(new Set());
+  const [fetchingV2Albums, setFetchingV2Albums] = useState<Set<string>>(new Set());
   
   // Info dialogs state (for Viewer role)
   const [selectedSongForInfo, setSelectedSongForInfo] = useState<Song | null>(null);
@@ -497,7 +504,122 @@ export const ArtistAlbumsSection = memo(({
     });
   };
 
-  // Get currently loading songs for display
+  // Fetch alternative version (V2) for a single song
+  const fetchAlternativeVersion = async (song: Song) => {
+    setFetchingV2Songs(prev => new Set(prev).add(song.id));
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fetch-alternative-version`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ songId: song.id }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Update local state
+        setDetailedSongs(prev => {
+          const next = new Map(prev);
+          const existing = next.get(song.id) || song;
+          next.set(song.id, {
+            ...existing,
+            alternative_audio_url: result.alternativeAudioUrl,
+          });
+          return next;
+        });
+
+        toast.success(`V2 von "${song.name}" geladen`);
+      } else {
+        toast.error(result.error || "Fehler beim Laden der V2");
+      }
+    } catch (error) {
+      console.error("Error fetching V2:", error);
+      toast.error("Verbindungsfehler");
+    } finally {
+      setFetchingV2Songs(prev => {
+        const next = new Set(prev);
+        next.delete(song.id);
+        return next;
+      });
+    }
+  };
+
+  // Fetch alternative versions for all songs in an album
+  const fetchAlbumAlternativeVersions = async (album: Album) => {
+    const eligibleSongs = album.songs
+      .map(s => getSongDetails(s))
+      .filter(s => s.audio_url && s.suno_task_id && !s.alternative_audio_url);
+
+    if (eligibleSongs.length === 0) {
+      toast.info("Keine Songs zum Laden von V2 verfügbar");
+      return;
+    }
+
+    setFetchingV2Albums(prev => new Set(prev).add(album.id));
+    
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const song of eligibleSongs) {
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fetch-alternative-version`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            },
+            body: JSON.stringify({ songId: song.id }),
+          }
+        );
+
+        const result = await response.json();
+
+        if (result.success) {
+          setDetailedSongs(prev => {
+            const next = new Map(prev);
+            const existing = next.get(song.id) || song;
+            next.set(song.id, {
+              ...existing,
+              alternative_audio_url: result.alternativeAudioUrl,
+            });
+            return next;
+          });
+          successCount++;
+        } else {
+          errorCount++;
+        }
+      } catch {
+        errorCount++;
+      }
+
+      // Small delay to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    setFetchingV2Albums(prev => {
+      const next = new Set(prev);
+      next.delete(album.id);
+      return next;
+    });
+
+    if (successCount > 0) {
+      toast.success(`${successCount} V2-Versionen geladen`);
+    }
+    if (errorCount > 0) {
+      toast.warning(`${errorCount} V2-Versionen konnten nicht geladen werden`);
+    }
+  };
+
+
   const loadingSongs = useMemo(() => {
     return albums.flatMap(album => 
       album.songs
@@ -555,6 +677,14 @@ export const ArtistAlbumsSection = memo(({
           const hasProcessingSongs = processingAlbumSongs.has(album.id);
           const remainingProcessingSongs = processingAlbumSongs.get(album.id)?.size || 0;
           const isAlbumBusy = isGeneratingAlbum || hasProcessingSongs;
+          
+          // V2 stats
+          const songsWithV2Possible = album.songs.filter(s => {
+            const d = getSongDetails(s);
+            return d.audio_url && d.suno_task_id && !d.alternative_audio_url;
+          }).length;
+          const songsWithV2 = album.songs.filter(s => getSongDetails(s).alternative_audio_url).length;
+          const isFetchingV2 = fetchingV2Albums.has(album.id);
 
           return (
             <div key={album.id} className="border border-border rounded-lg overflow-hidden bg-card/30">
@@ -643,6 +773,31 @@ export const ArtistAlbumsSection = memo(({
                     </Button>
                   </div>
                 )}
+                {/* Album V2 Button - only for Admin when songs are available */}
+                {isAdmin && songsWithV2Possible > 0 && !isAlbumBusy && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs"
+                    onClick={() => fetchAlbumAlternativeVersions(album)}
+                    disabled={isFetchingV2}
+                  >
+                    {isFetchingV2 ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <>
+                        <RefreshCw className="h-3 w-3 mr-1" />
+                        Album V2 ({songsWithV2Possible})
+                      </>
+                    )}
+                  </Button>
+                )}
+                {isAdmin && songsWithV2 > 0 && songsWithV2Possible === 0 && (
+                  <Badge variant="outline" className="text-emerald-500 border-emerald-500/50 text-[10px]">
+                    <Check className="h-2.5 w-2.5 mr-0.5" />
+                    {songsWithV2} V2
+                  </Badge>
+                )}
                 </div>
               </div>
 
@@ -725,6 +880,29 @@ export const ArtistAlbumsSection = memo(({
                               >
                                 <Download className="h-3.5 w-3.5" />
                               </Button>
+                              {/* V2 Button - only for Admin */}
+                              {isAdmin && details.suno_task_id && (
+                                details.alternative_audio_url ? (
+                                  <Badge variant="outline" className="text-[10px] text-emerald-500 border-emerald-500/50">
+                                    <Check className="h-2.5 w-2.5 mr-0.5" />
+                                    V2
+                                  </Badge>
+                                ) : (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-6 text-[10px] px-1.5 opacity-0 group-hover:opacity-100"
+                                    onClick={() => fetchAlternativeVersion(details)}
+                                    disabled={fetchingV2Songs.has(song.id)}
+                                  >
+                                    {fetchingV2Songs.has(song.id) ? (
+                                      <Loader2 className="h-3 w-3 animate-spin" />
+                                    ) : (
+                                      <>V2</>
+                                    )}
+                                  </Button>
+                                )
+                              )}
                             </>
                           ) : isGenerating ? (
                             <Badge className="bg-blue-500/20 text-blue-400 text-[10px]">
