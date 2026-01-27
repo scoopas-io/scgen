@@ -86,30 +86,31 @@ serve(async (req) => {
 
     // Call Suno API to create persona
     // According to docs: POST /api/v1/generate/generate-persona
-    const sunoResponse = await fetch("https://api.sunoapi.org/api/v1/generate/generate-persona", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${SUNO_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        taskId: song.suno_task_id,
-        // Suno requires musicIndex to specify which generated audio to use (0 or 1)
-        musicIndex: 0,
-        // Some Suno API variants expect `name`, others `personaName`.
-        name: personaName,
-        personaName,
-        description: personaDescription,
-      }),
-    });
+    const basePayload = {
+      taskId: song.suno_task_id,
+      // Some Suno API variants expect `name`, others `personaName`.
+      name: personaName,
+      personaName,
+      description: personaDescription,
+    };
 
-    if (!sunoResponse.ok) {
-      const errorText = await sunoResponse.text();
-      console.error("Suno persona API error:", sunoResponse.status, errorText);
-      throw new Error(`Suno API error ${sunoResponse.status}: ${errorText.substring(0, 200)}`);
+    // Suno requires musicIndex to specify which generated audio to use (0 or 1)
+    // and can intermittently fail on index 0 depending on which render finished.
+    let sunoResult = await callSunoCreatePersona(SUNO_API_KEY, { ...basePayload, musicIndex: 0 });
+    if (!sunoResult.ok) {
+      const msg = sunoResult.msg?.toLowerCase() || "";
+      const shouldRetryAltIndex = sunoResult.status >= 500 || msg.includes("create persona error");
+      if (shouldRetryAltIndex) {
+        console.log("Retrying persona creation with musicIndex=1");
+        sunoResult = await callSunoCreatePersona(SUNO_API_KEY, { ...basePayload, musicIndex: 1 });
+      }
     }
 
-    const sunoData = await sunoResponse.json();
+    if (!sunoResult.ok) {
+      throw new Error(`Suno API error ${sunoResult.status}${sunoResult.msg ? `: ${sunoResult.msg}` : ""}`);
+    }
+
+    const sunoData = sunoResult.data;
     console.log("Suno persona response:", JSON.stringify(sunoData));
 
     // Suno sometimes returns HTTP 200 with an error code in JSON.
@@ -154,10 +155,50 @@ serve(async (req) => {
         success: false,
         error: error instanceof Error ? error.message : "Unknown error"
       }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      // IMPORTANT: Don't return 500 to the browser for upstream provider errors,
+      // otherwise the frontend shows a hard "Edge function returned 500" error.
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
+
+async function callSunoCreatePersona(
+  apiKey: string,
+  payload: Record<string, unknown>,
+): Promise<{ ok: true; status: number; data: any } | { ok: false; status: number; msg?: string; raw?: string }> {
+  const res = await fetch("https://api.sunoapi.org/api/v1/generate/generate-persona", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const raw = await res.text();
+  let json: any = null;
+  try {
+    json = raw ? JSON.parse(raw) : null;
+  } catch {
+    // ignore JSON parse errors
+  }
+
+  // Handle non-2xx
+  if (!res.ok) {
+    const msg = (json?.msg || raw || "").toString().slice(0, 400);
+    console.error("Suno persona API error:", res.status, msg);
+    return { ok: false, status: res.status, msg, raw };
+  }
+
+  // Handle "200 but error" payloads
+  if (typeof json?.code === "number" && json.code !== 200) {
+    const msg = (json?.msg || "Unknown error").toString().slice(0, 400);
+    console.error("Suno persona API error (code):", json.code, msg);
+    return { ok: false, status: json.code, msg, raw };
+  }
+
+  return { ok: true, status: res.status, data: json };
+}
 
 /**
  * Build a detailed persona description from artist data
