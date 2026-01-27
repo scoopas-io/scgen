@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
+import { PersonaStatusDashboard } from "@/components/PersonaStatusDashboard";
 import {
   Sheet,
   SheetContent,
@@ -88,6 +89,9 @@ export const AppHeader = ({ stats }: AppHeaderProps) => {
             >
               {isAdmin ? "Admin" : "Viewer"}
             </Badge>
+
+            {/* Persona Status Dashboard - Admin only */}
+            {isAdmin && <PersonaStatusDashboard />}
 
             {/* Stats - hidden on mobile */}
             <div className="hidden sm:flex items-center gap-2 md:gap-3 text-xs text-muted-foreground">
