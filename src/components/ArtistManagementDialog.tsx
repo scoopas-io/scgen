@@ -10,7 +10,9 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Save, User, Disc, Music, Building, Loader2, Trash2, Plus } from "lucide-react";
+import { Save, User, Disc, Music, Building, Loader2, Trash2, Plus, RefreshCw, AlertTriangle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface ArtistData {
   id: string;
@@ -25,6 +27,8 @@ interface ArtistData {
   label: string | null;
   rechteinhaber_master: string | null;
   rechteinhaber_publishing: string | null;
+  // Vocal gender field
+  vocal_gender: string | null;
 }
 
 interface AlbumData {
@@ -74,6 +78,7 @@ interface Props {
 export function ArtistManagementDialog({ artistId, open, onOpenChange, onSaved }: Props) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [resettingAlbums, setResettingAlbums] = useState(false);
   const [artist, setArtist] = useState<ArtistData | null>(null);
   const [albums, setAlbums] = useState<AlbumData[]>([]);
   const [activeTab, setActiveTab] = useState("artist");
@@ -156,6 +161,63 @@ export function ArtistManagementDialog({ artistId, open, onOpenChange, onSaved }
       toast.error("Fehler beim Speichern");
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Change vocal gender and optionally reset all albums for regeneration
+  const changeGenderAndResetAlbums = async (newGender: string, resetAlbums: boolean) => {
+    if (!artist) return;
+    setSaving(true);
+    setResettingAlbums(resetAlbums);
+    
+    try {
+      // Update artist's vocal_gender
+      const { error: artistError } = await supabase
+        .from("artists")
+        .update({ vocal_gender: newGender })
+        .eq("id", artistId);
+      
+      if (artistError) throw artistError;
+      
+      // Update local state
+      setArtist({ ...artist, vocal_gender: newGender });
+      
+      if (resetAlbums) {
+        // Get all song IDs for this artist's albums
+        const allSongIds = albums.flatMap(album => album.songs.map(song => song.id));
+        
+        if (allSongIds.length > 0) {
+          // Reset all songs to pending status
+          const { error: songsError } = await supabase
+            .from("songs")
+            .update({ 
+              generation_status: "pending",
+              audio_url: null,
+              suno_task_id: null,
+              alternative_audio_url: null,
+              alternative_suno_audio_id: null
+            })
+            .in("id", allSongIds);
+          
+          if (songsError) throw songsError;
+          
+          toast.success(`Geschlecht auf "${newGender === "m" ? "Männlich" : "Weiblich"}" geändert. ${allSongIds.length} Songs zurückgesetzt.`, {
+            description: "Die Alben können jetzt im Audio-Generator neu abgerufen werden."
+          });
+        } else {
+          toast.success(`Geschlecht auf "${newGender === "m" ? "Männlich" : "Weiblich"}" geändert.`);
+        }
+      } else {
+        toast.success(`Geschlecht auf "${newGender === "m" ? "Männlich" : "Weiblich"}" geändert.`);
+      }
+      
+      onSaved?.();
+    } catch (error) {
+      console.error("Error changing gender:", error);
+      toast.error("Fehler beim Ändern des Geschlechts");
+    } finally {
+      setSaving(false);
+      setResettingAlbums(false);
     }
   };
 
@@ -364,6 +426,56 @@ export function ArtistManagementDialog({ artistId, open, onOpenChange, onSaved }
                   rows={4}
                   className="font-mono text-sm"
                 />
+              </div>
+
+              {/* Gender Correction Section */}
+              <div className="p-4 rounded-lg border border-amber-500/30 bg-amber-500/5 space-y-4">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <AlertTriangle className="h-4 w-4 text-amber-500" />
+                  Stimmgeschlecht korrigieren
+                </div>
+                <Alert>
+                  <AlertDescription className="text-xs">
+                    Ändere das Stimmgeschlecht und setze alle Alben zurück, um sie mit der korrekten Stimme neu zu generieren.
+                  </AlertDescription>
+                </Alert>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Aktuelles Geschlecht</Label>
+                    <Select 
+                      value={artist.vocal_gender || "auto"} 
+                      onValueChange={(v) => updateArtistField("vocal_gender", v === "auto" ? "" : v)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Nicht gesetzt" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="auto">Nicht gesetzt</SelectItem>
+                        <SelectItem value="m">Männlich</SelectItem>
+                        <SelectItem value="f">Weiblich</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-end gap-2">
+                    <Button 
+                      variant="outline"
+                      className="flex-1 border-amber-500/50 text-amber-500 hover:bg-amber-500/10"
+                      disabled={saving || resettingAlbums || !artist.vocal_gender}
+                      onClick={() => {
+                        if (confirm(`Geschlecht auf "${artist.vocal_gender === "m" ? "Männlich" : "Weiblich"}" ändern und ALLE Alben zurücksetzen?\n\nDie Songs müssen danach im Audio-Generator neu abgerufen werden.`)) {
+                          changeGenderAndResetAlbums(artist.vocal_gender!, true);
+                        }
+                      }}
+                    >
+                      {resettingAlbums ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                      )}
+                      Ändern & Alben zurücksetzen
+                    </Button>
+                  </div>
+                </div>
               </div>
 
               <div className="p-4 rounded-lg border border-border bg-muted/30 space-y-4">
