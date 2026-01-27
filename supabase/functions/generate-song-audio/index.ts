@@ -151,9 +151,16 @@ serve(async (req) => {
       callBackUrl: callbackUrl,
     };
 
-    // Add vocal gender for non-instrumental tracks
-    if (!isInstrumental && vocalGender) {
-      apiRequestBody.vocalGender = vocalGender;
+    // CRITICAL: Add vocal gender for non-instrumental tracks
+    // This parameter is essential for Suno to use the correct voice
+    if (!isInstrumental) {
+      if (vocalGender) {
+        apiRequestBody.vocalGender = vocalGender;
+        console.log(`Setting vocalGender parameter to: ${vocalGender}`);
+      } else {
+        // Fallback: try to extract from persona or voice prompt
+        console.warn("No vocalGender set - Suno may use random voice");
+      }
     }
 
     // Add advanced control parameters for better generation quality
@@ -161,7 +168,8 @@ serve(async (req) => {
     apiRequestBody.weirdnessConstraint = 0.3; // Moderate creative deviation
 
     // Add negative tags - merge persona negative tags with genre-based ones
-    const builtNegativeTags = buildNegativeTags(genre, isInstrumental);
+    // CRITICAL: Add opposite gender to negative tags to reinforce consistency
+    const builtNegativeTags = buildNegativeTags(genre, isInstrumental, vocalGender);
     const allNegativeTags = [
       ...(personaNegativeTags || []),
       ...(builtNegativeTags ? builtNegativeTags.split(", ") : []),
@@ -463,13 +471,21 @@ function buildStyleTagsWithPersona(
 
 /**
  * Builds negative tags to exclude unwanted styles
+ * CRITICAL: Adds opposite gender to negative tags to reinforce voice consistency
  */
-function buildNegativeTags(genre: string, isInstrumental: boolean): string | null {
+function buildNegativeTags(genre: string, isInstrumental: boolean, vocalGender?: string | null): string | null {
   const negativeTags: string[] = [];
   
   // Exclude vocals for instrumental tracks
   if (isInstrumental) {
     negativeTags.push("vocals", "singing", "rap", "spoken word");
+  } else {
+    // CRITICAL: Exclude opposite gender vocals to reinforce consistency
+    if (vocalGender === "m") {
+      negativeTags.push("female vocals", "female singer", "woman singing", "soprano", "alto");
+    } else if (vocalGender === "f") {
+      negativeTags.push("male vocals", "male singer", "man singing", "baritone", "tenor", "bass voice");
+    }
   }
   
   // Genre-specific exclusions
@@ -527,6 +543,8 @@ function extractVocalGender(voicePrompt: string): "m" | "f" | null {
 
 /**
  * Extracts voice characteristics keywords
+ * CRITICAL: Completely SKIP gender keywords - these are handled separately via vocalGender parameter
+ * Only extract texture/quality keywords to avoid conflicts
  */
 function extractVoiceKeywords(voicePrompt: string): string {
   if (!voicePrompt) return "";
@@ -534,24 +552,23 @@ function extractVoiceKeywords(voicePrompt: string): string {
   const keywords: string[] = [];
   const lowerPrompt = voicePrompt.toLowerCase();
   
-  // Gender (now also handled separately via vocalGender)
-  if (lowerPrompt.includes("female") || lowerPrompt.includes("woman") || lowerPrompt.includes("weiblich")) {
-    keywords.push("female vocals");
-  } else if (lowerPrompt.includes("male") || lowerPrompt.includes("man") || lowerPrompt.includes("männlich")) {
-    keywords.push("male vocals");
-  }
+  // REMOVED: Gender extraction - now handled exclusively via persona vocalGender
+  // This prevents "male vocals" being extracted when persona says "f"
   
-  // Voice texture
+  // Voice texture only
   if (lowerPrompt.includes("raspy") || lowerPrompt.includes("rauchig")) keywords.push("raspy");
   if (lowerPrompt.includes("smooth") || lowerPrompt.includes("weich") || lowerPrompt.includes("velvet")) keywords.push("smooth");
   if (lowerPrompt.includes("powerful") || lowerPrompt.includes("kraftvoll") || lowerPrompt.includes("strong")) keywords.push("powerful");
   if (lowerPrompt.includes("soft") || lowerPrompt.includes("sanft") || lowerPrompt.includes("gentle")) keywords.push("soft");
-  if (lowerPrompt.includes("high") || lowerPrompt.includes("hoch")) keywords.push("high-pitched");
-  if (lowerPrompt.includes("deep") || lowerPrompt.includes("tief") || lowerPrompt.includes("low")) keywords.push("deep voice");
   if (lowerPrompt.includes("breathy") || lowerPrompt.includes("hauchig")) keywords.push("breathy");
   if (lowerPrompt.includes("soulful") || lowerPrompt.includes("soul")) keywords.push("soulful");
   if (lowerPrompt.includes("operatic") || lowerPrompt.includes("opera")) keywords.push("operatic");
   if (lowerPrompt.includes("gritty") || lowerPrompt.includes("raw")) keywords.push("gritty");
+  if (lowerPrompt.includes("warm") || lowerPrompt.includes("rich")) keywords.push("warm");
+  if (lowerPrompt.includes("bright") || lowerPrompt.includes("clear")) keywords.push("bright");
+  
+  // REMOVED: high/deep keywords as they can conflict with gender expectations
+  // e.g., "deep voice" might confuse Suno for a female artist
   
   return keywords.slice(0, 3).join(", ");
 }
