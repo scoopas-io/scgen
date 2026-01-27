@@ -37,11 +37,15 @@ serve(async (req) => {
     // Extract audio data from nested array: data.data[0].audio_url (sunoapi.org format)
     const songsArray = callbackData.data?.data || callbackData.data?.songs || callbackData.songs || [];
     const firstSong = songsArray[0];
+    const secondSong = songsArray[1];
+
     const audioUrl = firstSong?.audio_url || firstSong?.audioUrl ||
                      callbackData.data?.audioUrl || callbackData.data?.audio_url ||
                      callbackData.audioUrl || callbackData.audio_url;
+
+    const audioUrlV2 = secondSong?.audio_url || secondSong?.audioUrl;
     
-    console.log("Extracted - taskId:", taskId, "status:", status, "audioUrl:", audioUrl);
+    console.log("Extracted - taskId:", taskId, "status:", status, "audioUrl:", audioUrl, "audioUrlV2:", audioUrlV2);
 
     if (!taskId) {
       console.error("No taskId in callback:", callbackData);
@@ -78,7 +82,7 @@ serve(async (req) => {
       });
     }
 
-    // If we have an audio URL, download and store it
+    // If we have an audio URL, download and store it (and optionally V2)
     if (audioUrl) {
       console.log("Downloading audio from:", audioUrl);
       
@@ -98,41 +102,55 @@ serve(async (req) => {
       const artistName = artistData?.name || "Unknown";
       const songName = songData.name || "Untitled";
 
-      // Download audio
-      const audioResponse = await fetch(audioUrl);
-      if (!audioResponse.ok) {
-        throw new Error("Failed to download audio from Suno");
+      const sanitize = (v: string) => v.replace(/[^a-zA-Z0-9]/g, "_");
+
+      const uploadFromUrl = async (url: string, suffix: string) => {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`Failed to download audio from Suno (${suffix})`);
+
+        const buf = await res.arrayBuffer();
+        const fileName = `${sanitize(artistName)}_${sanitize(songName)}_${suffix}_${Date.now()}.mp3`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("generated-audio")
+          .upload(fileName, buf, {
+            contentType: "audio/mpeg",
+            upsert: true,
+          });
+
+        if (uploadError) throw uploadError;
+
+        const { data: publicUrlData } = supabase.storage
+          .from("generated-audio")
+          .getPublicUrl(fileName);
+
+        return publicUrlData.publicUrl;
+      };
+
+      // V1
+      const storedUrlV1 = await uploadFromUrl(audioUrl, "v1");
+
+      // Prepare DB update (V1 always, V2 best-effort)
+      const updatePayload: Record<string, unknown> = {
+        audio_url: storedUrlV1,
+        generation_status: "completed",
+        suno_audio_id: firstSong?.id || null,
+      };
+
+      // V2 (best-effort; don't fail the whole callback if V2 fails)
+      if (audioUrlV2) {
+        try {
+          const storedUrlV2 = await uploadFromUrl(audioUrlV2, "v2");
+          updatePayload.alternative_audio_url = storedUrlV2;
+          updatePayload.alternative_suno_audio_id = secondSong?.id || null;
+        } catch (e) {
+          console.warn("Failed to store V2 audio (continuing with V1 only):", e);
+        }
       }
 
-      const audioBuffer = await audioResponse.arrayBuffer();
-      const fileName = `${artistName.replace(/[^a-zA-Z0-9]/g, '_')}_${songName.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.mp3`;
-
-      // Upload to storage
-      const { error: uploadError } = await supabase.storage
-        .from("generated-audio")
-        .upload(fileName, audioBuffer, {
-          contentType: "audio/mpeg",
-          upsert: true
-        });
-
-      if (uploadError) {
-        console.error("Storage upload error:", uploadError);
-        throw uploadError;
-      }
-
-      // Get public URL
-      const { data: publicUrlData } = supabase.storage
-        .from("generated-audio")
-        .getPublicUrl(fileName);
-
-      // Update song with audio URL and Suno audio ID for stable persona creation
       await supabase
         .from("songs")
-        .update({
-          audio_url: publicUrlData.publicUrl,
-          generation_status: "completed",
-          suno_audio_id: firstSong?.id || null
-        })
+        .update(updatePayload)
         .eq("id", songData.id);
 
       console.log("Song updated successfully:", songData.id);
@@ -140,7 +158,8 @@ serve(async (req) => {
       return new Response(JSON.stringify({
         success: true,
         status: "completed",
-        audioUrl: publicUrlData.publicUrl
+        audioUrl: storedUrlV1,
+        alternativeAudioUrl: (updatePayload as any).alternative_audio_url || null,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

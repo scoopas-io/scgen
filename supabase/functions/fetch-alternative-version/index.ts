@@ -67,49 +67,89 @@ serve(async (req) => {
 
     console.log(`Fetching alternative version for song ${songId} with task ${song.suno_task_id}`);
 
-    // Fetch task status from Suno API
-    const statusResponse = await fetch(
-      `https://api.sunoapi.org/api/v1/task/${song.suno_task_id}`,
-      {
+    // Fetch task/record status from Suno API.
+    // SunoAPI has multiple variants in the wild; we try a small set of known endpoints.
+    const encTaskId = encodeURIComponent(song.suno_task_id);
+    const candidateUrls = [
+      `https://api.sunoapi.org/api/v1/generate/record-info?taskId=${encTaskId}`,
+      `https://api.sunoapi.org/api/v1/generate/record-info?task_id=${encTaskId}`,
+      `https://api.sunoapi.org/api/v1/generate/record-info?id=${encTaskId}`,
+      // legacy fallback
+      `https://api.sunoapi.org/api/v1/task/${encTaskId}`,
+    ];
+
+    let statusResponse: Response | null = null;
+    let lastStatus = 0;
+    let lastUrl = "";
+
+    for (const url of candidateUrls) {
+      lastUrl = url;
+      const res = await fetch(url, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${SUNO_API_KEY}`,
           "Content-Type": "application/json",
         },
-      }
-    );
+      });
+      lastStatus = res.status;
+
+      // If not found, try next variant.
+      if (res.status === 404) continue;
+
+      statusResponse = res;
+      break;
+    }
+
+    // If ALL variants returned 404, treat as expired/not available.
+    if (!statusResponse) {
+      console.error("Suno API error: all endpoints returned 404 for task", song.suno_task_id);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Task-Daten abgelaufen (>48h). V2 nur bei neuen Generierungen verfügbar.",
+          expired: true,
+          sunoStatus: 404,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
     if (!statusResponse.ok) {
       const errorText = await statusResponse.text();
-      console.error("Suno API error:", errorText);
-      
-      // 404 means task data has expired (typically 24-48h after generation)
-      if (statusResponse.status === 404) {
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: "Task-Daten abgelaufen (>48h). V2 nur bei neuen Generierungen verfügbar.",
-            expired: true
-          }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      
+      console.error("Suno API error:", lastUrl, lastStatus, errorText);
+
       return new Response(
         JSON.stringify({
           success: false,
           error: "Suno API Fehler",
           sunoStatus: statusResponse.status,
         }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
     const statusData = await statusResponse.json();
-    console.log("Suno status data:", JSON.stringify(statusData));
+    console.log("Suno record-info data:", JSON.stringify(statusData));
 
-    // Extract songs array from response
-    const songsArray = statusData.data?.data || statusData.data?.songs || [];
+    // Some Suno API variants return HTTP 200 with an error code inside JSON.
+    if (typeof statusData?.code === "number" && statusData.code !== 200) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: statusData?.msg || "Suno API Fehler",
+          sunoCode: statusData.code,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Extract songs array from response (record-info format typically: data.response.sunoData)
+    const songsArray =
+      statusData?.data?.response?.sunoData ||
+      statusData?.data?.sunoData ||
+      statusData?.data?.data ||
+      statusData?.data?.songs ||
+      [];
     
     if (songsArray.length < 2) {
       return new Response(
