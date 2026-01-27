@@ -125,12 +125,13 @@ serve(async (req) => {
         .from("generated-audio")
         .getPublicUrl(fileName);
 
-      // Update song with audio URL
+      // Update song with audio URL and Suno audio ID for stable persona creation
       await supabase
         .from("songs")
         .update({
           audio_url: publicUrlData.publicUrl,
-          generation_status: "completed"
+          generation_status: "completed",
+          suno_audio_id: firstSong?.id || null
         })
         .eq("id", songData.id);
 

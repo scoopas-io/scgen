@@ -56,7 +56,7 @@ serve(async (req) => {
       });
     }
 
-    // Get song with suno_task_id (needed to create persona)
+    // Get song with suno_task_id and suno_audio_id (needed to create persona)
     const { data: song, error: songError } = await supabase
       .from("songs")
       .select("*, albums!inner(artist_id)")
@@ -83,9 +83,10 @@ serve(async (req) => {
 
     // Build a list of candidate songs (the requested one first), so we can fallback if Suno
     // refuses a specific track for persona creation.
+    // Prefer songs with suno_audio_id for stable persona creation
     const { data: fallbackSongs, error: fallbackError } = await supabase
       .from("songs")
-      .select("id, suno_task_id, audio_url, created_at, albums!inner(artist_id)")
+      .select("id, suno_task_id, suno_audio_id, audio_url, created_at, albums!inner(artist_id)")
       .eq("albums.artist_id", songArtistId)
       .neq("id", songId)
       .not("audio_url", "is", null)
@@ -97,9 +98,14 @@ serve(async (req) => {
       console.warn("Failed to load fallback songs:", fallbackError.message);
     }
 
-    const candidates: Array<{ id: string; suno_task_id: string }>
-      = [{ id: song.id, suno_task_id: song.suno_task_id }]
-        .concat((fallbackSongs || []).map((s: any) => ({ id: s.id, suno_task_id: s.suno_task_id })));
+    // Structure candidates with optional audio_id for stable persona creation
+    const candidates: Array<{ id: string; suno_task_id: string; suno_audio_id?: string }>
+      = [{ id: song.id, suno_task_id: song.suno_task_id, suno_audio_id: (song as any).suno_audio_id }]
+        .concat((fallbackSongs || []).map((s: any) => ({ 
+          id: s.id, 
+          suno_task_id: s.suno_task_id, 
+          suno_audio_id: s.suno_audio_id 
+        })));
 
     // Build persona description from artist data
     const personaDescription = buildPersonaDescription(artist);
@@ -135,15 +141,22 @@ serve(async (req) => {
     // This prevents the whole batch from failing on a single problematic track.
     for (let i = 0; i < Math.min(candidates.length, 4); i++) {
       const candidate = candidates[i];
-      console.log(`Trying persona creation with candidate song ${candidate.id} (taskId ${candidate.suno_task_id})`);
+      console.log(`Trying persona creation with candidate song ${candidate.id} (taskId ${candidate.suno_task_id}, audioId: ${candidate.suno_audio_id || 'none'})`);
 
-      sunoResult = await callSunoCreatePersona(SUNO_API_KEY, { ...basePayload, taskId: candidate.suno_task_id, musicIndex: 0 });
-      if (!sunoResult.ok) {
-        const msg = sunoResult.msg;
-        const shouldRetryAltIndex = sunoResult.status >= 500 || isRetryableMusicFailure(msg);
-        if (shouldRetryAltIndex) {
-          console.log("Retrying persona creation with musicIndex=1");
-          sunoResult = await callSunoCreatePersona(SUNO_API_KEY, { ...basePayload, taskId: candidate.suno_task_id, musicIndex: 1 });
+      // Prefer audioId if available (more stable), otherwise fall back to taskId + musicIndex
+      if (candidate.suno_audio_id) {
+        console.log("Using stable audioId for persona creation");
+        sunoResult = await callSunoCreatePersona(SUNO_API_KEY, { ...basePayload, audioId: candidate.suno_audio_id });
+      } else {
+        // Fallback to taskId + musicIndex approach
+        sunoResult = await callSunoCreatePersona(SUNO_API_KEY, { ...basePayload, taskId: candidate.suno_task_id, musicIndex: 0 });
+        if (!sunoResult.ok) {
+          const msg = sunoResult.msg;
+          const shouldRetryAltIndex = sunoResult.status >= 500 || isRetryableMusicFailure(msg);
+          if (shouldRetryAltIndex) {
+            console.log("Retrying persona creation with musicIndex=1");
+            sunoResult = await callSunoCreatePersona(SUNO_API_KEY, { ...basePayload, taskId: candidate.suno_task_id, musicIndex: 1 });
+          }
         }
       }
 
