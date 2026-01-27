@@ -270,19 +270,29 @@ export function useFilteredCatalog(
   searchQuery: string
 ) {
   return useMemo(() => {
-    if (!searchQuery.trim()) return artists;
+    // Helper to count total songs with audio for an artist
+    const countAvailableSongs = (artist: ArtistWithAlbums) => 
+      artist.albums.reduce((sum, album) => 
+        sum + album.songs.filter(s => s.audio_url).length, 0);
     
-    const query = searchQuery.toLowerCase();
-    return artists.filter(artist => {
-      if (artist.name.toLowerCase().includes(query)) return true;
-      if (artist.genre.toLowerCase().includes(query)) return true;
-      if (artist.style.toLowerCase().includes(query)) return true;
-      if (artist.albums.some(album => album.name.toLowerCase().includes(query))) return true;
-      if (artist.albums.some(album => 
-        album.songs.some(song => song.name.toLowerCase().includes(query))
-      )) return true;
-      return false;
-    });
+    let filtered = artists;
+    
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = artists.filter(artist => {
+        if (artist.name.toLowerCase().includes(query)) return true;
+        if (artist.genre.toLowerCase().includes(query)) return true;
+        if (artist.style.toLowerCase().includes(query)) return true;
+        if (artist.albums.some(album => album.name.toLowerCase().includes(query))) return true;
+        if (artist.albums.some(album => 
+          album.songs.some(song => song.name.toLowerCase().includes(query))
+        )) return true;
+        return false;
+      });
+    }
+    
+    // Sort by number of available songs (descending)
+    return [...filtered].sort((a, b) => countAvailableSongs(b) - countAvailableSongs(a));
   }, [artists, searchQuery]);
 }
 
