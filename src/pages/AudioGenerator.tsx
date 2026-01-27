@@ -679,7 +679,19 @@ const AudioGenerator = () => {
               bpm: song.bpm,
               tonart: song.tonart,
               artistName: song.artistName,
-              instrumental: isInstrumentalGenre(song.genre),
+              instrumental: song.instrumentalOnly ?? isInstrumentalGenre(song.genre),
+              language: song.language,
+              // Persona fields - now properly passed to API
+              vocalGender: song.vocalGender,
+              vocalTexture: song.vocalTexture,
+              vocalRange: song.vocalRange,
+              styleTags: song.styleTags,
+              moodTags: song.moodTags,
+              negativeTags: song.negativeTags,
+              defaultBpmMin: song.defaultBpmMin,
+              defaultBpmMax: song.defaultBpmMax,
+              preferredKeys: song.preferredKeys,
+              instrumentalOnly: song.instrumentalOnly,
             }),
           }
         );
