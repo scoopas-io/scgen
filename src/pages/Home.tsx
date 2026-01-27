@@ -9,7 +9,8 @@ import {
   Shield,
   Coins,
   ChevronRight,
-  ExternalLink
+  ExternalLink,
+  Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,6 +21,11 @@ import { useCatalogData, type ArtistWithAlbums, type Song } from "@/hooks/useCat
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { usePlayerHeight } from "@/components/GlobalAudioPlayer";
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // Genre card for discovery
 const GenreCard = ({ 
@@ -163,7 +169,7 @@ export default function Home() {
       const j = Math.floor(Math.random() * (i + 1));
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
-    return shuffled.slice(0, 9); // Show 9 random songs
+    return shuffled.slice(0, 12); // Show 12 random songs
   }, [allSongsWithAudio]);
 
   // Genre distribution
@@ -343,7 +349,23 @@ export default function Home() {
                     <Coins className="h-6 w-6" />
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Rechnerischer Katalogwert</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide">Rechnerischer Katalogwert</p>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs text-left">
+                          <p className="font-medium mb-1">Berechnungsmethodik</p>
+                          <p className="text-xs text-muted-foreground">
+                            Basiswert: 850 € pro Titel (V1+V2)<br />
+                            + Genre-Vielfalt: bis zu +25%<br />
+                            + Künstler-Diversität: bis zu +15%<br />
+                            + Vollrechte (scoopas GmbH): +20%
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
                     <p className="text-2xl md:text-3xl font-bold text-primary tabular-nums">
                       {catalogValuation.estimatedValue.toLocaleString('de-DE')} €
                     </p>
