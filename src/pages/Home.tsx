@@ -582,9 +582,9 @@ export default function Home() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
             <StatCard 
               icon={Music}
-              label="Verfügbare Titel"
-              value={allSongsWithAudio.length.toLocaleString('de-DE')}
-              subValue={coveragePercent === 100 ? "100% Abdeckung ✓" : `${coveragePercent}% Abdeckung (${totalSongs.toLocaleString('de-DE')} gesamt)`}
+              label="Titel im Katalog"
+              value={totalSongs.toLocaleString('de-DE')}
+              subValue={coveragePercent === 100 ? "100% mit Audio ✓" : `${allSongsWithAudio.length.toLocaleString('de-DE')} mit Audio (${coveragePercent}%)`}
               trend={coveragePercent === 100 ? "up" : undefined}
             />
             <StatCard 
