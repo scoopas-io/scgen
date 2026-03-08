@@ -14,6 +14,7 @@ import Generator from "./pages/Generator";
 import Katalog from "./pages/Katalog";
 import SocialTools from "./pages/SocialTools";
 import AudioGenerator from "./pages/AudioGenerator";
+import UeberUns from "./pages/UeberUns";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
