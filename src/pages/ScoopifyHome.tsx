@@ -339,7 +339,7 @@ export default function ScoopifyHome() {
             <div className="relative grid grid-cols-1 lg:grid-cols-2 lg:min-h-[380px]">
 
               {/* Left: Headline + Stats */}
-              <div className="p-4 sm:p-6 md:p-10 flex flex-col justify-center">
+              <div className="p-4 sm:p-6 md:p-10 flex flex-col justify-center items-center text-center lg:items-start lg:text-left">
                 {/* Eyebrow */}
                 <div className="flex items-center gap-1.5 w-fit max-w-full px-2.5 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary font-semibold uppercase mb-4"
                   style={{ fontSize: "clamp(0.55rem, 2.2vw, 0.7rem)", letterSpacing: "0.08em" }}
@@ -369,14 +369,14 @@ export default function ScoopifyHome() {
                 </p>
 
                 {/* Stats */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-6 w-full">
                   {[
                     { value: stats.artists, label: "KI-Künstler" },
                     { value: allSongsWithAudio.length, label: "Streamable Titel" },
                     { value: stats.albums ?? 0, label: "Alben" },
                     { value: "100%", label: "KI-generiert" },
                   ].map(({ value, label }) => (
-                    <div key={label} className="flex flex-col min-w-0">
+                    <div key={label} className="flex flex-col min-w-0 items-center lg:items-start">
                       <span
                         className="font-display font-bold leading-none"
                         style={{
