@@ -9,6 +9,7 @@ import { GlobalAudioPlayer } from "@/components/GlobalAudioPlayer";
 import { PasswordGate } from "@/components/PasswordGate";
 import Home from "./pages/Home";
 import ScoopifyHome from "./pages/ScoopifyHome";
+import KuenstlerSongs from "./pages/KuenstlerSongs";
 import Generator from "./pages/Generator";
 import Katalog from "./pages/Katalog";
 import SocialTools from "./pages/SocialTools";
