@@ -308,7 +308,7 @@ export default function ScoopifyHome() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col h-screen bg-background overflow-x-hidden">
       <AppHeader stats={stats} />
       <ScrollArea className="flex-1">
         {/* ── Full-Width Hero ─────────────────────────────────────────── */}
@@ -345,7 +345,7 @@ export default function ScoopifyHome() {
             </div>
 
             {/* Main headline */}
-            <h1 className="font-display font-bold leading-[1.05] mb-4" style={{ fontSize: "clamp(2.2rem, 6vw, 4.5rem)" }}>
+            <h1 className="font-display font-bold leading-[1.05] mb-4" style={{ fontSize: "clamp(1.8rem, 8vw, 4.5rem)" }}>
               <span className="text-foreground">Musik, komplett</span>
               <br />
               <span style={{ background: "linear-gradient(135deg, hsl(320 90% 65%), hsl(340 85% 55%), hsl(280 80% 65%))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
@@ -354,13 +354,13 @@ export default function ScoopifyHome() {
             </h1>
 
             {/* Sub-copy */}
-            <p className="text-muted-foreground text-base md:text-lg max-w-xl mb-8 leading-relaxed">
-              Kein Mensch. Kein Studio. Jede Note, jeder Beat, jeder Künstler – 
-              <span className="text-foreground font-medium"> vollständig generiert</span> von künstlicher Intelligenz.
+            <p className="text-muted-foreground text-sm md:text-lg max-w-xl mb-8 leading-relaxed">
+              Kein Mensch. Kein Studio. Jede Note, jeder Beat, jeder Künstler –{" "}
+              <span className="text-foreground font-medium">vollständig generiert</span> von künstlicher Intelligenz.
             </p>
 
             {/* Stats row */}
-            <div className="flex flex-wrap gap-6 md:gap-10">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 md:gap-10">
               {[
                 { value: stats.artists, label: "KI-Künstler", suffix: "" },
                 { value: allSongsWithAudio.length, label: "Streamable Titel", suffix: "" },
