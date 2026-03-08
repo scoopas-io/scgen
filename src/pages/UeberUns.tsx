@@ -31,11 +31,7 @@ const PILLARS = [
   },
 ];
 
-const TIMELINE = [
-  { year: "2024", label: "Gründung", desc: "Idee: Eine Streamingplattform, deren gesamter Katalog von KI erschaffen wird." },
-  { year: "2025", label: "Erste Künstler", desc: "Die ersten 50 KI-Künstler werden mit Personas, Alben und Titeln generiert." },
-  { year: "2026", label: "Scoopify Launch", desc: "Öffentlicher Start von Scoopify – der ersten reinen KI-Streamingplattform." },
-];
+
 
 export default function UeberUns() {
   const { stats } = useCatalogData();
