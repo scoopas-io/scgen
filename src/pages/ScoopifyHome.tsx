@@ -98,13 +98,8 @@ function ArtistCard({
   onPlay: () => void;
   onAddToQueue: () => void;
 }) {
-  const [hovered, setHovered] = useState(false);
   return (
-    <div
-      className="group flex-shrink-0 w-32 sm:w-40 md:w-48 text-left focus:outline-none"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
+    <div className="group flex-shrink-0 w-32 sm:w-40 md:w-48 text-left focus:outline-none">
       <div className="relative rounded-xl overflow-hidden aspect-square bg-muted/40 mb-2">
         {artist.profile_image_url ? (
           <img
@@ -117,10 +112,10 @@ function ArtistCard({
             <Music className="h-8 w-8 sm:h-10 sm:w-10 text-primary/40" />
           </div>
         )}
-        {/* On mobile: always show buttons (no hover-only), on desktop: hover-reveal */}
+        {/* Hover overlay on desktop; always-visible controls on mobile */}
         <div className={cn(
           "absolute inset-0 bg-black/50 flex items-center justify-center gap-2 transition-opacity duration-200",
-          hovered ? "opacity-100" : "opacity-0 sm:opacity-0"
+          "opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
         )}>
           <button
             onClick={onPlay}
@@ -136,13 +131,6 @@ function ArtistCard({
             <ListPlus className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
           </button>
         </div>
-
-        {/* Mobile tap-to-play overlay (visible on small screens without hover) */}
-        <button
-          onClick={onPlay}
-          className="absolute inset-0 sm:hidden"
-          aria-label={`${artist.name} abspielen`}
-        />
       </div>
       <p className="text-xs sm:text-sm font-semibold truncate">{artist.name}</p>
       <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{artist.genre} · {songCount} Titel</p>
