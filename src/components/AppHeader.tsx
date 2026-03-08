@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Music, Zap, Database, Volume2, Share2, Users, Disc, Menu, Home, LogOut } from "lucide-react";
+import { Music, Zap, Database, Volume2, Share2, Users, Disc, Menu, Home, LogOut, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScoopasIcon } from "@/components/ScoopasIcon";
 import { HeaderMiniPlayer } from "@/components/GlobalAudioPlayer";
