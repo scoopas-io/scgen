@@ -382,7 +382,7 @@ export default function ScoopifyHome() {
         </div>
 
         <div
-          className="container mx-auto px-3 md:px-6 pt-6"
+          className="container px-3 md:px-6 pt-6"
           style={{ paddingBottom: Math.max(playerHeight + 24, 32) }}
         >
 
