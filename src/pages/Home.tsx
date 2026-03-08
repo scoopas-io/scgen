@@ -1,19 +1,13 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { 
-  Users, 
   Disc, 
   Music, 
   Play,
   PieChart,
-  Shield,
-  Coins,
   ChevronRight,
-  ExternalLink,
-  Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AppHeader } from "@/components/AppHeader";
@@ -21,11 +15,6 @@ import { useCatalogData, type ArtistWithAlbums, type Song } from "@/hooks/useCat
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { usePlayerHeight } from "@/components/GlobalAudioPlayer";
 import { cn } from "@/lib/utils";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 // Genre card for discovery
 const GenreCard = ({ 

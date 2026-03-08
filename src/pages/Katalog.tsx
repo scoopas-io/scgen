@@ -200,6 +200,70 @@ const Katalog = () => {
       <main className="flex-1 min-h-0 overflow-hidden" style={{ paddingBottom: playerHeight }}>
         <div className="container h-full py-4 md:py-6 px-3 md:px-6">
           <div className="flex flex-col h-full gap-3 md:gap-4 min-h-0">
+
+            {/* Valuation Card */}
+            <Card className="bg-gradient-to-br from-card/80 to-card/40 border-border/50 shrink-0">
+              <CardContent className="p-4 md:p-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  {/* Left: Catalog Value */}
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
+                      <Coins className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-xs text-muted-foreground uppercase tracking-wide">Rechnerischer Katalogwert</p>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-xs text-left">
+                            <p className="font-medium mb-1">Berechnungsmethodik</p>
+                            <p className="text-xs text-muted-foreground">
+                              Basiswert: 850 € pro Titel (V1+V2)<br />
+                              + Genre-Vielfalt: bis zu +25%<br />
+                              + Künstler-Diversität: bis zu +15%<br />
+                              + Vollrechte (scoopas GmbH): +20%
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <p className="text-2xl font-bold text-primary tabular-nums">
+                        {catalogValuation.toLocaleString('de-DE')} €
+                      </p>
+                    </div>
+                  </div>
+                  {/* Right: Key Stats */}
+                  <div className="flex items-center gap-4 sm:gap-6 text-center">
+                    <div>
+                      <p className="text-lg font-bold tabular-nums">{totalAvailableTracks.toLocaleString('de-DE')}</p>
+                      <p className="text-xs text-muted-foreground">Titel (V1+V2)</p>
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold tabular-nums">{songsWithV2Count.toLocaleString('de-DE')}</p>
+                      <p className="text-xs text-muted-foreground">V2-Versionen</p>
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold tabular-nums">{stats.artists}</p>
+                      <p className="text-xs text-muted-foreground">Künstler</p>
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold tabular-nums">{stats.albums}</p>
+                      <p className="text-xs text-muted-foreground">Alben</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 mt-3 pt-3 border-t border-border/30 text-xs text-muted-foreground">
+                  <Shield className="h-3 w-3 text-emerald-500 shrink-0" />
+                  <span>100% Eigenproduktion</span>
+                  <span>•</span>
+                  <span>{genreStats.length} Genres</span>
+                  <span>•</span>
+                  <span>{potentialV2Count} potenzielle V2</span>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Toolbar - Mobile optimized */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3 shrink-0">
               <div className="flex items-center gap-2 sm:gap-3 flex-1 w-full sm:w-auto">
