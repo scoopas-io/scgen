@@ -335,7 +335,7 @@ export default function ScoopifyHome() {
             style={{ backgroundImage: "linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)", backgroundSize: "40px 40px" }}
           />
 
-          <div className="relative px-4 md:px-10 pt-10 pb-12">
+          <div className="relative container px-3 md:px-6 pt-10 pb-12">
             {/* Eyebrow */}
             <div className="flex items-center gap-2 mb-4">
               <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-semibold uppercase tracking-widest">
