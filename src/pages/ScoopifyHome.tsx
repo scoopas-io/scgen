@@ -314,7 +314,7 @@ export default function ScoopifyHome() {
       <AppHeader stats={stats} />
       <ScrollArea className="flex-1">
         <div
-          className="max-w-6xl mx-auto px-4 md:px-6 py-6"
+          className="max-w-7xl mx-auto px-4 md:px-8 py-6"
           style={{ paddingBottom: Math.max(playerHeight + 24, 32) }}
         >
           {/* Header */}
