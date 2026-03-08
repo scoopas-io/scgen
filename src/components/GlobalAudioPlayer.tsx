@@ -576,9 +576,6 @@ const SidePanel: React.FC = () => {
     </>
   );
 };
-      
-      {/* Panel */}
-      <div className="fixed inset-0 md:inset-auto md:top-0 md:right-0 md:bottom-0 md:w-full md:max-w-sm bg-gradient-to-b from-card via-card to-background md:border-l border-border/50 z-50 animate-slide-in-right flex flex-col shadow-2xl">
         {/* Header with gradient */}
         <div className="flex items-center justify-between px-5 py-4 shrink-0 bg-gradient-to-b from-primary/5 to-transparent">
           <div className="flex items-center gap-2">
