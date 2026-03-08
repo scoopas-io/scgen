@@ -394,7 +394,7 @@ export default function ScoopifyHome() {
         </div>
 
         <div
-          className="w-full px-4 md:px-10 pt-6"
+          className="container px-3 md:px-6 pt-6"
           style={{ paddingBottom: Math.max(playerHeight + 24, 32) }}
         >
           {/* Künstler entdecken — full-width horizontal scroll */}
