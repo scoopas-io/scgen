@@ -12,7 +12,7 @@ const ScrollArea = React.forwardRef<
       Radix setzt die Overflow-Styles intern, aber in manchen Browser/Embedding-Szenarien
       kann Wheel/Trackpad-Scroll nicht greifen. Das native overflow-auto dient als Fallback.
     */}
-    <ScrollAreaPrimitive.Viewport className="h-full w-full rounded-[inherit] overflow-auto">
+    <ScrollAreaPrimitive.Viewport className="h-full w-full rounded-[inherit] overflow-y-auto overflow-x-hidden">
       {children}
     </ScrollAreaPrimitive.Viewport>
     <ScrollBar />
