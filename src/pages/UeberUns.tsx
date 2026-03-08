@@ -1,4 +1,4 @@
-import { Sparkles, Music, Cpu, Zap, Globe, HeartHandshake, Radio } from "lucide-react";
+import { Sparkles, Cpu, Zap, Globe, HeartHandshake, Radio } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AppHeader } from "@/components/AppHeader";
 import { useCatalogData } from "@/hooks/useCatalogData";
@@ -31,11 +31,7 @@ const PILLARS = [
   },
 ];
 
-const TIMELINE = [
-  { year: "2024", label: "Gründung", desc: "Idee: Eine Streamingplattform, deren gesamter Katalog von KI erschaffen wird." },
-  { year: "2025", label: "Erste Künstler", desc: "Die ersten 50 KI-Künstler werden mit Personas, Alben und Titeln generiert." },
-  { year: "2026", label: "Scoopify Launch", desc: "Öffentlicher Start von Scoopify – der ersten reinen KI-Streamingplattform." },
-];
+
 
 export default function UeberUns() {
   const { stats } = useCatalogData();
@@ -172,28 +168,6 @@ export default function UeberUns() {
             ))}
           </div>
 
-          {/* ── Timeline ───────────────────────────────────────────────── */}
-          <div className="mb-12">
-            <div className="flex items-center gap-1.5 mb-6">
-              <Music className="h-4 w-4 text-primary" />
-              <h2 className="font-display font-bold text-xl">Unsere Geschichte</h2>
-            </div>
-            <div className="relative pl-6 border-l-2 border-border/50 space-y-8">
-              {TIMELINE.map(({ year, label, desc }) => (
-                <div key={year} className="relative">
-                  <div className="absolute -left-[1.55rem] top-1 h-3 w-3 rounded-full bg-primary ring-4 ring-background" />
-                  <p
-                    className="text-primary font-semibold uppercase mb-0.5"
-                    style={{ fontSize: "0.65rem", letterSpacing: "0.08em" }}
-                  >
-                    {year}
-                  </p>
-                  <h3 className="font-bold text-sm mb-1">{label}</h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">{desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
 
           {/* ── Mission Statement ──────────────────────────────────────── */}
           <div
