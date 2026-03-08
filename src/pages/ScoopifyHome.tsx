@@ -312,9 +312,9 @@ export default function ScoopifyHome() {
       <AppHeader stats={stats} />
       <ScrollArea className="flex-1">
         {/* ── Full-Width Hero ─────────────────────────────────────────── */}
-        <div className="relative w-full overflow-hidden">
-          {/* Animated gradient orbs */}
-          <div className="absolute inset-0 pointer-events-none">
+        <div className="relative w-full">
+          {/* Animated gradient orbs — clipped via a separate wrapper so they don't affect layout */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <div
               className="absolute -top-24 -left-24 w-72 sm:w-96 h-72 sm:h-96 rounded-full opacity-20 blur-3xl"
               style={{ background: "radial-gradient(circle, hsl(320 90% 55%), transparent 70%)", animation: "pulse 4s ease-in-out infinite" }}
@@ -327,12 +327,12 @@ export default function ScoopifyHome() {
               className="absolute bottom-0 left-1/2 -translate-x-1/2 w-56 sm:w-72 h-32 sm:h-40 opacity-10 blur-3xl"
               style={{ background: "radial-gradient(ellipse, hsl(320 90% 55%), transparent 70%)", animation: "pulse 6s ease-in-out infinite 2s" }}
             />
+            {/* Grid texture */}
+            <div
+              className="absolute inset-0 opacity-[0.03]"
+              style={{ backgroundImage: "linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)", backgroundSize: "40px 40px" }}
+            />
           </div>
-          {/* Grid texture */}
-          <div
-            className="absolute inset-0 opacity-[0.03] pointer-events-none"
-            style={{ backgroundImage: "linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)", backgroundSize: "40px 40px" }}
-          />
 
           {/* Two-column layout on lg+, stacked on mobile */}
           <div className="container px-3 md:px-6 relative flex flex-col lg:flex-row items-stretch gap-0 pt-6 sm:pt-10 pb-0 lg:pb-0">
