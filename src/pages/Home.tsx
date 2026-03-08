@@ -1,19 +1,13 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { 
-  Users, 
   Disc, 
   Music, 
   Play,
   PieChart,
-  Shield,
-  Coins,
   ChevronRight,
-  ExternalLink,
-  Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AppHeader } from "@/components/AppHeader";
@@ -21,11 +15,6 @@ import { useCatalogData, type ArtistWithAlbums, type Song } from "@/hooks/useCat
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { usePlayerHeight } from "@/components/GlobalAudioPlayer";
 import { cn } from "@/lib/utils";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 // Genre card for discovery
 const GenreCard = ({ 
@@ -148,28 +137,16 @@ export default function Home() {
     return count;
   }, [artists]);
 
-  // Potential V2 versions = all songs with audio (each V1 can have a V2)
-  const potentialV2Count = allSongsWithAudio.length;
-
-  // Total tracks (all songs + existing V2 versions) - this is the main display number
-  const totalAvailableTracks = useMemo(() => {
-    return totalSongs + songsWithV2Count;
-  }, [totalSongs, songsWithV2Count]);
-
-  // Total potential tracks for valuation (all songs + potential V2 for each song with audio)
-  const totalPotentialTracks = useMemo(() => {
-    return totalSongs + potentialV2Count;
-  }, [totalSongs, potentialV2Count]);
+  const totalAvailableTracks = useMemo(() => totalSongs + songsWithV2Count, [totalSongs, songsWithV2Count]);
 
   // Random song selection for discovery (shuffled from all available)
   const randomSongSelection = useMemo(() => {
-    // Shuffle algorithm (Fisher-Yates)
     const shuffled = [...allSongsWithAudio];
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
-    return shuffled.slice(0, 12); // Show 12 random songs
+    return shuffled.slice(0, 12);
   }, [allSongsWithAudio]);
 
   // Genre distribution
@@ -181,49 +158,11 @@ export default function Home() {
       existing.artists.add(item.artist.id);
       genreMap.set(item.artist.genre, existing);
     });
-    const total = allSongsWithAudio.length;
     return Array.from(genreMap.entries())
-      .map(([genre, data]) => ({
-        genre,
-        count: data.songs,
-        artistCount: data.artists.size,
-        percentage: total > 0 ? (data.songs / total) * 100 : 0,
-      }))
+      .map(([genre, data]) => ({ genre, count: data.songs, artistCount: data.artists.size }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 6);
   }, [allSongsWithAudio]);
-
-  // Catalog value estimation (Eigeneinschätzung) - includes potential V2 versions
-  const catalogValuation = useMemo(() => {
-    // Use total songs + potential V2 versions (each song with audio can have V2)
-    const trackCount = totalPotentialTracks;
-    const genreCount = genreStats.length;
-    const artistCount = stats.artists;
-    
-    // Base value per track (in EUR)
-    const baseValuePerTrack = 850;
-    
-    // Genre diversity multiplier (more genres = more versatile catalog)
-    const genreDiversityBonus = Math.min(genreCount / 10, 1) * 0.25; // up to 25% bonus
-    
-    // Artist diversity multiplier
-    const artistDiversityBonus = Math.min(artistCount / 20, 1) * 0.15; // up to 15% bonus
-    
-    // Rights status bonus (100% Eigenproduktion = full control)
-    const rightsBonus = 0.20; // 20% premium for full rights
-    
-    // Calculate total multiplier (removed separate V2 bonus since V2 is now in base count)
-    const totalMultiplier = 1 + genreDiversityBonus + artistDiversityBonus + rightsBonus;
-    
-    // Calculate estimated value
-    const estimatedValue = Math.round(trackCount * baseValuePerTrack * totalMultiplier);
-    
-    return {
-      estimatedValue,
-      potentialV2Count,
-    };
-  }, [totalPotentialTracks, genreStats.length, stats.artists, potentialV2Count]);
-
   const handlePlaySong = (item: { song: Song; artist: ArtistWithAlbums; albumName: string }) => {
     if (!item.song.audio_url) return;
     play({
@@ -339,76 +278,25 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Consolidated Stats Card */}
-          <Card className="bg-gradient-to-br from-card/80 to-card/40 border-border/50 mb-6 md:mb-8">
-            <CardContent className="p-4 md:p-6">
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                {/* Left: Catalog Value */}
-                <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-xl bg-primary/10 text-primary">
-                    <Coins className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <p className="text-xs text-muted-foreground uppercase tracking-wide">Rechnerischer Katalogwert</p>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground cursor-help" />
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-xs text-left">
-                          <p className="font-medium mb-1">Berechnungsmethodik</p>
-                          <p className="text-xs text-muted-foreground">
-                            Basiswert: 850 € pro Titel (V1+V2)<br />
-                            + Genre-Vielfalt: bis zu +25%<br />
-                            + Künstler-Diversität: bis zu +15%<br />
-                            + Vollrechte (scoopas GmbH): +20%
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </div>
-                    <p className="text-2xl md:text-3xl font-bold text-primary tabular-nums">
-                      {catalogValuation.estimatedValue.toLocaleString('de-DE')} €
-                    </p>
-                  </div>
-                </div>
-                
-                {/* Right: Key Stats Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 lg:gap-6">
-                  <div className="text-center lg:text-right">
-                    <p className="text-xl md:text-2xl font-bold tabular-nums">{totalAvailableTracks.toLocaleString('de-DE')}</p>
-                    <p className="text-xs text-muted-foreground">Titel (V1+V2)</p>
-                  </div>
-                  <div className="text-center lg:text-right">
-                    <p className="text-xl md:text-2xl font-bold tabular-nums">{songsWithV2Count.toLocaleString('de-DE')}</p>
-                    <p className="text-xs text-muted-foreground">V2-Versionen</p>
-                  </div>
-                  <div className="text-center lg:text-right">
-                    <p className="text-xl md:text-2xl font-bold tabular-nums">{stats.artists}</p>
-                    <p className="text-xs text-muted-foreground">Künstler</p>
-                  </div>
-                  <div className="text-center lg:text-right">
-                    <p className="text-xl md:text-2xl font-bold tabular-nums">{stats.albums}</p>
-                    <p className="text-xs text-muted-foreground">Alben</p>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Compact Bottom Row */}
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-4 pt-4 border-t border-border/30 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1.5">
-                  <Shield className="h-3 w-3 text-emerald-500" />
-                  100% Eigenproduktion
-                </span>
-                <span>{genreStats.length} Genres</span>
-                <span className="hidden sm:inline">•</span>
-                <span className="hidden sm:inline">{catalogValuation.potentialV2Count} potenzielle V2</span>
-                <div className="flex-1" />
-                <Link to="/katalog" className="hover:text-primary transition-colors flex items-center gap-1">
-                  Vollständiger Katalog <ExternalLink className="h-3 w-3" />
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Compact Stats Row */}
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mb-6 md:mb-8 px-1 text-sm">
+            <div>
+              <span className="font-bold tabular-nums">{totalAvailableTracks.toLocaleString('de-DE')}</span>
+              <span className="text-muted-foreground ml-1">Titel (V1+V2)</span>
+            </div>
+            <div>
+              <span className="font-bold tabular-nums">{songsWithV2Count.toLocaleString('de-DE')}</span>
+              <span className="text-muted-foreground ml-1">V2-Versionen</span>
+            </div>
+            <div>
+              <span className="font-bold tabular-nums">{stats.artists}</span>
+              <span className="text-muted-foreground ml-1">Künstler</span>
+            </div>
+            <div>
+              <span className="font-bold tabular-nums">{stats.albums}</span>
+              <span className="text-muted-foreground ml-1">Alben</span>
+            </div>
+          </div>
 
           {/* Genre Discovery Section */}
           <div className="mb-6 md:mb-8">
