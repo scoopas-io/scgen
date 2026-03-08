@@ -311,44 +311,39 @@ export default function ScoopifyHome() {
     <div className="flex flex-col h-screen bg-background">
       <AppHeader stats={stats} />
       <ScrollArea className="flex-1">
-        {/* overflow fits content — no clipping */}
-        <div className="w-full min-w-0">
+        <div
+          className="container pt-6"
+          style={{ paddingBottom: Math.max(playerHeight + 24, 32) }}
+        >
 
-          {/* ── Full-Width Hero ─────────────────────────────────────────── */}
-          <div className="relative w-full overflow-hidden">
-            {/* Animated gradient background */}
-            <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-background">
-              <div
-                className="absolute -top-24 -left-24 w-96 h-96 rounded-full opacity-20 blur-3xl"
-                style={{ background: "radial-gradient(circle, hsl(320 90% 55%), transparent 70%)", animation: "pulse 4s ease-in-out infinite" }}
-              />
-              <div
-                className="absolute top-0 right-0 w-80 h-80 rounded-full opacity-15 blur-3xl"
-                style={{ background: "radial-gradient(circle, hsl(260 80% 60%), transparent 70%)", animation: "pulse 5s ease-in-out infinite 1s" }}
-              />
-              <div
-                className="absolute bottom-0 left-1/2 -translate-x-1/2 w-72 h-40 opacity-10 blur-3xl"
-                style={{ background: "radial-gradient(ellipse, hsl(320 90% 55%), transparent 70%)", animation: "pulse 6s ease-in-out infinite 2s" }}
-              />
-            </div>
-
-            {/* Grid texture overlay */}
+          {/* ── Hero Card ─────────────────────────────────────────────── */}
+          <div className="relative rounded-2xl overflow-hidden mb-6 p-6 md:p-10"
+            style={{
+              background: "linear-gradient(135deg, hsl(var(--card)) 0%, hsl(260 30% 10%) 100%)",
+              boxShadow: "inset 0 0 80px 0 hsl(320 90% 55% / 0.12), inset 0 0 40px 0 hsl(260 80% 60% / 0.08)",
+            }}
+          >
+            {/* Grid texture */}
             <div
-              className="absolute inset-0 opacity-[0.03]"
+              className="absolute inset-0 opacity-[0.04] pointer-events-none"
               style={{ backgroundImage: "linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)", backgroundSize: "40px 40px" }}
             />
+            {/* Glow blobs — contained within the card */}
+            <div className="absolute top-0 left-0 w-64 h-64 rounded-full opacity-20 blur-3xl pointer-events-none"
+              style={{ background: "radial-gradient(circle, hsl(320 90% 55%), transparent 70%)", animation: "pulse 4s ease-in-out infinite" }} />
+            <div className="absolute bottom-0 right-0 w-56 h-56 rounded-full opacity-15 blur-3xl pointer-events-none"
+              style={{ background: "radial-gradient(circle, hsl(260 80% 60%), transparent 70%)", animation: "pulse 5s ease-in-out infinite 1.5s" }} />
 
-            <div className="relative container pt-10 pb-12">
-              {/* Eyebrow — wraps on narrow screens */}
-              <div className="mb-4">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-semibold uppercase tracking-widest leading-relaxed">
-                  <Sparkles className="h-3 w-3 shrink-0" />
-                  <span className="break-words">Die erste reine KI-Streamingplattform</span>
-                </div>
+            {/* Content */}
+            <div className="relative">
+              {/* Eyebrow */}
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-semibold uppercase tracking-widest mb-5">
+                <Sparkles className="h-3 w-3 shrink-0" />
+                Die erste reine KI-Streamingplattform
               </div>
 
-              {/* Main headline */}
-              <h1 className="font-display font-bold leading-[1.05] mb-4" style={{ fontSize: "clamp(1.8rem, 8vw, 4.5rem)" }}>
+              {/* Headline */}
+              <h1 className="font-display font-bold leading-tight mb-4" style={{ fontSize: "clamp(1.8rem, 5vw, 4rem)" }}>
                 <span className="text-foreground">Musik, komplett</span>
                 <br />
                 <span style={{ background: "linear-gradient(135deg, hsl(320 90% 65%), hsl(340 85% 55%), hsl(280 80% 65%))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
@@ -357,79 +352,75 @@ export default function ScoopifyHome() {
               </h1>
 
               {/* Sub-copy */}
-              <p className="text-muted-foreground text-sm md:text-lg mb-8 leading-relaxed">
+              <p className="text-muted-foreground text-sm md:text-base mb-7 leading-relaxed max-w-lg">
                 Kein Mensch. Kein Studio. Jede Note, jeder Beat, jeder Künstler –{" "}
                 <span className="text-foreground font-medium">vollständig generiert</span> von künstlicher Intelligenz.
               </p>
 
-              {/* Stats — 2 cols mobile, 4 cols sm+ */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-5">
+              {/* Stats */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {[
                   { value: stats.artists, label: "KI-Künstler", suffix: "" },
                   { value: allSongsWithAudio.length, label: "Streamable Titel", suffix: "" },
                   { value: stats.albums ?? 0, label: "Alben", suffix: "" },
                   { value: "100", label: "% KI-generiert", suffix: "%" },
                 ].map(({ value, label, suffix }) => (
-                  <div key={label} className="flex flex-col min-w-0">
+                  <div key={label} className="flex flex-col">
                     <span
                       className="font-display font-bold text-2xl md:text-3xl leading-none"
                       style={{ background: "linear-gradient(135deg, hsl(var(--foreground)), hsl(var(--primary)))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}
                     >
                       {value}{suffix}
                     </span>
-                    <span className="text-muted-foreground text-xs mt-0.5 uppercase tracking-wide truncate">{label}</span>
+                    <span className="text-muted-foreground text-xs mt-1 uppercase tracking-wide">{label}</span>
                   </div>
                 ))}
               </div>
             </div>
           </div>
 
-          <div
-            className="container pt-6"
-            style={{ paddingBottom: Math.max(playerHeight + 24, 32) }}
-          >
-            {featuredArtist && (
-              <FeaturedHero
-                artist={featuredArtist}
-                songs={featuredSongs}
-                onPlay={handlePlayFeatured}
-                isPlayingArtist={isPlayingFeatured}
-              />
+          {/* ── Rest of page ────────────────────────────────────────────── */}
+          {featuredArtist && (
+            <FeaturedHero
+              artist={featuredArtist}
+              songs={featuredSongs}
+              onPlay={handlePlayFeatured}
+              isPlayingArtist={isPlayingFeatured}
+            />
+          )}
+
+          <div className="mb-8">
+            <SectionHeader title="Künstler entdecken" />
+            <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-hide -mx-1 px-1">
+              {artistsWithAudio.map(({ artist, count }) => (
+                <ArtistCard
+                  key={artist.id}
+                  artist={artist}
+                  songCount={count}
+                  onPlay={() => handlePlayArtist(artist)}
+                  onAddToQueue={() => handleAddArtistToQueue(artist)}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <SectionHeader title="Jetzt entdecken" onShuffle={reshuffleDiscover} />
+            <div className="space-y-1">
+              {discoverSongs.map((item, i) => (
+                <SongRow
+                  key={item.song.id}
+                  item={item}
+                  index={i}
+                  onPlay={() => handlePlaySong(item)}
+                  isPlaying={currentTrack?.id === item.song.id && isPlaying}
+                  onAddToQueue={() => handleAddToQueue(item)}
+                />
+              ))}
+            </div>
+            {discoverSongs.length === 0 && (
+              <p className="text-muted-foreground text-sm text-center py-10">Keine Titel verfügbar</p>
             )}
-
-            <div className="mb-8">
-              <SectionHeader title="Künstler entdecken" />
-              <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-hide -mx-1 px-1">
-                {artistsWithAudio.map(({ artist, count }) => (
-                  <ArtistCard
-                    key={artist.id}
-                    artist={artist}
-                    songCount={count}
-                    onPlay={() => handlePlayArtist(artist)}
-                    onAddToQueue={() => handleAddArtistToQueue(artist)}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <SectionHeader title="Jetzt entdecken" onShuffle={reshuffleDiscover} />
-              <div className="space-y-1">
-                {discoverSongs.map((item, i) => (
-                  <SongRow
-                    key={item.song.id}
-                    item={item}
-                    index={i}
-                    onPlay={() => handlePlaySong(item)}
-                    isPlaying={currentTrack?.id === item.song.id && isPlaying}
-                    onAddToQueue={() => handleAddToQueue(item)}
-                  />
-                ))}
-              </div>
-              {discoverSongs.length === 0 && (
-                <p className="text-muted-foreground text-sm text-center py-10">Keine Titel verfügbar</p>
-              )}
-            </div>
           </div>
 
         </div>
