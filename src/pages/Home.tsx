@@ -339,76 +339,33 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Consolidated Stats Card */}
-          <Card className="bg-gradient-to-br from-card/80 to-card/40 border-border/50 mb-6 md:mb-8">
-            <CardContent className="p-4 md:p-6">
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                {/* Left: Catalog Value */}
-                <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-xl bg-primary/10 text-primary">
-                    <Coins className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <p className="text-xs text-muted-foreground uppercase tracking-wide">Rechnerischer Katalogwert</p>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground cursor-help" />
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-xs text-left">
-                          <p className="font-medium mb-1">Berechnungsmethodik</p>
-                          <p className="text-xs text-muted-foreground">
-                            Basiswert: 850 € pro Titel (V1+V2)<br />
-                            + Genre-Vielfalt: bis zu +25%<br />
-                            + Künstler-Diversität: bis zu +15%<br />
-                            + Vollrechte (scoopas GmbH): +20%
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </div>
-                    <p className="text-2xl md:text-3xl font-bold text-primary tabular-nums">
-                      {catalogValuation.estimatedValue.toLocaleString('de-DE')} €
-                    </p>
-                  </div>
-                </div>
-                
-                {/* Right: Key Stats Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 lg:gap-6">
-                  <div className="text-center lg:text-right">
-                    <p className="text-xl md:text-2xl font-bold tabular-nums">{totalAvailableTracks.toLocaleString('de-DE')}</p>
-                    <p className="text-xs text-muted-foreground">Titel (V1+V2)</p>
-                  </div>
-                  <div className="text-center lg:text-right">
-                    <p className="text-xl md:text-2xl font-bold tabular-nums">{songsWithV2Count.toLocaleString('de-DE')}</p>
-                    <p className="text-xs text-muted-foreground">V2-Versionen</p>
-                  </div>
-                  <div className="text-center lg:text-right">
-                    <p className="text-xl md:text-2xl font-bold tabular-nums">{stats.artists}</p>
-                    <p className="text-xs text-muted-foreground">Künstler</p>
-                  </div>
-                  <div className="text-center lg:text-right">
-                    <p className="text-xl md:text-2xl font-bold tabular-nums">{stats.albums}</p>
-                    <p className="text-xs text-muted-foreground">Alben</p>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Compact Bottom Row */}
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-4 pt-4 border-t border-border/30 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1.5">
-                  <Shield className="h-3 w-3 text-emerald-500" />
-                  100% Eigenproduktion
-                </span>
-                <span>{genreStats.length} Genres</span>
-                <span className="hidden sm:inline">•</span>
-                <span className="hidden sm:inline">{catalogValuation.potentialV2Count} potenzielle V2</span>
-                <div className="flex-1" />
-                <Link to="/katalog" className="hover:text-primary transition-colors flex items-center gap-1">
-                  Vollständiger Katalog <ExternalLink className="h-3 w-3" />
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Simple Stats Row */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6 md:mb-8">
+            <Card className="bg-gradient-to-br from-card/80 to-card/40 border-border/50">
+              <CardContent className="p-3 md:p-4">
+                <p className="text-xl md:text-2xl font-bold tabular-nums">{totalAvailableTracks.toLocaleString('de-DE')}</p>
+                <p className="text-xs text-muted-foreground">Titel (V1+V2)</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-card/80 to-card/40 border-border/50">
+              <CardContent className="p-3 md:p-4">
+                <p className="text-xl md:text-2xl font-bold tabular-nums">{songsWithV2Count.toLocaleString('de-DE')}</p>
+                <p className="text-xs text-muted-foreground">V2-Versionen</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-card/80 to-card/40 border-border/50">
+              <CardContent className="p-3 md:p-4">
+                <p className="text-xl md:text-2xl font-bold tabular-nums">{stats.artists}</p>
+                <p className="text-xs text-muted-foreground">Künstler</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-card/80 to-card/40 border-border/50">
+              <CardContent className="p-3 md:p-4">
+                <p className="text-xl md:text-2xl font-bold tabular-nums">{stats.albums}</p>
+                <p className="text-xs text-muted-foreground">Alben</p>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Genre Discovery Section */}
           <div className="mb-6 md:mb-8">

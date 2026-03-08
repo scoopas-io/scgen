@@ -1,11 +1,18 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { 
-  Database, FileJson, FileSpreadsheet, Search, Users, Disc, Music
+  Database, FileJson, FileSpreadsheet, Search, Users, Disc, Music,
+  Coins, Shield, Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { AppHeader } from "@/components/AppHeader";
 import { SongDetailDialog } from "@/components/SongDetailDialog";
 import { SongInfoDialog } from "@/components/catalog/SongInfoDialog";
