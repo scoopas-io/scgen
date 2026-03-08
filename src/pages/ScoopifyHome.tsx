@@ -50,7 +50,7 @@ function FeaturedHero({
   isPlayingArtist: boolean;
 }) {
   return (
-    <div className="relative rounded-2xl overflow-hidden min-h-[240px] md:min-h-[320px] flex items-end mb-8">
+    <div className="relative rounded-2xl overflow-hidden min-h-[240px] md:min-h-[320px] flex items-end h-full">
       <div className="absolute inset-0">
         {artist.profile_image_url ? (
           <img src={artist.profile_image_url} alt="" className="w-full h-full object-cover" />
@@ -313,14 +313,14 @@ export default function ScoopifyHome() {
       <ScrollArea className="flex-1">
         {/* ── Full-Width Hero ─────────────────────────────────────────── */}
         <div className="relative w-full overflow-hidden">
-          {/* Animated gradient background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-background">
+          {/* Animated gradient orbs */}
+          <div className="absolute inset-0">
             <div
               className="absolute -top-24 -left-24 w-96 h-96 rounded-full opacity-20 blur-3xl"
               style={{ background: "radial-gradient(circle, hsl(320 90% 55%), transparent 70%)", animation: "pulse 4s ease-in-out infinite" }}
             />
             <div
-              className="absolute top-0 right-0 w-80 h-80 rounded-full opacity-15 blur-3xl"
+              className="absolute top-0 right-1/3 w-80 h-80 rounded-full opacity-15 blur-3xl"
               style={{ background: "radial-gradient(circle, hsl(260 80% 60%), transparent 70%)", animation: "pulse 5s ease-in-out infinite 1s" }}
             />
             <div
@@ -328,56 +328,68 @@ export default function ScoopifyHome() {
               style={{ background: "radial-gradient(ellipse, hsl(320 90% 55%), transparent 70%)", animation: "pulse 6s ease-in-out infinite 2s" }}
             />
           </div>
-
-          {/* Grid texture overlay */}
+          {/* Grid texture */}
           <div
             className="absolute inset-0 opacity-[0.03]"
             style={{ backgroundImage: "linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)", backgroundSize: "40px 40px" }}
           />
 
-          <div className="relative px-4 md:px-10 pt-10 pb-12">
-            {/* Eyebrow */}
-            <div className="flex items-center gap-2 mb-4">
-              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-semibold uppercase tracking-widest">
-                <Sparkles className="h-3 w-3" />
-                Die erste reine KI-Streamingplattform
+          {/* Two-column layout: copy left, featured right */}
+          <div className="relative flex flex-col lg:flex-row items-stretch gap-0 px-4 md:px-10 pt-10 pb-0 lg:pb-0">
+
+            {/* LEFT: text content */}
+            <div className="flex-1 flex flex-col justify-center pb-10 lg:pb-12 lg:pr-10">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-semibold uppercase tracking-widest">
+                  <Sparkles className="h-3 w-3" />
+                  Die erste reine KI-Streamingplattform
+                </div>
+              </div>
+
+              <h1 className="font-display font-bold leading-[1.05] mb-4" style={{ fontSize: "clamp(2rem, 5vw, 4rem)" }}>
+                <span className="text-foreground">Musik, komplett</span>
+                <br />
+                <span style={{ background: "linear-gradient(135deg, hsl(320 90% 65%), hsl(340 85% 55%), hsl(280 80% 65%))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+                  von KI erschaffen.
+                </span>
+              </h1>
+
+              <p className="text-muted-foreground text-sm md:text-base max-w-md mb-8 leading-relaxed">
+                Kein Mensch. Kein Studio. Jede Note, jeder Beat, jeder Künstler –
+                <span className="text-foreground font-medium"> vollständig generiert</span> von künstlicher Intelligenz.
+              </p>
+
+              <div className="flex flex-wrap gap-6 md:gap-8">
+                {[
+                  { value: stats.artists, label: "KI-Künstler", suffix: "" },
+                  { value: allSongsWithAudio.length, label: "Streamable Titel", suffix: "" },
+                  { value: stats.albums ?? 0, label: "Alben", suffix: "" },
+                  { value: "100", label: "% KI-generiert", suffix: "%" },
+                ].map(({ value, label, suffix }) => (
+                  <div key={label} className="flex flex-col">
+                    <span
+                      className="font-display font-bold text-2xl md:text-3xl leading-none"
+                      style={{ background: "linear-gradient(135deg, hsl(var(--foreground)), hsl(var(--primary)))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}
+                    >
+                      {value}{suffix}
+                    </span>
+                    <span className="text-muted-foreground text-xs mt-0.5 uppercase tracking-wide">{label}</span>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Main headline */}
-            <h1 className="font-display font-bold leading-[1.05] mb-4" style={{ fontSize: "clamp(2.2rem, 6vw, 4.5rem)" }}>
-              <span className="text-foreground">Musik, komplett</span>
-              <br />
-              <span style={{ background: "linear-gradient(135deg, hsl(320 90% 65%), hsl(340 85% 55%), hsl(280 80% 65%))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-                von KI erschaffen.
-              </span>
-            </h1>
-
-            {/* Sub-copy */}
-            <p className="text-muted-foreground text-base md:text-lg max-w-xl mb-8 leading-relaxed">
-              Kein Mensch. Kein Studio. Jede Note, jeder Beat, jeder Künstler – 
-              <span className="text-foreground font-medium"> vollständig generiert</span> von künstlicher Intelligenz.
-            </p>
-
-            {/* Stats row */}
-            <div className="flex flex-wrap gap-6 md:gap-10">
-              {[
-                { value: stats.artists, label: "KI-Künstler", suffix: "" },
-                { value: allSongsWithAudio.length, label: "Streamable Titel", suffix: "" },
-                { value: stats.albums ?? 0, label: "Alben", suffix: "" },
-                { value: "100", label: "% KI-generiert", suffix: "%" },
-              ].map(({ value, label, suffix }) => (
-                <div key={label} className="flex flex-col">
-                  <span
-                    className="font-display font-bold text-2xl md:text-3xl leading-none"
-                    style={{ background: "linear-gradient(135deg, hsl(var(--foreground)), hsl(var(--primary)))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}
-                  >
-                    {value}{suffix}
-                  </span>
-                  <span className="text-muted-foreground text-xs mt-0.5 uppercase tracking-wide">{label}</span>
-                </div>
-              ))}
-            </div>
+            {/* RIGHT: Featured Artist */}
+            {featuredArtist && (
+              <div className="w-full lg:w-[44%] flex-shrink-0 pb-10 lg:pb-12">
+                <FeaturedHero
+                  artist={featuredArtist}
+                  songs={featuredSongs}
+                  onPlay={handlePlayFeatured}
+                  isPlayingArtist={isPlayingFeatured}
+                />
+              </div>
+            )}
           </div>
         </div>
 
@@ -385,15 +397,6 @@ export default function ScoopifyHome() {
           className="container mx-auto px-3 md:px-6 pt-6"
           style={{ paddingBottom: Math.max(playerHeight + 24, 32) }}
         >
-
-          {featuredArtist && (
-            <FeaturedHero
-              artist={featuredArtist}
-              songs={featuredSongs}
-              onPlay={handlePlayFeatured}
-              isPlayingArtist={isPlayingFeatured}
-            />
-          )}
 
           <div className="mb-8">
             <SectionHeader title="Künstler entdecken" />
