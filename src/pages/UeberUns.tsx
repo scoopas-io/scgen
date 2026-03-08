@@ -172,28 +172,6 @@ export default function UeberUns() {
             ))}
           </div>
 
-          {/* ── Timeline ───────────────────────────────────────────────── */}
-          <div className="mb-12">
-            <div className="flex items-center gap-1.5 mb-6">
-              <Music className="h-4 w-4 text-primary" />
-              <h2 className="font-display font-bold text-xl">Unsere Geschichte</h2>
-            </div>
-            <div className="relative pl-6 border-l-2 border-border/50 space-y-8">
-              {TIMELINE.map(({ year, label, desc }) => (
-                <div key={year} className="relative">
-                  <div className="absolute -left-[1.55rem] top-1 h-3 w-3 rounded-full bg-primary ring-4 ring-background" />
-                  <p
-                    className="text-primary font-semibold uppercase mb-0.5"
-                    style={{ fontSize: "0.65rem", letterSpacing: "0.08em" }}
-                  >
-                    {year}
-                  </p>
-                  <h3 className="font-bold text-sm mb-1">{label}</h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">{desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
 
           {/* ── Mission Statement ──────────────────────────────────────── */}
           <div
