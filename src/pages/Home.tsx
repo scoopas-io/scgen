@@ -137,7 +137,32 @@ export default function Home() {
     return count;
   }, [artists]);
 
+  const totalAvailableTracks = useMemo(() => totalSongs + songsWithV2Count, [totalSongs, songsWithV2Count]);
 
+  // Random song selection for discovery (shuffled from all available)
+  const randomSongSelection = useMemo(() => {
+    const shuffled = [...allSongsWithAudio];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled.slice(0, 12);
+  }, [allSongsWithAudio]);
+
+  // Genre distribution
+  const genreStats = useMemo(() => {
+    const genreMap = new Map<string, { songs: number; artists: Set<string> }>();
+    allSongsWithAudio.forEach(item => {
+      const existing = genreMap.get(item.artist.genre) || { songs: 0, artists: new Set() };
+      existing.songs++;
+      existing.artists.add(item.artist.id);
+      genreMap.set(item.artist.genre, existing);
+    });
+    return Array.from(genreMap.entries())
+      .map(([genre, data]) => ({ genre, count: data.songs, artistCount: data.artists.size }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 6);
+  }, [allSongsWithAudio]);
   const handlePlaySong = (item: { song: Song; artist: ArtistWithAlbums; albumName: string }) => {
     if (!item.song.audio_url) return;
     play({
