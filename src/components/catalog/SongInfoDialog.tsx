@@ -1,7 +1,11 @@
-import { Info, Music, FileText, Hash, Clock, Gauge, Key, Building2, User, DollarSign, Calendar, Shield, FileCheck } from "lucide-react";
+import {
+  Music, Hash, Clock, Gauge, Key, FileText,
+  User, DollarSign, Calendar, Shield, FileCheck, Building2
+} from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Song {
   id: string;
@@ -43,7 +47,6 @@ interface SongInfoDialogProps {
 
 function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string | number | null | undefined }) {
   if (value === null || value === undefined || value === "") return null;
-  
   return (
     <div className="flex items-start gap-3 py-2">
       <Icon className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
@@ -56,8 +59,47 @@ function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label:
 }
 
 export function SongInfoDialog({ song, albumName, artistName, open, onOpenChange }: SongInfoDialogProps) {
+  const { isAdmin } = useAuth();
   if (!song) return null;
 
+  // ── Viewer: nur Titel + Technische Daten ──────────────────────────────────
+  if (!isAdmin) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Music className="h-5 w-5 text-primary" />
+              Song-Informationen
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Titel */}
+            <div className="bg-muted/50 rounded-lg p-4">
+              <h3 className="font-semibold text-base">{song.name}</h3>
+              <p className="text-sm text-muted-foreground mt-0.5">{artistName} · {albumName}</p>
+              {song.version && song.version !== "Original" && (
+                <Badge variant="secondary" className="mt-2">{song.version}</Badge>
+              )}
+            </div>
+            {/* Technische Daten */}
+            <div>
+              <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Technische Daten</h4>
+              <div className="grid grid-cols-2 gap-x-4 bg-card rounded-lg border border-border p-3">
+                <InfoRow icon={Hash} label="Track-Nr." value={song.track_number} />
+                <InfoRow icon={Gauge} label="BPM" value={song.bpm} />
+                <InfoRow icon={Key} label="Tonart" value={song.tonart} />
+                <InfoRow icon={Clock} label="Länge" value={song.laenge} />
+                <InfoRow icon={FileText} label="Version" value={song.version} />
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // ── Admin: vollständige Ansicht ────────────────────────────────────────────
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
@@ -67,25 +109,18 @@ export function SongInfoDialog({ song, albumName, artistName, open, onOpenChange
             Song-Informationen
           </DialogTitle>
         </DialogHeader>
-
         <div className="space-y-4">
-          {/* Header Info */}
           <div className="bg-muted/50 rounded-lg p-4">
             <h3 className="font-semibold text-lg">{song.name}</h3>
             <p className="text-sm text-muted-foreground">{artistName} • {albumName}</p>
             <div className="flex flex-wrap gap-2 mt-2">
-              {song.version && song.version !== "Original" && (
-                <Badge variant="secondary">{song.version}</Badge>
-              )}
+              {song.version && song.version !== "Original" && <Badge variant="secondary">{song.version}</Badge>}
               {song.verwertungsstatus && (
-                <Badge variant={song.verwertungsstatus === "Aktiv" ? "default" : "secondary"}>
-                  {song.verwertungsstatus}
-                </Badge>
+                <Badge variant={song.verwertungsstatus === "Aktiv" ? "default" : "secondary"}>{song.verwertungsstatus}</Badge>
               )}
             </div>
           </div>
 
-          {/* Technical Details */}
           <div>
             <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Technische Daten</h4>
             <div className="grid grid-cols-2 gap-x-4 bg-card rounded-lg border border-border p-3">
@@ -100,7 +135,6 @@ export function SongInfoDialog({ song, albumName, artistName, open, onOpenChange
 
           <Separator />
 
-          {/* Rights & Identifiers */}
           <div>
             <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Rechte & Identifikation</h4>
             <div className="grid grid-cols-1 gap-x-4 bg-card rounded-lg border border-border p-3">
@@ -115,7 +149,6 @@ export function SongInfoDialog({ song, albumName, artistName, open, onOpenChange
 
           <Separator />
 
-          {/* Contract & Revenue */}
           <div>
             <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Vertrag & Umsatz</h4>
             <div className="grid grid-cols-2 gap-x-4 bg-card rounded-lg border border-border p-3">
@@ -129,26 +162,25 @@ export function SongInfoDialog({ song, albumName, artistName, open, onOpenChange
             </div>
           </div>
 
-          {/* Shares */}
-          {(song.anteil_komponist || song.anteil_text || song.anteil_verlag) && (
+          {(song.anteil_komponist != null || song.anteil_text != null || song.anteil_verlag != null) && (
             <>
               <Separator />
               <div>
                 <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Anteile</h4>
                 <div className="grid grid-cols-3 gap-2">
-                  {song.anteil_komponist !== null && song.anteil_komponist !== undefined && (
+                  {song.anteil_komponist != null && (
                     <div className="bg-card rounded-lg border border-border p-3 text-center">
                       <p className="text-lg font-bold text-primary">{song.anteil_komponist}%</p>
                       <p className="text-xs text-muted-foreground">Komponist</p>
                     </div>
                   )}
-                  {song.anteil_text !== null && song.anteil_text !== undefined && (
+                  {song.anteil_text != null && (
                     <div className="bg-card rounded-lg border border-border p-3 text-center">
                       <p className="text-lg font-bold text-primary">{song.anteil_text}%</p>
                       <p className="text-xs text-muted-foreground">Text</p>
                     </div>
                   )}
-                  {song.anteil_verlag !== null && song.anteil_verlag !== undefined && (
+                  {song.anteil_verlag != null && (
                     <div className="bg-card rounded-lg border border-border p-3 text-center">
                       <p className="text-lg font-bold text-primary">{song.anteil_verlag}%</p>
                       <p className="text-xs text-muted-foreground">Verlag</p>
@@ -159,7 +191,6 @@ export function SongInfoDialog({ song, albumName, artistName, open, onOpenChange
             </>
           )}
 
-          {/* Notes */}
           {song.bemerkungen && (
             <>
               <Separator />
