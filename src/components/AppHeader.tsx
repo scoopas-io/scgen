@@ -45,7 +45,7 @@ export const AppHeader = ({ stats }: AppHeaderProps) => {
 
   return (
     <header className="shrink-0 border-b border-border bg-background/95 backdrop-blur">
-      <div className="container py-3 md:py-4 px-3 md:px-6">
+      <div className="container py-3 md:py-4">
         <div className="flex items-center justify-between gap-2 md:gap-4">
           {/* Logo — scoopify for viewer, scoopas for admin */}
           <div className="flex items-center gap-2 md:gap-3 min-w-0">
