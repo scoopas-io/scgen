@@ -50,7 +50,7 @@ function FeaturedHero({
   isPlayingArtist: boolean;
 }) {
   return (
-    <div className="relative rounded-2xl overflow-hidden min-h-[240px] md:min-h-[320px] flex items-end mb-8">
+    <div className="relative rounded-2xl overflow-hidden min-h-[240px] md:min-h-[320px] flex items-end h-full">
       <div className="absolute inset-0">
         {artist.profile_image_url ? (
           <img src={artist.profile_image_url} alt="" className="w-full h-full object-cover" />
