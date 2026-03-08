@@ -576,7 +576,22 @@ const SidePanel: React.FC = () => {
     </>
   );
 };
-        {/* Header with gradient */}
+
+// Hook to get player height for padding
+export const usePlayerHeight = () => {
+  const { currentTrack, isPanelOpen } = useAudioPlayer();
+  return currentTrack && !isPanelOpen ? 80 : 0;
+};
+
+export const GlobalAudioPlayer: React.FC = () => {
+  const { currentTrack } = useAudioPlayer();
+  return (
+    <>
+      {currentTrack && <MiniPlayer />}
+      <SidePanel />
+    </>
+  );
+};
         <div className="flex items-center justify-between px-5 py-4 shrink-0 bg-gradient-to-b from-primary/5 to-transparent">
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
