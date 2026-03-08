@@ -1,4 +1,4 @@
-import { Sparkles, Music, Cpu, Zap, Globe, HeartHandshake, Radio } from "lucide-react";
+import { Sparkles, Cpu, Zap, Globe, HeartHandshake, Radio } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AppHeader } from "@/components/AppHeader";
 import { useCatalogData } from "@/hooks/useCatalogData";
