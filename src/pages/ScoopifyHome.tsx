@@ -433,10 +433,8 @@ export default function ScoopifyHome() {
           </div>
 
         </div>
-          </div>
-
-        </div>
       </ScrollArea>
     </div>
   );
+}
 }
