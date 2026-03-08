@@ -328,32 +328,24 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Simple Stats Row */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6 md:mb-8">
-            <Card className="bg-gradient-to-br from-card/80 to-card/40 border-border/50">
-              <CardContent className="p-3 md:p-4">
-                <p className="text-xl md:text-2xl font-bold tabular-nums">{totalAvailableTracks.toLocaleString('de-DE')}</p>
-                <p className="text-xs text-muted-foreground">Titel (V1+V2)</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-gradient-to-br from-card/80 to-card/40 border-border/50">
-              <CardContent className="p-3 md:p-4">
-                <p className="text-xl md:text-2xl font-bold tabular-nums">{songsWithV2Count.toLocaleString('de-DE')}</p>
-                <p className="text-xs text-muted-foreground">V2-Versionen</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-gradient-to-br from-card/80 to-card/40 border-border/50">
-              <CardContent className="p-3 md:p-4">
-                <p className="text-xl md:text-2xl font-bold tabular-nums">{stats.artists}</p>
-                <p className="text-xs text-muted-foreground">Künstler</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-gradient-to-br from-card/80 to-card/40 border-border/50">
-              <CardContent className="p-3 md:p-4">
-                <p className="text-xl md:text-2xl font-bold tabular-nums">{stats.albums}</p>
-                <p className="text-xs text-muted-foreground">Alben</p>
-              </CardContent>
-            </Card>
+          {/* Compact Stats Row */}
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mb-6 md:mb-8 px-1 text-sm">
+            <div>
+              <span className="font-bold tabular-nums">{totalAvailableTracks.toLocaleString('de-DE')}</span>
+              <span className="text-muted-foreground ml-1">Titel (V1+V2)</span>
+            </div>
+            <div>
+              <span className="font-bold tabular-nums">{songsWithV2Count.toLocaleString('de-DE')}</span>
+              <span className="text-muted-foreground ml-1">V2-Versionen</span>
+            </div>
+            <div>
+              <span className="font-bold tabular-nums">{stats.artists}</span>
+              <span className="text-muted-foreground ml-1">Künstler</span>
+            </div>
+            <div>
+              <span className="font-bold tabular-nums">{stats.albums}</span>
+              <span className="text-muted-foreground ml-1">Alben</span>
+            </div>
           </div>
 
           {/* Genre Discovery Section */}
