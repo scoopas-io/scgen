@@ -901,7 +901,7 @@ const AudioGenerator = () => {
       <AppHeader stats={stats} />
 
       <main className="flex-1 min-h-0 overflow-hidden pb-16 md:pb-0">
-        <div className="container h-full py-4 md:py-6 px-3 md:px-6">
+        <div className="container h-full py-4 md:py-6">
           <div className="h-full flex flex-col">
             {/* Page Header - Responsive */}
             <div className="flex items-center gap-3 md:gap-4 mb-4 md:mb-6">

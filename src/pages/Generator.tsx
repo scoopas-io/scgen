@@ -346,7 +346,7 @@ const Generator = () => {
 
       <main className="flex-1 min-h-0 overflow-hidden">
         <ScrollArea className="h-full">
-          <div className="container py-3 md:py-4 px-3 md:px-6 pb-20 md:pb-4">
+          <div className="container py-3 md:py-4 pb-20 md:pb-4">
             <div className="flex flex-col lg:grid lg:grid-cols-[360px_1fr] gap-4 md:gap-6">
               {/* Controls - flows naturally on mobile */}
               <aside className="space-y-3 md:space-y-4">

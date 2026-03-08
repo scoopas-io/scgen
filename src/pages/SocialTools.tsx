@@ -631,7 +631,7 @@ const SocialTools = () => {
       <ContentPreviewDialog />
 
       <main className="flex-1 min-h-0 overflow-hidden">
-        <div className="container h-full py-3 md:py-6 px-3 md:px-6">
+        <div className="container h-full py-3 md:py-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
             <TabsList className="grid w-full max-w-md grid-cols-3 h-9 md:h-10">
               <TabsTrigger value="generator" className="gap-1.5 text-xs md:text-sm">
