@@ -128,90 +128,104 @@ const MiniPlayer: React.FC = () => {
   if (!currentTrack || isPanelOpen) return null;
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const coverUrl = currentTrack.artistImageUrl || currentTrack.coverUrl;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border shadow-lg">
-      {/* Progress bar - thin line at top */}
-      <div className="absolute top-0 left-0 right-0 h-0.5 bg-muted">
-        <div 
-          className="h-full bg-primary transition-all duration-150"
-          style={{ width: `${progress}%` }}
+    <div className="fixed bottom-0 left-0 right-0 z-50">
+      {/* Ambient glow behind player */}
+      {coverUrl && (
+        <div
+          className="absolute inset-0 opacity-20 blur-2xl scale-110 pointer-events-none"
+          style={{ backgroundImage: `url(${coverUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
         />
-      </div>
-      
-      <div className="flex items-center gap-2 px-3 py-2 max-w-screen-xl mx-auto">
-        {/* Track info */}
-        <button 
-          onClick={togglePanel}
-          className="flex items-center gap-2 flex-1 min-w-0 text-left"
-        >
-          <div className="w-10 h-10 rounded bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden">
-            {currentTrack.artistImageUrl || currentTrack.coverUrl ? (
-              <img 
-                src={currentTrack.artistImageUrl || currentTrack.coverUrl} 
-                alt={currentTrack.artist}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <Music className="w-4 h-4 text-muted-foreground" />
-            )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="font-medium text-sm truncate">{currentTrack.title}</p>
-            <p className="text-xs text-muted-foreground truncate">{currentTrack.artist}</p>
-          </div>
-        </button>
+      )}
 
-        {/* Controls - compact */}
-        <div className="flex items-center gap-1">
+      {/* Glass card */}
+      <div className="relative mx-3 mb-3 rounded-2xl overflow-hidden border border-white/10 shadow-2xl shadow-black/40 bg-card/80 backdrop-blur-xl">
+        {/* Progress bar — thin accent line at top */}
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-muted/40">
+          <div
+            className="h-full bg-primary transition-all duration-150 rounded-full"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+
+        <div className="flex items-center gap-3 px-3 py-2.5">
+          {/* Cover thumbnail */}
+          <button onClick={togglePanel} className="flex-shrink-0 group">
+            <div className="w-11 h-11 rounded-xl overflow-hidden bg-muted/50 ring-1 ring-white/10 shadow-md transition-transform duration-200 group-hover:scale-105">
+              {coverUrl ? (
+                <img
+                  src={coverUrl}
+                  alt={currentTrack.artist}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <Music className="w-4 w-4 text-muted-foreground" />
+                </div>
+              )}
+            </div>
+          </button>
+
+          {/* Track info */}
+          <button
+            onClick={togglePanel}
+            className="flex-1 min-w-0 text-left"
+          >
+            <p className="font-semibold text-sm truncate leading-tight">{currentTrack.title}</p>
+            <p className="text-xs text-muted-foreground truncate mt-0.5">{currentTrack.artist}</p>
+          </button>
+
+          {/* Time */}
+          <div className="hidden md:flex items-center text-xs text-muted-foreground/70 tabular-nums gap-1 flex-shrink-0">
+            <span>{formatTime(currentTime)}</span>
+            <span className="text-muted-foreground/40">/</span>
+            <span>{formatTime(duration)}</span>
+          </div>
+
+          {/* Controls */}
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 hidden sm:flex rounded-full text-muted-foreground hover:text-foreground"
+              onClick={playPrevious}
+            >
+              <SkipBack className="h-3.5 w-3.5" />
+            </Button>
+
+            <button
+              onClick={isPlaying ? pause : resume}
+              className="h-10 w-10 rounded-full bg-primary hover:bg-primary/90 flex items-center justify-center shadow-lg shadow-primary/30 transition-all hover:scale-105 active:scale-95"
+            >
+              {isPlaying ? (
+                <Pause className="h-4 w-4 text-primary-foreground" fill="currentColor" />
+              ) : (
+                <Play className="h-4 w-4 text-primary-foreground ml-0.5" fill="currentColor" />
+              )}
+            </button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 hidden sm:flex rounded-full text-muted-foreground hover:text-foreground"
+              onClick={playNext}
+            >
+              <SkipForward className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+
+          {/* Expand */}
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 hidden sm:flex"
-            onClick={playPrevious}
+            className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground flex-shrink-0"
+            onClick={togglePanel}
           >
-            <SkipBack className="h-4 w-4" />
-          </Button>
-          
-          <Button
-            variant="default"
-            size="icon"
-            className="h-10 w-10 rounded-full"
-            onClick={isPlaying ? pause : resume}
-          >
-            {isPlaying ? (
-              <Pause className="h-5 w-5" />
-            ) : (
-              <Play className="h-5 w-5 ml-0.5" />
-            )}
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 hidden sm:flex"
-            onClick={playNext}
-          >
-            <SkipForward className="h-4 w-4" />
+            <ChevronUp className="h-4 w-4" />
           </Button>
         </div>
-
-        {/* Time display */}
-        <div className="hidden md:flex items-center gap-1 text-xs text-muted-foreground tabular-nums min-w-[80px] justify-end">
-          <span>{formatTime(currentTime)}</span>
-          <span>/</span>
-          <span>{formatTime(duration)}</span>
-        </div>
-
-        {/* Expand button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          onClick={togglePanel}
-        >
-          <ChevronUp className="h-4 w-4" />
-        </Button>
       </div>
     </div>
   );
@@ -617,7 +631,8 @@ const SidePanel: React.FC = () => {
 export const usePlayerHeight = () => {
   const { currentTrack, isPanelOpen } = useAudioPlayer();
   // Return height only when mini player is visible (track exists and panel is closed)
-  return currentTrack && !isPanelOpen ? 60 : 0;
+  // Extra space for floating card (mb-3 + card height ~64px + rounded = ~80px)
+  return currentTrack && !isPanelOpen ? 80 : 0;
 };
 
 export const GlobalAudioPlayer: React.FC = () => {
