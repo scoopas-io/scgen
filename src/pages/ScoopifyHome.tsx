@@ -337,36 +337,55 @@ export default function ScoopifyHome() {
           {/* Two-column layout on lg+, stacked on mobile */}
           <div className="container px-3 md:px-6 relative flex flex-col lg:flex-row items-stretch gap-0 pt-6 sm:pt-10 pb-0 lg:pb-0">
 
-            {/* LEFT: text content */}
-            <div className="flex-1 flex flex-col justify-center pb-6 sm:pb-10 lg:pb-12 lg:pr-10">
-              <div className="flex items-center gap-2 mb-3 sm:mb-4">
+            {/* LEFT: text content — centered on mobile, left-aligned on desktop */}
+            <div className="flex-1 flex flex-col items-center lg:items-start justify-center pb-6 sm:pb-10 lg:pb-12 lg:pr-10 text-center lg:text-left">
+
+              {/* Badge */}
+              <div
+                className="flex items-center gap-2 mb-3 sm:mb-4 animate-fade-in"
+                style={{ animationDelay: "0ms", animationFillMode: "both" }}
+              >
                 <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-[10px] sm:text-xs font-semibold uppercase tracking-widest">
-                  <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                  <span className="hidden xs:inline">Die erste reine </span>KI-Streamingplattform
+                  <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3 shrink-0" />
+                  KI-Streamingplattform
                 </div>
               </div>
 
-              <h1 className="font-display font-bold leading-[1.05] mb-3 sm:mb-4" style={{ fontSize: "clamp(1.6rem, 6vw, 4rem)" }}>
-                <span className="text-foreground">Musik, komplett</span>
-                <br />
-                <span style={{ background: "linear-gradient(135deg, hsl(320 90% 65%), hsl(340 85% 55%), hsl(280 80% 65%))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+              {/* Headline */}
+              <h1
+                className="font-display font-bold leading-[1.05] mb-3 sm:mb-4 animate-fade-in"
+                style={{ fontSize: "clamp(1.8rem, 7vw, 4rem)", animationDelay: "80ms", animationFillMode: "both" }}
+              >
+                <span className="text-foreground block">Musik, komplett</span>
+                <span
+                  className="block"
+                  style={{ background: "linear-gradient(135deg, hsl(320 90% 65%), hsl(340 85% 55%), hsl(280 80% 65%))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}
+                >
                   von KI erschaffen.
                 </span>
               </h1>
 
-              <p className="text-muted-foreground text-xs sm:text-sm md:text-base max-w-md mb-5 sm:mb-8 leading-relaxed">
+              {/* Description */}
+              <p
+                className="text-muted-foreground text-xs sm:text-sm md:text-base max-w-sm lg:max-w-md mb-5 sm:mb-8 leading-relaxed animate-fade-in"
+                style={{ animationDelay: "160ms", animationFillMode: "both" }}
+              >
                 Kein Mensch. Kein Studio. Jede Note, jeder Beat, jeder Künstler –
                 <span className="text-foreground font-medium"> vollständig generiert</span> von künstlicher Intelligenz.
               </p>
 
-              <div className="flex flex-wrap gap-4 sm:gap-6 md:gap-8">
+              {/* Stats */}
+              <div
+                className="flex flex-wrap justify-center lg:justify-start gap-4 sm:gap-6 md:gap-8 animate-fade-in"
+                style={{ animationDelay: "240ms", animationFillMode: "both" }}
+              >
                 {[
                   { value: stats.artists, label: "KI-Künstler", suffix: "" },
                   { value: allSongsWithAudio.length, label: "Streamable Titel", suffix: "" },
                   { value: stats.albums ?? 0, label: "Alben", suffix: "" },
-                  { value: "100", label: "% KI", suffix: "%" },
+                  { value: "100", label: "% KI-generiert", suffix: "%" },
                 ].map(({ value, label, suffix }) => (
-                  <div key={label} className="flex flex-col">
+                  <div key={label} className="flex flex-col items-center lg:items-start">
                     <span
                       className="font-display font-bold text-xl sm:text-2xl md:text-3xl leading-none"
                       style={{ background: "linear-gradient(135deg, hsl(var(--foreground)), hsl(var(--primary)))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}
@@ -381,7 +400,10 @@ export default function ScoopifyHome() {
 
             {/* RIGHT: Featured Artist */}
             {featuredArtist && (
-              <div className="w-full lg:w-[44%] flex-shrink-0 pb-6 sm:pb-10 lg:pb-12">
+              <div
+                className="w-full lg:w-[44%] flex-shrink-0 pb-6 sm:pb-10 lg:pb-12 animate-fade-in"
+                style={{ animationDelay: "120ms", animationFillMode: "both" }}
+              >
                 <FeaturedHero
                   artist={featuredArtist}
                   songs={featuredSongs}
