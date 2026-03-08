@@ -631,7 +631,8 @@ const SidePanel: React.FC = () => {
 export const usePlayerHeight = () => {
   const { currentTrack, isPanelOpen } = useAudioPlayer();
   // Return height only when mini player is visible (track exists and panel is closed)
-  return currentTrack && !isPanelOpen ? 60 : 0;
+  // Extra space for floating card (mb-3 + card height ~64px + rounded = ~80px)
+  return currentTrack && !isPanelOpen ? 80 : 0;
 };
 
 export const GlobalAudioPlayer: React.FC = () => {
