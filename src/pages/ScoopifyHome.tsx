@@ -311,20 +311,80 @@ export default function ScoopifyHome() {
     <div className="flex flex-col h-screen bg-background">
       <AppHeader stats={stats} />
       <ScrollArea className="flex-1">
+        {/* ── Full-Width Hero ─────────────────────────────────────────── */}
+        <div className="relative w-full overflow-hidden">
+          {/* Animated gradient background */}
+          <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-background">
+            <div
+              className="absolute -top-24 -left-24 w-96 h-96 rounded-full opacity-20 blur-3xl"
+              style={{ background: "radial-gradient(circle, hsl(320 90% 55%), transparent 70%)", animation: "pulse 4s ease-in-out infinite" }}
+            />
+            <div
+              className="absolute top-0 right-0 w-80 h-80 rounded-full opacity-15 blur-3xl"
+              style={{ background: "radial-gradient(circle, hsl(260 80% 60%), transparent 70%)", animation: "pulse 5s ease-in-out infinite 1s" }}
+            />
+            <div
+              className="absolute bottom-0 left-1/2 -translate-x-1/2 w-72 h-40 opacity-10 blur-3xl"
+              style={{ background: "radial-gradient(ellipse, hsl(320 90% 55%), transparent 70%)", animation: "pulse 6s ease-in-out infinite 2s" }}
+            />
+          </div>
+
+          {/* Grid texture overlay */}
+          <div
+            className="absolute inset-0 opacity-[0.03]"
+            style={{ backgroundImage: "linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)", backgroundSize: "40px 40px" }}
+          />
+
+          <div className="relative px-4 md:px-10 pt-10 pb-12">
+            {/* Eyebrow */}
+            <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-semibold uppercase tracking-widest">
+                <Sparkles className="h-3 w-3" />
+                Die erste reine KI-Streamingplattform
+              </div>
+            </div>
+
+            {/* Main headline */}
+            <h1 className="font-display font-bold leading-[1.05] mb-4" style={{ fontSize: "clamp(2.2rem, 6vw, 4.5rem)" }}>
+              <span className="text-foreground">Musik, komplett</span>
+              <br />
+              <span style={{ background: "linear-gradient(135deg, hsl(320 90% 65%), hsl(340 85% 55%), hsl(280 80% 65%))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+                von KI erschaffen.
+              </span>
+            </h1>
+
+            {/* Sub-copy */}
+            <p className="text-muted-foreground text-base md:text-lg max-w-xl mb-8 leading-relaxed">
+              Kein Mensch. Kein Studio. Jede Note, jeder Beat, jeder Künstler – 
+              <span className="text-foreground font-medium"> vollständig generiert</span> von künstlicher Intelligenz.
+            </p>
+
+            {/* Stats row */}
+            <div className="flex flex-wrap gap-6 md:gap-10">
+              {[
+                { value: stats.artists, label: "KI-Künstler", suffix: "" },
+                { value: allSongsWithAudio.length, label: "Streamable Titel", suffix: "" },
+                { value: stats.albums ?? 0, label: "Alben", suffix: "" },
+                { value: "100", label: "% KI-generiert", suffix: "%" },
+              ].map(({ value, label, suffix }) => (
+                <div key={label} className="flex flex-col">
+                  <span
+                    className="font-display font-bold text-2xl md:text-3xl leading-none"
+                    style={{ background: "linear-gradient(135deg, hsl(var(--foreground)), hsl(var(--primary)))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}
+                  >
+                    {value}{suffix}
+                  </span>
+                  <span className="text-muted-foreground text-xs mt-0.5 uppercase tracking-wide">{label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
         <div
-          className="container mx-auto px-3 md:px-6 py-6"
+          className="container mx-auto px-3 md:px-6 pt-6"
           style={{ paddingBottom: Math.max(playerHeight + 24, 32) }}
         >
-          <div className="mb-6">
-            <p className="text-xs text-primary font-semibold uppercase tracking-widest mb-1 flex items-center gap-1.5">
-              <Sparkles className="h-3.5 w-3.5" />
-              Entdecke KI-generierte Künstler
-            </p>
-            <h1 className="font-display text-2xl md:text-3xl font-bold">Guten Tag 👋</h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              {stats.artists} Künstler · {allSongsWithAudio.length} Titel zum Entdecken
-            </p>
-          </div>
 
           {featuredArtist && (
             <FeaturedHero
