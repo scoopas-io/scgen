@@ -311,8 +311,8 @@ export default function ScoopifyHome() {
     <div className="flex flex-col h-screen bg-background">
       <AppHeader stats={stats} />
       <ScrollArea className="flex-1">
-        {/* overflow-x-hidden wrapper inside ScrollArea viewport */}
-        <div className="w-full overflow-x-hidden">
+        {/* overflow fits content — no clipping */}
+        <div className="w-full min-w-0">
 
           {/* ── Full-Width Hero ─────────────────────────────────────────── */}
           <div className="relative w-full overflow-hidden">
@@ -339,11 +339,11 @@ export default function ScoopifyHome() {
             />
 
             <div className="relative container pt-10 pb-12">
-              {/* Eyebrow */}
-              <div className="flex items-center gap-2 mb-4">
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-semibold uppercase tracking-widest">
-                  <Sparkles className="h-3 w-3" />
-                  Die erste reine KI-Streamingplattform
+              {/* Eyebrow — wraps on narrow screens */}
+              <div className="mb-4">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-semibold uppercase tracking-widest leading-relaxed">
+                  <Sparkles className="h-3 w-3 shrink-0" />
+                  <span className="break-words">Die erste reine KI-Streamingplattform</span>
                 </div>
               </div>
 
@@ -362,7 +362,7 @@ export default function ScoopifyHome() {
                 <span className="text-foreground font-medium">vollständig generiert</span> von künstlicher Intelligenz.
               </p>
 
-              {/* Stats row — 2 cols on mobile, 4 on sm+ */}
+              {/* Stats — 2 cols mobile, 4 cols sm+ */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-5">
                 {[
                   { value: stats.artists, label: "KI-Künstler", suffix: "" },
@@ -370,14 +370,14 @@ export default function ScoopifyHome() {
                   { value: stats.albums ?? 0, label: "Alben", suffix: "" },
                   { value: "100", label: "% KI-generiert", suffix: "%" },
                 ].map(({ value, label, suffix }) => (
-                  <div key={label} className="flex flex-col">
+                  <div key={label} className="flex flex-col min-w-0">
                     <span
                       className="font-display font-bold text-2xl md:text-3xl leading-none"
                       style={{ background: "linear-gradient(135deg, hsl(var(--foreground)), hsl(var(--primary)))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}
                     >
                       {value}{suffix}
                     </span>
-                    <span className="text-muted-foreground text-xs mt-0.5 uppercase tracking-wide">{label}</span>
+                    <span className="text-muted-foreground text-xs mt-0.5 uppercase tracking-wide truncate">{label}</span>
                   </div>
                 ))}
               </div>
