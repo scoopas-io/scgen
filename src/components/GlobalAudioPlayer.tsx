@@ -223,18 +223,18 @@ const SidePanel: React.FC = () => {
         <ScrollArea className="flex-1 min-h-0">
           <div className="px-5 pb-6 space-y-5">
 
-            {/* Cover Art */}
-            <div className="relative mt-2">
+            {/* Cover Art — 67% width, centered */}
+            <div className="relative mt-2 flex justify-center">
               {coverUrl && (
                 <div className="absolute inset-0 rounded-3xl blur-3xl opacity-40 scale-90"
                   style={{ backgroundImage: `url(${coverUrl})`, backgroundSize: 'cover' }} />
               )}
-              <div className="relative aspect-square w-full rounded-2xl overflow-hidden ring-1 ring-white/10 shadow-2xl">
+              <div className="relative w-2/3 aspect-square rounded-2xl overflow-hidden ring-1 ring-white/10 shadow-2xl">
                 {coverUrl ? (
                   <img src={coverUrl} alt={localTrack?.artist} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/30">
-                    <Music className="w-16 h-16 text-muted-foreground/30" />
+                    <Music className="w-12 h-12 text-muted-foreground/30" />
                   </div>
                 )}
               </div>
