@@ -329,7 +329,7 @@ export default function KuenstlerSongs() {
       <AppHeader stats={stats} />
       <ScrollArea className="flex-1">
         <div
-          className="container mx-auto px-3 md:px-6 py-6"
+          className="container py-6"
           style={{ paddingBottom: Math.max(playerHeight + 24, 32) }}
         >
           {/* Page Header */}
