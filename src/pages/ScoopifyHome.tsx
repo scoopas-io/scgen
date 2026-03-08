@@ -318,7 +318,7 @@ export default function ScoopifyHome() {
 
           {/* ── Hero Card ─────────────────────────────────────────────── */}
           <div
-            className="relative rounded-2xl overflow-hidden mb-6 p-4 sm:p-6 md:p-10"
+            className="relative rounded-2xl overflow-hidden mb-6"
             style={{
               background: "linear-gradient(135deg, hsl(var(--card)) 0%, hsl(260 30% 10%) 100%)",
               boxShadow: "inset 0 0 80px 0 hsl(320 90% 55% / 0.12), inset 0 0 40px 0 hsl(260 80% 60% / 0.08)",
@@ -335,62 +335,100 @@ export default function ScoopifyHome() {
             <div className="absolute bottom-0 right-0 w-40 h-40 sm:w-56 sm:h-56 rounded-full opacity-15 blur-3xl pointer-events-none"
               style={{ background: "radial-gradient(circle, hsl(260 80% 60%), transparent 70%)", animation: "pulse 5s ease-in-out infinite 1.5s" }} />
 
-            {/* Content */}
-            <div className="relative">
-              {/* Eyebrow — font size and tracking adapt to screen width */}
-              <div className="flex items-center gap-1.5 w-fit max-w-full px-2.5 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary font-semibold uppercase mb-4"
-                style={{ fontSize: "clamp(0.55rem, 2.2vw, 0.7rem)", letterSpacing: "0.08em" }}
-              >
-                <Sparkles className="h-2.5 w-2.5 shrink-0" />
-                <span>Erste reine KI-Streamingplattform</span>
+            {/* Desktop: 2-col grid — left: copy, right: featured artist */}
+            <div className="relative grid grid-cols-1 lg:grid-cols-2 lg:min-h-[380px]">
+
+              {/* Left: Headline + Stats */}
+              <div className="p-4 sm:p-6 md:p-10 flex flex-col justify-center">
+                {/* Eyebrow */}
+                <div className="flex items-center gap-1.5 w-fit max-w-full px-2.5 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary font-semibold uppercase mb-4"
+                  style={{ fontSize: "clamp(0.55rem, 2.2vw, 0.7rem)", letterSpacing: "0.08em" }}
+                >
+                  <Sparkles className="h-2.5 w-2.5 shrink-0" />
+                  <span>Erste reine KI-Streamingplattform</span>
+                </div>
+
+                {/* Headline */}
+                <h1 className="font-display font-bold leading-tight mb-3"
+                  style={{ fontSize: "clamp(1.5rem, 4vw, 3.5rem)" }}
+                >
+                  <span className="text-foreground">Musik, komplett</span>
+                  <br />
+                  <span style={{ background: "linear-gradient(135deg, hsl(320 90% 65%), hsl(340 85% 55%), hsl(280 80% 65%))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+                    von KI erschaffen.
+                  </span>
+                </h1>
+
+                {/* Sub-copy */}
+                <p className="text-muted-foreground leading-relaxed mb-6"
+                  style={{ fontSize: "clamp(0.8rem, 1.5vw, 1rem)" }}
+                >
+                  Kein Mensch. Kein Studio. Jede Note, jeder Beat,<br />
+                  jeder Künstler – vollständig generiert von<br />
+                  <span className="text-foreground font-medium">künstlicher Intelligenz.</span>
+                </p>
+
+                {/* Stats */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-6">
+                  {[
+                    { value: stats.artists, label: "KI-Künstler" },
+                    { value: allSongsWithAudio.length, label: "Streamable Titel" },
+                    { value: stats.albums ?? 0, label: "Alben" },
+                    { value: "100%", label: "KI-generiert" },
+                  ].map(({ value, label }) => (
+                    <div key={label} className="flex flex-col min-w-0">
+                      <span
+                        className="font-display font-bold leading-none"
+                        style={{
+                          fontSize: "clamp(1.4rem, 3vw, 2.5rem)",
+                          background: "linear-gradient(135deg, hsl(var(--foreground)), hsl(var(--primary)))",
+                          WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text"
+                        }}
+                      >
+                        {value}
+                      </span>
+                      <span className="text-muted-foreground uppercase mt-1 truncate"
+                        style={{ fontSize: "clamp(0.55rem, 1.2vw, 0.7rem)", letterSpacing: "0.06em" }}
+                      >{label}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              {/* Headline — scales fluidly with viewport */}
-              <h1
-                className="font-display font-bold leading-tight mb-3"
-                style={{ fontSize: "clamp(1.5rem, 7vw, 4rem)" }}
-              >
-                <span className="text-foreground">Musik, komplett</span>
-                <br />
-                <span style={{ background: "linear-gradient(135deg, hsl(320 90% 65%), hsl(340 85% 55%), hsl(280 80% 65%))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-                  von KI erschaffen.
-                </span>
-              </h1>
-
-              {/* Sub-copy */}
-              <p className="text-muted-foreground leading-relaxed mb-6"
-                style={{ fontSize: "clamp(0.8rem, 2.5vw, 1rem)" }}
-              >
-                Kein Mensch. Kein Studio. Jede Note, jeder Beat,<br />
-                jeder Künstler – vollständig generiert von<br />
-                <span className="text-foreground font-medium">künstlicher Intelligenz.</span>
-              </p>
-
-              {/* Stats — 2×2 on mobile, 4 cols on sm+ */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6">
-                {[
-                  { value: stats.artists, label: "KI-Künstler" },
-                  { value: allSongsWithAudio.length, label: "Streamable Titel" },
-                  { value: stats.albums ?? 0, label: "Alben" },
-                  { value: "100%", label: "KI-generiert" },
-                ].map(({ value, label }) => (
-                  <div key={label} className="flex flex-col min-w-0">
-                    <span
-                      className="font-display font-bold leading-none"
-                      style={{
-                        fontSize: "clamp(1.4rem, 5vw, 2.5rem)",
-                        background: "linear-gradient(135deg, hsl(var(--foreground)), hsl(var(--primary)))",
-                        WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text"
-                      }}
-                    >
-                      {value}
-                    </span>
-                    <span className="text-muted-foreground uppercase mt-1 truncate"
-                      style={{ fontSize: "clamp(0.55rem, 2vw, 0.7rem)", letterSpacing: "0.06em" }}
-                    >{label}</span>
+              {/* Right: KI-Künstler des Tages — desktop only inline, mobile below */}
+              {featuredArtist && (
+                <div className="relative lg:rounded-r-2xl overflow-hidden min-h-[220px] lg:min-h-0 flex items-end">
+                  <div className="absolute inset-0">
+                    {featuredArtist.profile_image_url ? (
+                      <img src={featuredArtist.profile_image_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-primary/30 to-primary/5" />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
                   </div>
-                ))}
-              </div>
+                  <div className="absolute top-4 left-4">
+                    <Badge className="gap-1.5 bg-primary/90 text-primary-foreground border-0 text-xs">
+                      <Sparkles className="h-3 w-3" />
+                      KI-Künstler des Tages
+                    </Badge>
+                  </div>
+                  <div className="relative p-5 w-full">
+                    <p className="text-white/70 text-xs uppercase tracking-widest mb-1">{featuredArtist.genre}</p>
+                    <h2 className="text-white font-display font-bold mb-1 leading-tight"
+                      style={{ fontSize: "clamp(1.4rem, 2.5vw, 2.5rem)" }}
+                    >{featuredArtist.name}</h2>
+                    <p className="text-white/60 text-sm mb-4 line-clamp-1">{featuredArtist.style}</p>
+                    <div className="flex items-center gap-3">
+                      <Button size="sm" className="rounded-full gap-2 font-semibold" onClick={() => handlePlayFeatured(featuredSongs)}>
+                        {isPlayingFeatured
+                          ? <><Pause className="h-4 w-4" fill="currentColor" /> Pause</>
+                          : <><Play className="h-4 w-4" fill="currentColor" /> Abspielen</>}
+                      </Button>
+                      <span className="text-white/50 text-sm">{featuredSongs.length} Titel</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
