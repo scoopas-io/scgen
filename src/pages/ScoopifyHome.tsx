@@ -337,9 +337,9 @@ export default function ScoopifyHome() {
             {/* Content */}
             <div className="relative">
               {/* Eyebrow */}
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-semibold uppercase tracking-widest mb-5">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-semibold uppercase tracking-wide mb-5">
                 <Sparkles className="h-3 w-3 shrink-0" />
-                Die erste reine KI-Streamingplattform
+                Erste reine KI-Streamingplattform
               </div>
 
               {/* Headline */}
