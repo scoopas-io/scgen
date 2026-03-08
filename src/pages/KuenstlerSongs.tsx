@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback } from "react";
 import {
-  Search, Play, Pause, Shuffle, Music, User, ChevronDown, ChevronRight, Sparkles, ListPlus
+  Search, Play, Pause, Shuffle, Music, User, ChevronDown, ChevronRight, Sparkles, ListPlus, X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -73,9 +73,9 @@ function SongRow({
 }) {
   return (
     <div className={cn(
-      "group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all",
-      "hover:bg-muted/60",
-      isCurrentlyPlaying && "bg-primary/8"
+      "group flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2.5 rounded-lg transition-all",
+      "hover:bg-muted/60 active:bg-muted/80",
+      isCurrentlyPlaying && "bg-primary/10"
     )}>
       <button onClick={onPlay} className="w-5 flex-shrink-0 flex items-center justify-center">
         <span className={cn("text-xs tabular-nums text-muted-foreground group-hover:hidden", isCurrentlyPlaying && "hidden")}>
@@ -96,10 +96,10 @@ function SongRow({
         <p className={cn("text-sm font-medium truncate", isCurrentlyPlaying && "text-primary")}>{item.song.name}</p>
         <p className="text-xs text-muted-foreground truncate">{item.albumName}</p>
       </button>
-      {/* Add to queue */}
+      {/* Add to queue — always visible on mobile */}
       <button
         onClick={onAddToQueue}
-        className="opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7 flex items-center justify-center rounded-full hover:bg-muted text-muted-foreground hover:text-foreground shrink-0"
+        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity h-7 w-7 flex items-center justify-center rounded-full hover:bg-muted text-muted-foreground hover:text-foreground active:scale-95 shrink-0"
         title="Zur Warteschlange hinzufügen"
       >
         <ListPlus className="h-3.5 w-3.5" />
@@ -140,15 +140,15 @@ function ArtistPanel({
       "bg-card/40 hover:bg-card/60",
       isExpanded && "border-border bg-card/60"
     )}>
-      <div className="flex items-center gap-4 p-4">
+      <div className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4">
         {/* Image */}
         <button onClick={onToggle} className="flex-shrink-0">
-          <div className="w-16 h-16 rounded-xl overflow-hidden ring-2 ring-border">
+          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl overflow-hidden ring-2 ring-border">
             {artist.profile_image_url ? (
               <img src={artist.profile_image_url} alt={artist.name} className="w-full h-full object-cover" loading="lazy" />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                <User className="h-6 w-6 text-primary/50" />
+                <User className="h-5 w-5 sm:h-6 sm:w-6 text-primary/50" />
               </div>
             )}
           </div>
@@ -156,16 +156,16 @@ function ArtistPanel({
 
         {/* Info */}
         <button onClick={onToggle} className="flex-1 text-left min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="font-bold text-base truncate">{artist.name}</span>
+          <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
+            <span className="font-bold text-sm sm:text-base truncate">{artist.name}</span>
             {artist.language && (
               <span className="text-sm shrink-0">
                 {{ de: "🇩🇪", en: "🇬🇧", es: "🇪🇸", fr: "🇫🇷", it: "🇮🇹", pt: "🇵🇹", ja: "🇯🇵", ko: "🇰🇷", zh: "🇨🇳" }[artist.language] ?? ""}
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full border", genreColor(artist.genre))}>
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+            <span className={cn("text-[10px] font-semibold px-1.5 sm:px-2 py-0.5 rounded-full border", genreColor(artist.genre))}>
               {artist.genre}
             </span>
             <span className="text-xs text-muted-foreground">{songs.length} Titel</span>
@@ -173,12 +173,12 @@ function ArtistPanel({
         </button>
 
         {/* Actions */}
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
           {songs.length > 0 && (
             <>
               <button
                 onClick={(e) => { e.stopPropagation(); onAddArtistToQueue(); }}
-                className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
+                className="h-8 w-8 sm:h-8 sm:w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-95 transition-all"
                 title="Alle zur Warteschlange hinzufügen"
               >
                 <ListPlus className="h-4 w-4" />
@@ -186,7 +186,7 @@ function ArtistPanel({
               <button
                 onClick={(e) => { e.stopPropagation(); onPlayArtist(); }}
                 className={cn(
-                  "h-9 w-9 rounded-full flex items-center justify-center transition-all",
+                  "h-9 w-9 rounded-full flex items-center justify-center transition-all active:scale-95",
                   isArtistPlaying
                     ? "bg-primary text-primary-foreground hover:bg-primary/90"
                     : "hover:bg-primary/10 hover:text-primary text-muted-foreground"
@@ -200,7 +200,7 @@ function ArtistPanel({
           )}
           <button
             onClick={onToggle}
-            className="h-9 w-9 flex items-center justify-center rounded-full hover:bg-muted/60 transition-colors text-muted-foreground"
+            className="h-9 w-9 flex items-center justify-center rounded-full hover:bg-muted/60 active:scale-95 transition-colors text-muted-foreground"
           >
             {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           </button>
@@ -209,7 +209,7 @@ function ArtistPanel({
 
       {/* Songs List */}
       {isExpanded && songs.length > 0 && (
-        <div className="border-t border-border/40 px-2 pb-3 pt-2 bg-muted/20 animate-in slide-in-from-top-2 duration-200">
+        <div className="border-t border-border/40 px-1 sm:px-2 pb-2 sm:pb-3 pt-1 sm:pt-2 bg-muted/20 animate-in slide-in-from-top-2 duration-200">
           {songs.map((item, i) => (
             <SongRow
               key={item.song.id}
@@ -329,36 +329,44 @@ export default function KuenstlerSongs() {
       <AppHeader stats={stats} />
       <ScrollArea className="flex-1">
         <div
-          className="container mx-auto px-3 md:px-6 py-6"
+          className="container mx-auto px-3 md:px-6 py-4 sm:py-6"
           style={{ paddingBottom: Math.max(playerHeight + 24, 32) }}
         >
           {/* Page Header */}
-          <div className="mb-6">
+          <div className="mb-4 sm:mb-6">
             <p className="text-xs text-primary font-semibold uppercase tracking-widest mb-1 flex items-center gap-1.5">
               <Sparkles className="h-3.5 w-3.5" />
               KI-Musik Katalog
             </p>
-            <h1 className="font-display text-2xl md:text-3xl font-bold mb-1">Künstler & Songs</h1>
-            <p className="text-muted-foreground text-sm">
+            <h1 className="font-display text-xl sm:text-2xl md:text-3xl font-bold mb-1">Künstler & Songs</h1>
+            <p className="text-muted-foreground text-xs sm:text-sm">
               {stats.artists} Künstler · {allSongsWithAudio.length} Titel
             </p>
           </div>
 
           {/* Search + Shuffle */}
-          <div className="flex gap-2 mb-4">
+          <div className="flex gap-2 mb-3 sm:mb-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               <Input
-                placeholder="Künstler, Genre oder Stil suchen…"
+                placeholder="Künstler, Genre oder Stil…"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="pl-9 bg-muted/30 border-border/60 focus:bg-background"
+                className="pl-9 pr-9 bg-muted/30 border-border/60 focus:bg-background text-sm h-10"
               />
+              {search && (
+                <button
+                  onClick={() => setSearch("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 h-5 w-5 flex items-center justify-center rounded-full bg-muted text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
             </div>
             <Button
               variant="outline"
               size="icon"
-              className="shrink-0 hover:bg-primary/10 hover:text-primary hover:border-primary/40"
+              className="shrink-0 hover:bg-primary/10 hover:text-primary hover:border-primary/40 h-10 w-10"
               onClick={handleShuffleAll}
               title="Alle mischen"
             >
@@ -366,12 +374,12 @@ export default function KuenstlerSongs() {
             </Button>
           </div>
 
-          {/* Genre Filter Pills */}
-          <div className="flex gap-2 flex-wrap mb-6">
+          {/* Genre Filter Pills — horizontally scrollable on mobile */}
+          <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-2 mb-4 sm:mb-6 scrollbar-hide -mx-3 sm:mx-0 px-3 sm:px-0">
             <button
               onClick={() => setActiveGenre(null)}
               className={cn(
-                "text-xs font-semibold px-3 py-1.5 rounded-full border transition-all",
+                "text-xs font-semibold px-3 py-1.5 rounded-full border transition-all whitespace-nowrap flex-shrink-0",
                 !activeGenre
                   ? "bg-primary text-primary-foreground border-primary"
                   : "bg-muted/30 border-border/60 text-muted-foreground hover:border-border"
@@ -382,7 +390,7 @@ export default function KuenstlerSongs() {
                 key={genre}
                 onClick={() => setActiveGenre(prev => prev === genre ? null : genre)}
                 className={cn(
-                  "text-xs font-semibold px-3 py-1.5 rounded-full border transition-all",
+                  "text-xs font-semibold px-3 py-1.5 rounded-full border transition-all whitespace-nowrap flex-shrink-0",
                   activeGenre === genre
                     ? "bg-primary text-primary-foreground border-primary"
                     : cn("hover:border-border", genreColor(genre))
@@ -391,14 +399,29 @@ export default function KuenstlerSongs() {
             ))}
           </div>
 
+          {/* Active filter indicator */}
+          {activeGenre && (
+            <div className="flex items-center gap-2 mb-3 sm:mb-4">
+              <span className="text-xs text-muted-foreground">Filter:</span>
+              <button
+                onClick={() => setActiveGenre(null)}
+                className={cn("flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full border", genreColor(activeGenre))}
+              >
+                {activeGenre}
+                <X className="h-3 w-3 ml-0.5" />
+              </button>
+              <span className="text-xs text-muted-foreground">{filteredArtists.length} Künstler</span>
+            </div>
+          )}
+
           {/* Artist List */}
           {filteredArtists.length === 0 ? (
             <div className="text-center py-16 text-muted-foreground">
               <Music className="h-10 w-10 mx-auto mb-3 opacity-30" />
-              <p className="text-sm">Keine Ergebnisse für „{search}"</p>
+              <p className="text-sm">Keine Ergebnisse{search ? ` für „${search}"` : ""}</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {filteredArtists.map(artist => (
                 <ArtistPanel
                   key={artist.id}
