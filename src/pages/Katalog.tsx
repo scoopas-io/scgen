@@ -198,7 +198,7 @@ const Katalog = () => {
       <AppHeader stats={stats} />
 
       <main className="flex-1 min-h-0 overflow-hidden" style={{ paddingBottom: playerHeight }}>
-        <div className="container h-full py-4 md:py-6 px-3 md:px-6">
+        <div className="container h-full py-4 md:py-6">
           <div className="flex flex-col h-full gap-3 md:gap-4 min-h-0">
 
             {/* Valuation Card — Admin only */}
