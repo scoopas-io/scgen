@@ -95,16 +95,15 @@ export const AppHeader = ({ stats }: AppHeaderProps) => {
 
           {/* Right side: Role Badge + Stats + Mini Player + Logout + Mobile Menu */}
           <div className="flex items-center gap-2 md:gap-3">
-            {/* Role Badge */}
-            <Badge 
-              variant={isAdmin ? "default" : "secondary"} 
-              className={cn(
-                "text-[10px] px-2 py-0.5 hidden sm:inline-flex",
-                isAdmin && "bg-primary/20 text-primary border-primary/30"
-              )}
-            >
-              {isAdmin ? "Admin" : "Viewer"}
-            </Badge>
+            {/* Role Badge — only show for admins */}
+            {isAdmin && (
+              <Badge
+                variant="default"
+                className="text-[10px] px-2 py-0.5 hidden sm:inline-flex bg-primary/20 text-primary border-primary/30"
+              >
+                Admin
+              </Badge>
+            )}
 
             {/* Persona Status Dashboard - Admin only */}
             {isAdmin && <PersonaStatusDashboard />}
