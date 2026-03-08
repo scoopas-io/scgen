@@ -14,6 +14,7 @@ import Generator from "./pages/Generator";
 import Katalog from "./pages/Katalog";
 import SocialTools from "./pages/SocialTools";
 import AudioGenerator from "./pages/AudioGenerator";
+import UeberUns from "./pages/UeberUns";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,6 +46,7 @@ const App = () => (
                 <Route path="/erweitern" element={<AdminRoute><Generator /></AdminRoute>} />
                 <Route path="/katalog" element={<AdminRoute><Katalog /></AdminRoute>} />
                 <Route path="/kuenstler" element={<KuenstlerSongs />} />
+                <Route path="/ueber-uns" element={<UeberUns />} />
                 <Route path="/social-tools" element={<AdminRoute><SocialTools /></AdminRoute>} />
                 <Route path="/audio-generator" element={<AdminRoute><AudioGenerator /></AdminRoute>} />
                 <Route path="*" element={<NotFound />} />

@@ -329,19 +329,66 @@ export default function KuenstlerSongs() {
       <AppHeader stats={stats} />
       <ScrollArea className="flex-1">
         <div
-          className="w-full max-w-[100vw] overflow-x-hidden px-3 md:px-6 py-6"
+          className="w-full max-w-[100vw] overflow-x-hidden px-3 md:px-6 pt-6"
           style={{ paddingBottom: Math.max(playerHeight + 24, 32) }}
         >
-          {/* Page Header */}
-          <div className="mb-6">
-            <p className="text-xs text-primary font-semibold uppercase tracking-widest mb-1 flex items-center gap-1.5">
-              <Sparkles className="h-3.5 w-3.5" />
-              KI-Musik Katalog
-            </p>
-            <h1 className="font-display text-2xl md:text-3xl font-bold mb-1">Künstler & Songs</h1>
-            <p className="text-muted-foreground text-sm">
-              {stats.artists} Künstler · {allSongsWithAudio.length} Titel
-            </p>
+
+          {/* ── Hero Card ─────────────────────────────────────────────── */}
+          <div
+            className="relative rounded-2xl overflow-hidden mb-6"
+            style={{
+              background: "linear-gradient(135deg, hsl(var(--card)) 0%, hsl(260 30% 10%) 100%)",
+              boxShadow: "inset 0 0 80px 0 hsl(320 90% 55% / 0.12), inset 0 0 40px 0 hsl(260 80% 60% / 0.08)",
+            }}
+          >
+            {/* Grid texture */}
+            <div
+              className="absolute inset-0 opacity-[0.04] pointer-events-none"
+              style={{ backgroundImage: "linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)", backgroundSize: "40px 40px" }}
+            />
+            {/* Glow blobs */}
+            <div className="absolute top-0 right-0 w-48 h-48 sm:w-64 sm:h-64 rounded-full opacity-20 blur-3xl pointer-events-none"
+              style={{ background: "radial-gradient(circle, hsl(320 90% 55%), transparent 70%)" }} />
+            <div className="absolute bottom-0 left-0 w-40 h-40 sm:w-56 sm:h-56 rounded-full opacity-15 blur-3xl pointer-events-none"
+              style={{ background: "radial-gradient(circle, hsl(260 80% 60%), transparent 70%)" }} />
+
+            <div className="relative p-4 sm:p-6 md:p-10 flex flex-col items-center text-center sm:flex-row sm:items-end sm:text-left sm:justify-between gap-4">
+              <div>
+                <div className="flex items-center justify-center sm:justify-start gap-1.5 w-fit mx-auto sm:mx-0 px-2.5 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary font-semibold uppercase mb-3"
+                  style={{ fontSize: "clamp(0.55rem, 2.2vw, 0.7rem)", letterSpacing: "0.08em" }}
+                >
+                  <Sparkles className="h-2.5 w-2.5 shrink-0" />
+                  <span>KI-Musik Katalog</span>
+                </div>
+                <h1 className="font-display font-bold leading-tight mb-2"
+                  style={{ fontSize: "clamp(1.5rem, 4vw, 3rem)" }}
+                >
+                  <span className="text-foreground">Künstler</span>
+                  {" "}
+                  <span style={{ background: "linear-gradient(135deg, hsl(320 90% 65%), hsl(340 85% 55%), hsl(280 80% 65%))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+                    &amp; Songs
+                  </span>
+                </h1>
+                <p className="text-muted-foreground text-sm">
+                  {stats.artists} KI-Künstler · {allSongsWithAudio.length} Titel
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="text-center">
+                  <p className="font-display font-bold leading-none"
+                    style={{ fontSize: "clamp(1.4rem, 3vw, 2rem)", background: "linear-gradient(135deg, hsl(var(--foreground)), hsl(var(--primary)))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}
+                  >{stats.artists}</p>
+                  <p className="text-muted-foreground uppercase mt-1" style={{ fontSize: "0.6rem", letterSpacing: "0.06em" }}>Künstler</p>
+                </div>
+                <div className="w-px h-10 bg-border/40 mx-2" />
+                <div className="text-center">
+                  <p className="font-display font-bold leading-none"
+                    style={{ fontSize: "clamp(1.4rem, 3vw, 2rem)", background: "linear-gradient(135deg, hsl(var(--foreground)), hsl(var(--primary)))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}
+                  >{allSongsWithAudio.length}</p>
+                  <p className="text-muted-foreground uppercase mt-1" style={{ fontSize: "0.6rem", letterSpacing: "0.06em" }}>Titel</p>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Search + Shuffle */}

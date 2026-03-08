@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Music, Zap, Database, Volume2, Share2, Users, Disc, Menu, Home, LogOut } from "lucide-react";
+import { Music, Zap, Database, Volume2, Share2, Users, Disc, Menu, Home, LogOut, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScoopasIcon } from "@/components/ScoopasIcon";
 import { HeaderMiniPlayer } from "@/components/GlobalAudioPlayer";
@@ -34,6 +34,7 @@ export const AppHeader = ({ stats }: AppHeaderProps) => {
     { path: "/erweitern", label: "Erweitern", icon: Zap, adminOnly: true, viewerOnly: false },
     { path: "/katalog", label: "Katalog", icon: Database, adminOnly: true, viewerOnly: false },
     { path: "/kuenstler", label: "Künstler & Songs", icon: Music, adminOnly: false, viewerOnly: true },
+    { path: "/ueber-uns", label: "Über Uns", icon: Info, adminOnly: false, viewerOnly: true },
     { path: "/audio-generator", label: "Audio", icon: Volume2, adminOnly: true, viewerOnly: false },
     { path: "/social-tools", label: "Social", icon: Share2, adminOnly: true, viewerOnly: false },
   ];
@@ -95,16 +96,15 @@ export const AppHeader = ({ stats }: AppHeaderProps) => {
 
           {/* Right side: Role Badge + Stats + Mini Player + Logout + Mobile Menu */}
           <div className="flex items-center gap-2 md:gap-3">
-            {/* Role Badge */}
-            <Badge 
-              variant={isAdmin ? "default" : "secondary"} 
-              className={cn(
-                "text-[10px] px-2 py-0.5 hidden sm:inline-flex",
-                isAdmin && "bg-primary/20 text-primary border-primary/30"
-              )}
-            >
-              {isAdmin ? "Admin" : "Viewer"}
-            </Badge>
+            {/* Role Badge — only show for admins */}
+            {isAdmin && (
+              <Badge
+                variant="default"
+                className="text-[10px] px-2 py-0.5 hidden sm:inline-flex bg-primary/20 text-primary border-primary/30"
+              >
+                Admin
+              </Badge>
+            )}
 
             {/* Persona Status Dashboard - Admin only */}
             {isAdmin && <PersonaStatusDashboard />}
@@ -154,15 +154,11 @@ export const AppHeader = ({ stats }: AppHeaderProps) => {
                 <div className="flex flex-col h-full">
                   <div className="p-4 border-b border-border flex items-center justify-between">
                     <h2 className="font-semibold text-lg">Navigation</h2>
-                    <Badge 
-                      variant={isAdmin ? "default" : "secondary"} 
-                      className={cn(
-                        "text-xs",
-                        isAdmin && "bg-primary/20 text-primary"
-                      )}
-                    >
-                      {isAdmin ? "Admin" : "Viewer"}
-                    </Badge>
+                    {isAdmin && (
+                      <Badge variant="default" className="text-xs bg-primary/20 text-primary">
+                        Admin
+                      </Badge>
+                    )}
                   </div>
                   <nav className="flex-1 p-4 space-y-1">
                     {navItems.map(({ path, label, icon: Icon }) => (
