@@ -28,17 +28,20 @@ export const AppHeader = ({ stats }: AppHeaderProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isAdmin, isViewer, logout, role } = useAuth();
   
-  // All navigation items
+  // All navigation items — adminOnly hides from viewers, viewerOnly hides from admins
   const allNavItems = [
-    { path: "/", label: "Home", icon: Home, adminOnly: false },
-    { path: "/erweitern", label: "Erweitern", icon: Zap, adminOnly: true },
-    { path: "/katalog", label: "Katalog", icon: Database, adminOnly: false },
-    { path: "/audio-generator", label: "Audio", icon: Volume2, adminOnly: true },
-    { path: "/social-tools", label: "Social", icon: Share2, adminOnly: true },
+    { path: "/", label: "Home", icon: Home, adminOnly: false, viewerOnly: false },
+    { path: "/erweitern", label: "Erweitern", icon: Zap, adminOnly: true, viewerOnly: false },
+    { path: "/katalog", label: "Katalog", icon: Database, adminOnly: true, viewerOnly: false },
+    { path: "/kuenstler", label: "Künstler & Songs", icon: Music, adminOnly: false, viewerOnly: true },
+    { path: "/audio-generator", label: "Audio", icon: Volume2, adminOnly: true, viewerOnly: false },
+    { path: "/social-tools", label: "Social", icon: Share2, adminOnly: true, viewerOnly: false },
   ];
 
   // Filter nav items based on role
-  const navItems = allNavItems.filter(item => !item.adminOnly || isAdmin);
+  const navItems = allNavItems.filter(item =>
+    (!item.adminOnly || isAdmin) && (!item.viewerOnly || !isAdmin)
+  );
 
   return (
     <header className="shrink-0 border-b border-border bg-background/95 backdrop-blur">

@@ -9,6 +9,7 @@ import { GlobalAudioPlayer } from "@/components/GlobalAudioPlayer";
 import { PasswordGate } from "@/components/PasswordGate";
 import Home from "./pages/Home";
 import ScoopifyHome from "./pages/ScoopifyHome";
+import KuenstlerSongs from "./pages/KuenstlerSongs";
 import Generator from "./pages/Generator";
 import Katalog from "./pages/Katalog";
 import SocialTools from "./pages/SocialTools";
@@ -40,9 +41,10 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <Routes>
-                <Route path="/" element={<HomeRoute />} />
+              <Route path="/" element={<HomeRoute />} />
                 <Route path="/erweitern" element={<AdminRoute><Generator /></AdminRoute>} />
-                <Route path="/katalog" element={<Katalog />} />
+                <Route path="/katalog" element={<AdminRoute><Katalog /></AdminRoute>} />
+                <Route path="/kuenstler" element={<KuenstlerSongs />} />
                 <Route path="/social-tools" element={<AdminRoute><SocialTools /></AdminRoute>} />
                 <Route path="/audio-generator" element={<AdminRoute><AudioGenerator /></AdminRoute>} />
                 <Route path="*" element={<NotFound />} />
