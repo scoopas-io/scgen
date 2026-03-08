@@ -153,15 +153,11 @@ export const AppHeader = ({ stats }: AppHeaderProps) => {
                 <div className="flex flex-col h-full">
                   <div className="p-4 border-b border-border flex items-center justify-between">
                     <h2 className="font-semibold text-lg">Navigation</h2>
-                    <Badge 
-                      variant={isAdmin ? "default" : "secondary"} 
-                      className={cn(
-                        "text-xs",
-                        isAdmin && "bg-primary/20 text-primary"
-                      )}
-                    >
-                      {isAdmin ? "Admin" : "Viewer"}
-                    </Badge>
+                    {isAdmin && (
+                      <Badge variant="default" className="text-xs bg-primary/20 text-primary">
+                        Admin
+                      </Badge>
+                    )}
                   </div>
                   <nav className="flex-1 p-4 space-y-1">
                     {navItems.map(({ path, label, icon: Icon }) => (
