@@ -34,6 +34,7 @@ export const AppHeader = ({ stats }: AppHeaderProps) => {
     { path: "/erweitern", label: "Erweitern", icon: Zap, adminOnly: true, viewerOnly: false },
     { path: "/katalog", label: "Katalog", icon: Database, adminOnly: true, viewerOnly: false },
     { path: "/kuenstler", label: "Künstler & Songs", icon: Music, adminOnly: false, viewerOnly: true },
+    { path: "/ueber-uns", label: "Über Uns", icon: Info, adminOnly: false, viewerOnly: true },
     { path: "/audio-generator", label: "Audio", icon: Volume2, adminOnly: true, viewerOnly: false },
     { path: "/social-tools", label: "Social", icon: Share2, adminOnly: true, viewerOnly: false },
   ];
