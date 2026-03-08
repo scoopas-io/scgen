@@ -358,12 +358,12 @@ export default function ScoopifyHome() {
               </h1>
 
               {/* Sub-copy */}
-              <p className="text-muted-foreground leading-relaxed mb-2"
+              <p className="text-muted-foreground leading-relaxed mb-6"
                 style={{ fontSize: "clamp(0.8rem, 2.5vw, 1rem)" }}
               >
-                Kein Mensch. Kein Studio. Jede Note, jeder Beat, jeder Künstler –{" "}
-                <span className="text-foreground font-medium">vollständig generiert</span>{" "}
-                von künstlicher Intelligenz.
+                Kein Mensch. Kein Studio. Jede Note, jeder Beat,<br />
+                jeder Künstler – vollständig generiert von<br />
+                <span className="text-foreground font-medium">künstlicher Intelligenz.</span>
               </p>
 
               {/* Stats — 2×2 on mobile, 4 cols on sm+ */}
