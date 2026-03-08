@@ -310,9 +310,9 @@ export default function ScoopifyHome() {
   return (
     <div className="flex flex-col h-screen bg-background">
       <AppHeader stats={stats} />
-      <ScrollArea className="flex-1 [&>[data-radix-scroll-area-viewport]]:!overflow-x-hidden">
+      <ScrollArea className="flex-1">
         <div
-          className="container pt-6"
+          className="w-full max-w-[100vw] overflow-x-hidden px-3 md:px-6 pt-6"
           style={{ paddingBottom: Math.max(playerHeight + 24, 32) }}
         >
 
