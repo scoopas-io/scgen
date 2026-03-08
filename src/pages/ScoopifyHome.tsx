@@ -317,7 +317,8 @@ export default function ScoopifyHome() {
         >
 
           {/* ── Hero Card ─────────────────────────────────────────────── */}
-          <div className="relative rounded-2xl overflow-hidden mb-6 p-6 md:p-10"
+          <div
+            className="relative rounded-2xl overflow-hidden mb-6 p-4 sm:p-6 md:p-10"
             style={{
               background: "linear-gradient(135deg, hsl(var(--card)) 0%, hsl(260 30% 10%) 100%)",
               boxShadow: "inset 0 0 80px 0 hsl(320 90% 55% / 0.12), inset 0 0 40px 0 hsl(260 80% 60% / 0.08)",
@@ -328,22 +329,27 @@ export default function ScoopifyHome() {
               className="absolute inset-0 opacity-[0.04] pointer-events-none"
               style={{ backgroundImage: "linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)", backgroundSize: "40px 40px" }}
             />
-            {/* Glow blobs — contained within the card */}
-            <div className="absolute top-0 left-0 w-64 h-64 rounded-full opacity-20 blur-3xl pointer-events-none"
+            {/* Glow blobs */}
+            <div className="absolute top-0 left-0 w-48 h-48 sm:w-64 sm:h-64 rounded-full opacity-20 blur-3xl pointer-events-none"
               style={{ background: "radial-gradient(circle, hsl(320 90% 55%), transparent 70%)", animation: "pulse 4s ease-in-out infinite" }} />
-            <div className="absolute bottom-0 right-0 w-56 h-56 rounded-full opacity-15 blur-3xl pointer-events-none"
+            <div className="absolute bottom-0 right-0 w-40 h-40 sm:w-56 sm:h-56 rounded-full opacity-15 blur-3xl pointer-events-none"
               style={{ background: "radial-gradient(circle, hsl(260 80% 60%), transparent 70%)", animation: "pulse 5s ease-in-out infinite 1.5s" }} />
 
             {/* Content */}
             <div className="relative">
-              {/* Eyebrow */}
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-semibold uppercase tracking-wide mb-5">
-                <Sparkles className="h-3 w-3 shrink-0" />
-                Erste reine KI-Streamingplattform
+              {/* Eyebrow — font size and tracking adapt to screen width */}
+              <div className="flex items-center gap-1.5 w-fit max-w-full px-2.5 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary font-semibold uppercase mb-4"
+                style={{ fontSize: "clamp(0.55rem, 2.2vw, 0.7rem)", letterSpacing: "0.08em" }}
+              >
+                <Sparkles className="h-2.5 w-2.5 shrink-0" />
+                <span>Erste reine KI-Streamingplattform</span>
               </div>
 
-              {/* Headline */}
-              <h1 className="font-display font-bold leading-tight mb-4" style={{ fontSize: "clamp(1.8rem, 5vw, 4rem)" }}>
+              {/* Headline — scales fluidly with viewport */}
+              <h1
+                className="font-display font-bold leading-tight mb-3"
+                style={{ fontSize: "clamp(1.5rem, 7vw, 4rem)" }}
+              >
                 <span className="text-foreground">Musik, komplett</span>
                 <br />
                 <span style={{ background: "linear-gradient(135deg, hsl(320 90% 65%), hsl(340 85% 55%), hsl(280 80% 65%))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
@@ -352,27 +358,35 @@ export default function ScoopifyHome() {
               </h1>
 
               {/* Sub-copy */}
-              <p className="text-muted-foreground text-sm md:text-base mb-7 leading-relaxed max-w-lg">
+              <p className="text-muted-foreground leading-relaxed mb-6"
+                style={{ fontSize: "clamp(0.8rem, 2.5vw, 1rem)" }}
+              >
                 Kein Mensch. Kein Studio. Jede Note, jeder Beat, jeder Künstler –{" "}
                 <span className="text-foreground font-medium">vollständig generiert</span> von künstlicher Intelligenz.
               </p>
 
-              {/* Stats */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {/* Stats — 2×2 on mobile, 4 cols on sm+ */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6">
                 {[
-                  { value: stats.artists, label: "KI-Künstler", suffix: "" },
-                  { value: allSongsWithAudio.length, label: "Streamable Titel", suffix: "" },
-                  { value: stats.albums ?? 0, label: "Alben", suffix: "" },
-                  { value: "100", label: "% KI-generiert", suffix: "%" },
-                ].map(({ value, label, suffix }) => (
-                  <div key={label} className="flex flex-col">
+                  { value: stats.artists, label: "KI-Künstler" },
+                  { value: allSongsWithAudio.length, label: "Streamable Titel" },
+                  { value: stats.albums ?? 0, label: "Alben" },
+                  { value: "100%", label: "KI-generiert" },
+                ].map(({ value, label }) => (
+                  <div key={label} className="flex flex-col min-w-0">
                     <span
-                      className="font-display font-bold text-2xl md:text-3xl leading-none"
-                      style={{ background: "linear-gradient(135deg, hsl(var(--foreground)), hsl(var(--primary)))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}
+                      className="font-display font-bold leading-none"
+                      style={{
+                        fontSize: "clamp(1.4rem, 5vw, 2.5rem)",
+                        background: "linear-gradient(135deg, hsl(var(--foreground)), hsl(var(--primary)))",
+                        WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text"
+                      }}
                     >
-                      {value}{suffix}
+                      {value}
                     </span>
-                    <span className="text-muted-foreground text-xs mt-1 uppercase tracking-wide">{label}</span>
+                    <span className="text-muted-foreground uppercase mt-1 truncate"
+                      style={{ fontSize: "clamp(0.55rem, 2vw, 0.7rem)", letterSpacing: "0.06em" }}
+                    >{label}</span>
                   </div>
                 ))}
               </div>
