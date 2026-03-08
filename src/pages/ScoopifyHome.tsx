@@ -433,14 +433,6 @@ export default function ScoopifyHome() {
           </div>
 
           {/* ── Rest of page ────────────────────────────────────────────── */}
-          {featuredArtist && (
-            <FeaturedHero
-              artist={featuredArtist}
-              songs={featuredSongs}
-              onPlay={handlePlayFeatured}
-              isPlayingArtist={isPlayingFeatured}
-            />
-          )}
 
           <div className="mb-8">
             <SectionHeader title="Künstler entdecken" />
