@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { GlobalAudioPlayer } from "@/components/GlobalAudioPlayer";
 import { PasswordGate } from "@/components/PasswordGate";
 import Home from "./pages/Home";
+import ScoopifyHome from "./pages/ScoopifyHome";
 import Generator from "./pages/Generator";
 import Katalog from "./pages/Katalog";
 import SocialTools from "./pages/SocialTools";
@@ -16,15 +17,17 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// Protected route wrapper for admin-only pages
+// Admin-only route guard
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const { isAdmin } = useAuth();
-  
-  if (!isAdmin) {
-    return <Navigate to="/" replace />;
-  }
-  
+  if (!isAdmin) return <Navigate to="/" replace />;
   return <>{children}</>;
+}
+
+// Role-based home: viewers get scoopify experience
+function HomeRoute() {
+  const { isAdmin } = useAuth();
+  return isAdmin ? <Home /> : <ScoopifyHome />;
 }
 
 const App = () => (
@@ -37,12 +40,11 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <Routes>
-                <Route path="/" element={<Home />} />
+                <Route path="/" element={<HomeRoute />} />
                 <Route path="/erweitern" element={<AdminRoute><Generator /></AdminRoute>} />
                 <Route path="/katalog" element={<Katalog />} />
                 <Route path="/social-tools" element={<AdminRoute><SocialTools /></AdminRoute>} />
                 <Route path="/audio-generator" element={<AdminRoute><AudioGenerator /></AdminRoute>} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>

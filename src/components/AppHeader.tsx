@@ -44,15 +44,28 @@ export const AppHeader = ({ stats }: AppHeaderProps) => {
     <header className="shrink-0 border-b border-border bg-background/95 backdrop-blur">
       <div className="container py-3 md:py-4 px-3 md:px-6">
         <div className="flex items-center justify-between gap-2 md:gap-4">
-          {/* Logo */}
+          {/* Logo — scoopify for viewer, scoopas for admin */}
           <div className="flex items-center gap-2 md:gap-3 min-w-0">
             <Link to="/" className="flex flex-col min-w-0">
-              <h1 className="text-lg md:text-2xl lg:text-3xl font-display font-bold tracking-tight truncate">
-                <span className="text-foreground">sc<span className="text-primary">oo</span>pas</span>
-              </h1>
-              <span className="text-[9px] md:text-[10px] font-sans font-bold tracking-[0.25em] text-muted-foreground uppercase text-center -mt-1.5">
-                Musikkatalog
-              </span>
+              {isAdmin ? (
+                <>
+                  <h1 className="text-lg md:text-2xl lg:text-3xl font-display font-bold tracking-tight truncate">
+                    <span className="text-foreground">sc<span className="text-primary">oo</span>pas</span>
+                  </h1>
+                  <span className="text-[9px] md:text-[10px] font-sans font-bold tracking-[0.25em] text-muted-foreground uppercase text-center -mt-1.5">
+                    Musikkatalog
+                  </span>
+                </>
+              ) : (
+                <>
+                  <h1 className="text-lg md:text-2xl lg:text-3xl font-display font-bold tracking-tight truncate">
+                    <span className="text-foreground">sc</span><span className="text-primary">oopi</span><span className="text-foreground">fy</span>
+                  </h1>
+                  <span className="text-[9px] md:text-[10px] font-sans font-bold tracking-[0.25em] text-muted-foreground uppercase text-center -mt-1.5">
+                    KI-Musik
+                  </span>
+                </>
+              )}
             </Link>
           </div>
 
