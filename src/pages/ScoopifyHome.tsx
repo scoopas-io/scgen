@@ -98,13 +98,8 @@ function ArtistCard({
   onPlay: () => void;
   onAddToQueue: () => void;
 }) {
-  const [hovered, setHovered] = useState(false);
   return (
-    <div
-      className="group flex-shrink-0 w-32 sm:w-40 md:w-48 text-left focus:outline-none"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
+    <div className="group flex-shrink-0 w-32 sm:w-40 md:w-48 text-left focus:outline-none">
       <div className="relative rounded-xl overflow-hidden aspect-square bg-muted/40 mb-2">
         {artist.profile_image_url ? (
           <img
