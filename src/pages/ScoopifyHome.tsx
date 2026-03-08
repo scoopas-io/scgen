@@ -341,7 +341,7 @@ export default function ScoopifyHome() {
             <div className="flex-1 flex flex-col items-center lg:items-start justify-center pb-6 sm:pb-10 lg:pb-12 lg:pr-10 text-center lg:text-left">
 
               {/* Badge */}
-              <div className="flex items-center gap-2 mb-3 sm:mb-4 hero-item" style={{ "--delay": "0ms" } as React.CSSProperties}>
+              <div className="flex items-center gap-2 mb-3 sm:mb-4">
                 <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-[10px] sm:text-xs font-semibold uppercase tracking-widest">
                   <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3 shrink-0" />
                   KI-Streamingplattform
@@ -350,8 +350,8 @@ export default function ScoopifyHome() {
 
               {/* Headline */}
               <h1
-                className="font-display font-bold leading-[1.05] mb-3 sm:mb-4 hero-item"
-                style={{ fontSize: "clamp(1.8rem, 7vw, 4rem)", "--delay": "80ms" } as React.CSSProperties}
+                className="font-display font-bold leading-[1.05] mb-3 sm:mb-4"
+                style={{ fontSize: "clamp(1.8rem, 7vw, 4rem)" }}
               >
                 <span className="text-foreground block">Musik, komplett</span>
                 <span
@@ -363,19 +363,13 @@ export default function ScoopifyHome() {
               </h1>
 
               {/* Description */}
-              <p
-                className="text-muted-foreground text-xs sm:text-sm md:text-base max-w-sm lg:max-w-md mb-5 sm:mb-8 leading-relaxed hero-item"
-                style={{ "--delay": "160ms" } as React.CSSProperties}
-              >
+              <p className="text-muted-foreground text-xs sm:text-sm md:text-base max-w-sm lg:max-w-md mb-5 sm:mb-8 leading-relaxed">
                 Kein Mensch. Kein Studio. Jede Note, jeder Beat, jeder Künstler –
                 <span className="text-foreground font-medium"> vollständig generiert</span> von künstlicher Intelligenz.
               </p>
 
               {/* Stats */}
-              <div
-                className="flex flex-wrap justify-center lg:justify-start gap-4 sm:gap-6 md:gap-8 hero-item"
-                style={{ "--delay": "240ms" } as React.CSSProperties}
-              >
+              <div className="flex flex-wrap justify-center lg:justify-start gap-4 sm:gap-6 md:gap-8">
                 {[
                   { value: stats.artists, label: "KI-Künstler", suffix: "" },
                   { value: allSongsWithAudio.length, label: "Streamable Titel", suffix: "" },
@@ -397,10 +391,7 @@ export default function ScoopifyHome() {
 
             {/* RIGHT: Featured Artist */}
             {featuredArtist && (
-              <div
-                className="w-full lg:w-[44%] flex-shrink-0 pb-6 sm:pb-10 lg:pb-12 hero-item"
-                style={{ "--delay": "120ms" } as React.CSSProperties}
-              >
+              <div className="w-full lg:w-[44%] flex-shrink-0 pb-6 sm:pb-10 lg:pb-12">
                 <FeaturedHero
                   artist={featuredArtist}
                   songs={featuredSongs}
