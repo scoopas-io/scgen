@@ -335,7 +335,7 @@ export default function ScoopifyHome() {
           />
 
           {/* Two-column layout: copy left, featured right */}
-          <div className="relative flex flex-col lg:flex-row items-stretch gap-0 px-4 md:px-10 pt-10 pb-0 lg:pb-0">
+          <div className="container px-3 md:px-6 relative flex flex-col lg:flex-row items-stretch gap-0 pt-10 pb-0 lg:pb-0">
 
             {/* LEFT: text content */}
             <div className="flex-1 flex flex-col justify-center pb-10 lg:pb-12 lg:pr-10">
