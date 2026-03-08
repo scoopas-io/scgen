@@ -437,4 +437,3 @@ export default function ScoopifyHome() {
     </div>
   );
 }
-}
