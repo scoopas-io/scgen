@@ -308,13 +308,274 @@ const SidePanel: React.FC = () => {
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
+  const coverUrl = localTrack?.artistImageUrl || localTrack?.coverUrl;
+
   return (
     <>
       {/* Backdrop */}
-      <div 
-        className="fixed inset-0 bg-black/60 backdrop-blur-md z-50"
+      <div
+        className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50"
         onClick={closePanel}
       />
+
+      {/* Panel */}
+      <div className="fixed inset-0 md:inset-auto md:top-3 md:right-3 md:bottom-3 md:w-[360px] z-50 flex flex-col rounded-none md:rounded-3xl overflow-hidden shadow-2xl border border-white/10 animate-slide-in-right">
+
+        {/* Ambient background from cover art */}
+        <div className="absolute inset-0 -z-10">
+          {coverUrl ? (
+            <img src={coverUrl} alt="" className="w-full h-full object-cover opacity-20 scale-110 blur-3xl" />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-primary/20 to-background" />
+          )}
+          <div className="absolute inset-0 bg-card/85 backdrop-blur-2xl" />
+        </div>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 pt-5 pb-2 shrink-0">
+          <div className="flex items-center gap-2">
+            <div className={cn("w-1.5 h-1.5 rounded-full bg-primary", isPlaying && "animate-pulse")} />
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
+              {isPlaying ? "Wird gespielt" : "Pausiert"}
+            </span>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={closePanel}
+            className="h-8 w-8 rounded-full bg-muted/50 hover:bg-muted"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <ScrollArea className="flex-1 min-h-0">
+          <div className="px-5 pb-6 space-y-5">
+
+            {/* Cover Art */}
+            <div className="relative mt-2">
+              {coverUrl && (
+                <div
+                  className="absolute inset-0 rounded-3xl blur-3xl opacity-40 scale-90"
+                  style={{ backgroundImage: `url(${coverUrl})`, backgroundSize: 'cover' }}
+                />
+              )}
+              <div className="relative aspect-square w-full rounded-2xl overflow-hidden ring-1 ring-white/10 shadow-2xl">
+                {coverUrl ? (
+                  <img
+                    src={coverUrl}
+                    alt={localTrack?.artist}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/30">
+                    <Music className="w-16 h-16 text-muted-foreground/30" />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Track Info */}
+            <div className="space-y-1">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-xl font-bold truncate leading-tight">
+                    {localTrack?.title || 'Kein Track'}
+                    {isPlayingV2 && <span className="text-primary text-sm ml-1.5">(V2)</span>}
+                  </h3>
+                  <p className="text-muted-foreground text-sm truncate mt-0.5">
+                    {localTrack?.artist || 'Unbekannt'}
+                  </p>
+                  {localTrack?.album && (
+                    <p className="text-xs text-muted-foreground/50 truncate mt-0.5">
+                      {localTrack.album}
+                    </p>
+                  )}
+                </div>
+                {/* Info / Edit button next to title */}
+                {localTrack?.songId && isAdmin && (
+                  <Button variant="ghost" size="icon" onClick={() => setEditDialogOpen(true)}
+                    className="h-8 w-8 rounded-full shrink-0 mt-0.5 text-muted-foreground hover:text-foreground">
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+                {localTrack?.songId && !isAdmin && (
+                  <Button variant="ghost" size="icon" onClick={() => setInfoDialogOpen(true)}
+                    className="h-8 w-8 rounded-full shrink-0 mt-0.5 text-muted-foreground hover:text-foreground"
+                    title="Song-Informationen">
+                    <Info className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </div>
+
+              {/* Version Toggle */}
+              {localTrack?.alternativeAudioUrl && (
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    onClick={() => { if (isPlayingV2 && localTrack) { setIsPlayingV2(false); play({ ...localTrack, audioUrl: currentTrack?.audioUrl || localTrack.audioUrl }); } }}
+                    disabled={!isPlayingV2}
+                    className={cn("text-[11px] font-bold px-3 py-1 rounded-full border transition-all",
+                      !isPlayingV2 ? "bg-primary text-primary-foreground border-primary" : "border-border/60 text-muted-foreground hover:border-border"
+                    )}
+                  >V1</button>
+                  <button
+                    onClick={() => { if (!isPlayingV2 && localTrack?.alternativeAudioUrl) { setIsPlayingV2(true); play({ ...localTrack, audioUrl: localTrack.alternativeAudioUrl }); } }}
+                    disabled={isPlayingV2}
+                    className={cn("text-[11px] font-bold px-3 py-1 rounded-full border transition-all",
+                      isPlayingV2 ? "bg-primary text-primary-foreground border-primary" : "border-border/60 text-muted-foreground hover:border-border"
+                    )}
+                  >V2</button>
+                </div>
+              )}
+            </div>
+
+            {/* Progress */}
+            <div className="space-y-1.5">
+              <div className="relative h-1.5 bg-muted/40 rounded-full overflow-hidden cursor-pointer group">
+                <div
+                  className="absolute inset-y-0 left-0 bg-primary rounded-full transition-all duration-150"
+                  style={{ width: `${progress}%` }}
+                />
+                <Slider
+                  value={[currentTime]}
+                  max={duration || 100}
+                  step={1}
+                  onValueChange={([value]) => seek(value)}
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                />
+              </div>
+              <div className="flex justify-between text-[11px] text-muted-foreground/60 tabular-nums">
+                <span>{formatTime(currentTime)}</span>
+                <span>{formatTime(duration)}</span>
+              </div>
+            </div>
+
+            {/* Main Controls */}
+            <div className="flex items-center justify-between px-2">
+              <button
+                onClick={toggleShuffle}
+                className={cn("h-9 w-9 rounded-full flex items-center justify-center transition-all hover:scale-110",
+                  isShuffled ? "text-primary bg-primary/15" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                )}
+              >
+                <Shuffle className="h-4 w-4" />
+              </button>
+
+              <button
+                onClick={playPrevious}
+                className="h-11 w-11 rounded-full flex items-center justify-center text-foreground hover:bg-muted/60 transition-all hover:scale-110 active:scale-95"
+              >
+                <SkipBack className="h-5 w-5" fill="currentColor" />
+              </button>
+
+              <button
+                onClick={isPlaying ? pause : resume}
+                className="h-16 w-16 rounded-full bg-primary hover:bg-primary/90 flex items-center justify-center shadow-xl shadow-primary/30 transition-all hover:scale-105 active:scale-95"
+              >
+                {isPlaying ? (
+                  <Pause className="h-7 w-7 text-primary-foreground" fill="currentColor" />
+                ) : (
+                  <Play className="h-7 w-7 text-primary-foreground ml-1" fill="currentColor" />
+                )}
+              </button>
+
+              <button
+                onClick={playNext}
+                className="h-11 w-11 rounded-full flex items-center justify-center text-foreground hover:bg-muted/60 transition-all hover:scale-110 active:scale-95"
+              >
+                <SkipForward className="h-5 w-5" fill="currentColor" />
+              </button>
+
+              <button
+                onClick={toggleRepeatMode}
+                className={cn("h-9 w-9 rounded-full flex items-center justify-center transition-all hover:scale-110",
+                  repeatMode !== 'off' ? "text-primary bg-primary/15" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                )}
+              >
+                {repeatMode === 'one' ? <Repeat1 className="h-4 w-4" /> : <Repeat className="h-4 w-4" />}
+              </button>
+            </div>
+
+            {/* Volume */}
+            <div className="flex items-center gap-3 px-1">
+              <button onClick={toggleMute} className="flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors">
+                {isMuted || volume === 0 ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+              </button>
+              <Slider
+                value={[isMuted ? 0 : volume * 100]}
+                max={100}
+                step={1}
+                onValueChange={([value]) => setVolume(value / 100)}
+                className="flex-1"
+              />
+            </div>
+
+            {/* Queue */}
+            {queue.length > 0 && (
+              <div className="space-y-2 pt-3 border-t border-border/30">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <ListMusic className="h-3.5 w-3.5 text-primary/70" />
+                    <span className="text-xs font-semibold">Warteschlange</span>
+                    <span className="text-[10px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-full">{queue.length}</span>
+                  </div>
+                  <button onClick={clearQueue} className="text-[11px] text-muted-foreground hover:text-foreground transition-colors">
+                    Leeren
+                  </button>
+                </div>
+                <div className="space-y-1">
+                  {queue.slice(0, 5).map((track, index) => (
+                    <div
+                      key={`${track.id}-${index}`}
+                      className="flex items-center gap-3 px-2 py-2 rounded-xl bg-muted/20 hover:bg-muted/40 transition-colors"
+                    >
+                      <div className="relative w-9 h-9 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                        {track.artistImageUrl || track.coverUrl ? (
+                          <img src={track.artistImageUrl || track.coverUrl} alt={track.artist} className="w-full h-full object-cover" />
+                        ) : (
+                          <Music className="w-4 h-4 text-muted-foreground/50 m-auto mt-2.5" />
+                        )}
+                        <span className="absolute bottom-0.5 right-0.5 text-[8px] font-bold text-white/80 bg-black/50 px-1 rounded">
+                          {index + 1}
+                        </span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium truncate">{track.title}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">{track.artist}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {queue.length > 5 && (
+                    <p className="text-[11px] text-muted-foreground/60 text-center py-1.5">
+                      +{queue.length - 5} weitere
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+      </div>
+
+      {/* Edit Dialog */}
+      <TrackEditDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        track={localTrack}
+        onTrackUpdated={handleTrackUpdated}
+      />
+
+      {/* Info Dialog for Viewer */}
+      <SongInfoDialog
+        song={songMetadata}
+        albumName={albumName}
+        artistName={localTrack?.artist || ""}
+        open={infoDialogOpen}
+        onOpenChange={setInfoDialogOpen}
+      />
+    </>
+  );
+};
       
       {/* Panel */}
       <div className="fixed inset-0 md:inset-auto md:top-0 md:right-0 md:bottom-0 md:w-full md:max-w-sm bg-gradient-to-b from-card via-card to-background md:border-l border-border/50 z-50 animate-slide-in-right flex flex-col shadow-2xl">
