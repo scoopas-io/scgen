@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { 
-  Play, Pause, Music, Shuffle, ChevronRight, Sparkles
+  Play, Pause, Music, Shuffle, Sparkles, ListPlus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -51,46 +51,29 @@ function FeaturedHero({
 }) {
   return (
     <div className="relative rounded-2xl overflow-hidden min-h-[240px] md:min-h-[320px] flex items-end mb-8">
-      {/* Background */}
       <div className="absolute inset-0">
         {artist.profile_image_url ? (
-          <img
-            src={artist.profile_image_url}
-            alt=""
-            className="w-full h-full object-cover"
-          />
+          <img src={artist.profile_image_url} alt="" className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-primary/30 to-primary/5" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
       </div>
-
-      {/* Badge */}
       <div className="absolute top-4 left-4">
         <Badge className="gap-1.5 bg-primary/90 text-primary-foreground border-0 text-xs">
           <Sparkles className="h-3 w-3" />
           KI-Künstler des Tages
         </Badge>
       </div>
-
-      {/* Content */}
       <div className="relative p-5 md:p-8 w-full">
         <p className="text-white/70 text-xs uppercase tracking-widest mb-1">{artist.genre}</p>
-        <h2 className="text-white text-3xl md:text-5xl font-display font-bold mb-1 leading-tight">
-          {artist.name}
-        </h2>
+        <h2 className="text-white text-3xl md:text-5xl font-display font-bold mb-1 leading-tight">{artist.name}</h2>
         <p className="text-white/60 text-sm mb-4 line-clamp-1">{artist.style}</p>
         <div className="flex items-center gap-3">
-          <Button
-            size="lg"
-            className="rounded-full gap-2 font-semibold h-12 px-6"
-            onClick={() => onPlay(songs)}
-          >
-            {isPlayingArtist ? (
-              <><Pause className="h-5 w-5" fill="currentColor" /> Pause</>
-            ) : (
-              <><Play className="h-5 w-5" fill="currentColor" /> Abspielen</>
-            )}
+          <Button size="lg" className="rounded-full gap-2 font-semibold h-12 px-6" onClick={() => onPlay(songs)}>
+            {isPlayingArtist
+              ? <><Pause className="h-5 w-5" fill="currentColor" /> Pause</>
+              : <><Play className="h-5 w-5" fill="currentColor" /> Abspielen</>}
           </Button>
           <span className="text-white/50 text-sm">{songs.length} Titel</span>
         </div>
@@ -104,18 +87,19 @@ function ArtistCard({
   artist,
   songCount,
   onPlay,
+  onAddToQueue,
 }: {
   artist: ArtistWithAlbums;
   songCount: number;
   onPlay: () => void;
+  onAddToQueue: () => void;
 }) {
   const [hovered, setHovered] = useState(false);
   return (
-    <button
-      onClick={onPlay}
+    <div
+      className="group flex-shrink-0 w-40 md:w-48 text-left focus:outline-none"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className="group flex-shrink-0 w-40 md:w-48 text-left focus:outline-none"
     >
       <div className="relative rounded-xl overflow-hidden aspect-square bg-muted/40 mb-2.5">
         {artist.profile_image_url ? (
@@ -130,17 +114,27 @@ function ArtistCard({
           </div>
         )}
         <div className={cn(
-          "absolute inset-0 bg-black/50 flex items-center justify-center transition-opacity duration-200",
+          "absolute inset-0 bg-black/50 flex items-center justify-center gap-2 transition-opacity duration-200",
           hovered ? "opacity-100" : "opacity-0"
         )}>
-          <div className="bg-primary rounded-full p-3 shadow-lg shadow-primary/40">
+          <button
+            onClick={onPlay}
+            className="bg-primary rounded-full p-3 shadow-lg shadow-primary/40 hover:scale-105 transition-transform"
+          >
             <Play className="h-5 w-5 text-primary-foreground" fill="currentColor" />
-          </div>
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onAddToQueue(); }}
+            className="bg-white/20 hover:bg-white/30 rounded-full p-2.5 shadow transition-all"
+            title="Zur Warteschlange hinzufügen"
+          >
+            <ListPlus className="h-4 w-4 text-white" />
+          </button>
         </div>
       </div>
       <p className="text-sm font-semibold truncate">{artist.name}</p>
       <p className="text-xs text-muted-foreground truncate">{artist.genre} · {songCount} Titel</p>
-    </button>
+    </div>
   );
 }
 
@@ -150,36 +144,29 @@ function SongRow({
   index,
   onPlay,
   isPlaying,
+  onAddToQueue,
 }: {
   item: SongItem;
   index: number;
   onPlay: () => void;
   isPlaying: boolean;
+  onAddToQueue: () => void;
 }) {
   return (
-    <button
-      onClick={onPlay}
-      className={cn(
-        "group w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left",
-        "hover:bg-muted/60",
-        isPlaying && "bg-primary/8"
-      )}
-    >
+    <div className={cn(
+      "group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors",
+      "hover:bg-muted/60",
+      isPlaying && "bg-primary/8"
+    )}>
       {/* Index / Play indicator */}
-      <div className="w-6 flex-shrink-0 flex items-center justify-center">
-        <span className={cn(
-          "text-sm tabular-nums text-muted-foreground group-hover:hidden",
-          isPlaying && "hidden"
-        )}>
+      <button onClick={onPlay} className="w-6 flex-shrink-0 flex items-center justify-center">
+        <span className={cn("text-sm tabular-nums text-muted-foreground group-hover:hidden", isPlaying && "hidden")}>
           {index + 1}
         </span>
-        <Play className={cn(
-          "h-3.5 w-3.5 text-primary hidden group-hover:block",
-          isPlaying && "block"
-        )} fill="currentColor" />
-      </div>
+        <Play className={cn("h-3.5 w-3.5 text-primary hidden group-hover:block", isPlaying && "!block")} fill="currentColor" />
+      </button>
       {/* Cover */}
-      <div className="w-9 h-9 rounded-md overflow-hidden flex-shrink-0 bg-muted/50">
+      <button onClick={onPlay} className="w-9 h-9 rounded-md overflow-hidden flex-shrink-0 bg-muted/50">
         {item.artist.profile_image_url ? (
           <img src={item.artist.profile_image_url} alt="" className="w-full h-full object-cover" />
         ) : (
@@ -187,14 +174,22 @@ function SongRow({
             <Music className="h-4 w-4 text-muted-foreground" />
           </div>
         )}
-      </div>
+      </button>
       {/* Info */}
-      <div className="flex-1 min-w-0">
+      <button onClick={onPlay} className="flex-1 min-w-0 text-left">
         <p className={cn("text-sm font-medium truncate", isPlaying && "text-primary")}>{item.song.name}</p>
         <p className="text-xs text-muted-foreground truncate">{item.artist.name}</p>
-      </div>
+      </button>
       <Badge variant="outline" className="text-xs hidden sm:inline-flex shrink-0">{item.artist.genre}</Badge>
-    </button>
+      {/* Add to queue */}
+      <button
+        onClick={onAddToQueue}
+        className="opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7 flex items-center justify-center rounded-full hover:bg-muted text-muted-foreground hover:text-foreground shrink-0"
+        title="Zur Warteschlange hinzufügen"
+      >
+        <ListPlus className="h-3.5 w-3.5" />
+      </button>
+    </div>
   );
 }
 
@@ -231,7 +226,6 @@ export default function ScoopifyHome() {
     return items;
   }, [artists]);
 
-  // Featured artist: most songs with audio
   const featuredArtist = useMemo(() => {
     if (!artists.length) return null;
     return [...artists].sort((a, b) => {
@@ -246,7 +240,6 @@ export default function ScoopifyHome() {
     [allSongsWithAudio, featuredArtist]
   );
 
-  // Artists with audio sorted by song count
   const artistsWithAudio = useMemo(() => {
     return [...artists]
       .map(a => ({ artist: a, count: allSongsWithAudio.filter(s => s.artist.id === a.id).length }))
@@ -254,7 +247,6 @@ export default function ScoopifyHome() {
       .sort((a, b) => b.count - a.count);
   }, [artists, allSongsWithAudio]);
 
-  // Random selection for "Jetzt entdecken"
   const [discoverSongs, setDiscoverSongs] = useState<SongItem[]>([]);
   useMemo(() => {
     setDiscoverSongs(shuffle(allSongsWithAudio).slice(0, 10));
@@ -275,10 +267,12 @@ export default function ScoopifyHome() {
     playQueue(songs);
   };
 
-  const handlePlayFeatured = (items: SongItem[]) => {
-    const shuffled = shuffle(items);
-    playQueue(shuffled);
+  const handleAddArtistToQueue = (artist: ArtistWithAlbums) => {
+    const songs = shuffle(allSongsWithAudio.filter(s => s.artist.id === artist.id));
+    songs.forEach(s => addToQueue(toTrack(s)));
   };
+
+  const handlePlayFeatured = (items: SongItem[]) => playQueue(shuffle(items));
 
   const handlePlaySong = (item: SongItem) => {
     if (!item.song.audio_url) return;
@@ -289,10 +283,14 @@ export default function ScoopifyHome() {
     }
   };
 
+  const handleAddToQueue = (item: SongItem) => {
+    if (item.song.audio_url) addToQueue(toTrack(item));
+  };
+
   const isPlayingFeatured = !!(
-    featuredArtist && currentTrack && allSongsWithAudio.some(
-      s => s.artist.id === featuredArtist.id && s.song.id === currentTrack.id
-    ) && isPlaying
+    featuredArtist && currentTrack &&
+    allSongsWithAudio.some(s => s.artist.id === featuredArtist.id && s.song.id === currentTrack.id) &&
+    isPlaying
   );
 
   if (isLoading) {
@@ -317,21 +315,17 @@ export default function ScoopifyHome() {
           className="container mx-auto px-3 md:px-6 py-6"
           style={{ paddingBottom: Math.max(playerHeight + 24, 32) }}
         >
-          {/* Header */}
           <div className="mb-6">
             <p className="text-xs text-primary font-semibold uppercase tracking-widest mb-1 flex items-center gap-1.5">
               <Sparkles className="h-3.5 w-3.5" />
               Entdecke KI-generierte Künstler
             </p>
-            <h1 className="font-display text-2xl md:text-3xl font-bold">
-              Guten Tag 👋
-            </h1>
+            <h1 className="font-display text-2xl md:text-3xl font-bold">Guten Tag 👋</h1>
             <p className="text-muted-foreground text-sm mt-1">
               {stats.artists} Künstler · {allSongsWithAudio.length} Titel zum Entdecken
             </p>
           </div>
 
-          {/* Featured Hero */}
           {featuredArtist && (
             <FeaturedHero
               artist={featuredArtist}
@@ -341,7 +335,6 @@ export default function ScoopifyHome() {
             />
           )}
 
-          {/* Künstler entdecken */}
           <div className="mb-8">
             <SectionHeader title="Künstler entdecken" />
             <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-hide -mx-1 px-1">
@@ -351,12 +344,12 @@ export default function ScoopifyHome() {
                   artist={artist}
                   songCount={count}
                   onPlay={() => handlePlayArtist(artist)}
+                  onAddToQueue={() => handleAddArtistToQueue(artist)}
                 />
               ))}
             </div>
           </div>
 
-          {/* Jetzt entdecken */}
           <div>
             <SectionHeader title="Jetzt entdecken" onShuffle={reshuffleDiscover} />
             <div className="space-y-1">
@@ -367,13 +360,12 @@ export default function ScoopifyHome() {
                   index={i}
                   onPlay={() => handlePlaySong(item)}
                   isPlaying={currentTrack?.id === item.song.id && isPlaying}
+                  onAddToQueue={() => handleAddToQueue(item)}
                 />
               ))}
             </div>
             {discoverSongs.length === 0 && (
-              <p className="text-muted-foreground text-sm text-center py-10">
-                Keine Titel verfügbar
-              </p>
+              <p className="text-muted-foreground text-sm text-center py-10">Keine Titel verfügbar</p>
             )}
           </div>
         </div>

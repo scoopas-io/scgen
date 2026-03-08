@@ -1,10 +1,9 @@
 import { useMemo, useState, useCallback } from "react";
 import {
-  Search, Play, Pause, Shuffle, Music, User, ChevronDown, ChevronRight, Sparkles
+  Search, Play, Pause, Shuffle, Music, User, ChevronDown, ChevronRight, Sparkles, ListPlus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AppHeader } from "@/components/AppHeader";
 import { useCatalogData, type ArtistWithAlbums, type Song } from "@/hooks/useCatalogData";
@@ -12,7 +11,7 @@ import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { usePlayerHeight } from "@/components/GlobalAudioPlayer";
 import { cn } from "@/lib/utils";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 type SongItem = { song: Song; artist: ArtistWithAlbums; albumName: string };
 
 function shuffle<T>(arr: T[]): T[] {
@@ -38,7 +37,7 @@ function toTrack(item: SongItem) {
   };
 }
 
-// ─── Genre pill ──────────────────────────────────────────────────────────────
+// ─── Genre colors ─────────────────────────────────────────────────────────────
 const GENRE_COLORS: Record<string, string> = {
   "Pop": "bg-pink-500/20 text-pink-400 border-pink-500/30",
   "Rock": "bg-red-500/20 text-red-400 border-red-500/30",
@@ -64,28 +63,27 @@ function SongRow({
   index,
   onPlay,
   isCurrentlyPlaying,
+  onAddToQueue,
 }: {
   item: SongItem;
   index: number;
   onPlay: () => void;
   isCurrentlyPlaying: boolean;
+  onAddToQueue: () => void;
 }) {
   return (
-    <button
-      onClick={onPlay}
-      className={cn(
-        "group w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-left",
-        "hover:bg-muted/60",
-        isCurrentlyPlaying && "bg-primary/8"
-      )}
-    >
-      <div className="w-5 flex-shrink-0 flex items-center justify-center">
+    <div className={cn(
+      "group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all",
+      "hover:bg-muted/60",
+      isCurrentlyPlaying && "bg-primary/8"
+    )}>
+      <button onClick={onPlay} className="w-5 flex-shrink-0 flex items-center justify-center">
         <span className={cn("text-xs tabular-nums text-muted-foreground group-hover:hidden", isCurrentlyPlaying && "hidden")}>
           {index + 1}
         </span>
         <Play className={cn("h-3 w-3 text-primary hidden group-hover:block", isCurrentlyPlaying && "!block")} fill="currentColor" />
-      </div>
-      <div className="w-8 h-8 rounded flex-shrink-0 overflow-hidden bg-muted/50">
+      </button>
+      <button onClick={onPlay} className="w-8 h-8 rounded flex-shrink-0 overflow-hidden bg-muted/50">
         {item.artist.profile_image_url ? (
           <img src={item.artist.profile_image_url} alt="" className="w-full h-full object-cover" />
         ) : (
@@ -93,12 +91,20 @@ function SongRow({
             <Music className="h-3.5 w-3.5 text-muted-foreground" />
           </div>
         )}
-      </div>
-      <div className="flex-1 min-w-0">
+      </button>
+      <button onClick={onPlay} className="flex-1 min-w-0 text-left">
         <p className={cn("text-sm font-medium truncate", isCurrentlyPlaying && "text-primary")}>{item.song.name}</p>
         <p className="text-xs text-muted-foreground truncate">{item.albumName}</p>
-      </div>
-    </button>
+      </button>
+      {/* Add to queue */}
+      <button
+        onClick={onAddToQueue}
+        className="opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7 flex items-center justify-center rounded-full hover:bg-muted text-muted-foreground hover:text-foreground shrink-0"
+        title="Zur Warteschlange hinzufügen"
+      >
+        <ListPlus className="h-3.5 w-3.5" />
+      </button>
+    </div>
   );
 }
 
@@ -109,7 +115,9 @@ function ArtistPanel({
   isExpanded,
   onToggle,
   onPlayArtist,
+  onAddArtistToQueue,
   onPlaySong,
+  onAddSongToQueue,
   currentTrackId,
   isPlaying,
 }: {
@@ -118,7 +126,9 @@ function ArtistPanel({
   isExpanded: boolean;
   onToggle: () => void;
   onPlayArtist: () => void;
+  onAddArtistToQueue: () => void;
   onPlaySong: (item: SongItem) => void;
+  onAddSongToQueue: (item: SongItem) => void;
   currentTrackId: string | null;
   isPlaying: boolean;
 }) {
@@ -130,18 +140,12 @@ function ArtistPanel({
       "bg-card/40 hover:bg-card/60",
       isExpanded && "border-border bg-card/60"
     )}>
-      {/* Artist Header */}
       <div className="flex items-center gap-4 p-4">
         {/* Image */}
-        <button onClick={onToggle} className="flex-shrink-0 relative group">
+        <button onClick={onToggle} className="flex-shrink-0">
           <div className="w-16 h-16 rounded-xl overflow-hidden ring-2 ring-border">
             {artist.profile_image_url ? (
-              <img
-                src={artist.profile_image_url}
-                alt={artist.name}
-                className="w-full h-full object-cover"
-                loading="lazy"
-              />
+              <img src={artist.profile_image_url} alt={artist.name} className="w-full h-full object-cover" loading="lazy" />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
                 <User className="h-6 w-6 text-primary/50" />
@@ -169,35 +173,36 @@ function ArtistPanel({
         </button>
 
         {/* Actions */}
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-1.5 flex-shrink-0">
           {songs.length > 0 && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "h-9 w-9 rounded-full transition-all",
-                isArtistPlaying
-                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                  : "hover:bg-primary/10 hover:text-primary"
-              )}
-              onClick={(e) => { e.stopPropagation(); onPlayArtist(); }}
-            >
-              {isArtistPlaying ? (
-                <Pause className="h-4 w-4" fill="currentColor" />
-              ) : (
-                <Play className="h-4 w-4" fill="currentColor" />
-              )}
-            </Button>
+            <>
+              <button
+                onClick={(e) => { e.stopPropagation(); onAddArtistToQueue(); }}
+                className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
+                title="Alle zur Warteschlange hinzufügen"
+              >
+                <ListPlus className="h-4 w-4" />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); onPlayArtist(); }}
+                className={cn(
+                  "h-9 w-9 rounded-full flex items-center justify-center transition-all",
+                  isArtistPlaying
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                    : "hover:bg-primary/10 hover:text-primary text-muted-foreground"
+                )}
+              >
+                {isArtistPlaying
+                  ? <Pause className="h-4 w-4" fill="currentColor" />
+                  : <Play className="h-4 w-4" fill="currentColor" />}
+              </button>
+            </>
           )}
           <button
             onClick={onToggle}
             className="h-9 w-9 flex items-center justify-center rounded-full hover:bg-muted/60 transition-colors text-muted-foreground"
           >
-            {isExpanded ? (
-              <ChevronDown className="h-4 w-4" />
-            ) : (
-              <ChevronRight className="h-4 w-4" />
-            )}
+            {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           </button>
         </div>
       </div>
@@ -212,6 +217,7 @@ function ArtistPanel({
               index={i}
               onPlay={() => onPlaySong(item)}
               isCurrentlyPlaying={currentTrackId === item.song.id && isPlaying}
+              onAddToQueue={() => onAddSongToQueue(item)}
             />
           ))}
         </div>
@@ -242,14 +248,12 @@ export default function KuenstlerSongs() {
     return items;
   }, [artists]);
 
-  // All genres
   const genres = useMemo(() => {
     const set = new Set<string>();
     artists.forEach(a => set.add(a.genre));
     return Array.from(set).sort();
   }, [artists]);
 
-  // Filtered artists
   const filteredArtists = useMemo(() => {
     return artists.filter(artist => {
       const matchesGenre = !activeGenre || artist.genre === activeGenre;
@@ -273,9 +277,12 @@ export default function KuenstlerSongs() {
   }, [play, clearQueue, addToQueue]);
 
   const handlePlayArtist = useCallback((artist: ArtistWithAlbums) => {
-    const songs = shuffle(getSongsForArtist(artist));
-    playQueue(songs);
+    playQueue(shuffle(getSongsForArtist(artist)));
   }, [getSongsForArtist, playQueue]);
+
+  const handleAddArtistToQueue = useCallback((artist: ArtistWithAlbums) => {
+    getSongsForArtist(artist).forEach(s => addToQueue(toTrack(s)));
+  }, [getSongsForArtist, addToQueue]);
 
   const handlePlaySong = useCallback((item: SongItem) => {
     if (!item.song.audio_url) return;
@@ -285,6 +292,10 @@ export default function KuenstlerSongs() {
       play(toTrack(item));
     }
   }, [currentTrack, isPlaying, pause, resume, play]);
+
+  const handleAddSongToQueue = useCallback((item: SongItem) => {
+    if (item.song.audio_url) addToQueue(toTrack(item));
+  }, [addToQueue]);
 
   const handleShuffleAll = () => {
     const visible = filteredArtists.flatMap(a => getSongsForArtist(a));
@@ -327,9 +338,7 @@ export default function KuenstlerSongs() {
               <Sparkles className="h-3.5 w-3.5" />
               KI-Musik Katalog
             </p>
-            <h1 className="font-display text-2xl md:text-3xl font-bold mb-1">
-              Künstler & Songs
-            </h1>
+            <h1 className="font-display text-2xl md:text-3xl font-bold mb-1">Künstler & Songs</h1>
             <p className="text-muted-foreground text-sm">
               {stats.artists} Künstler · {allSongsWithAudio.length} Titel
             </p>
@@ -367,9 +376,7 @@ export default function KuenstlerSongs() {
                   ? "bg-primary text-primary-foreground border-primary"
                   : "bg-muted/30 border-border/60 text-muted-foreground hover:border-border"
               )}
-            >
-              Alle
-            </button>
+            >Alle</button>
             {genres.map(genre => (
               <button
                 key={genre}
@@ -380,9 +387,7 @@ export default function KuenstlerSongs() {
                     ? "bg-primary text-primary-foreground border-primary"
                     : cn("hover:border-border", genreColor(genre))
                 )}
-              >
-                {genre}
-              </button>
+              >{genre}</button>
             ))}
           </div>
 
@@ -402,7 +407,9 @@ export default function KuenstlerSongs() {
                   isExpanded={expandedArtists.has(artist.id)}
                   onToggle={() => toggleArtist(artist.id)}
                   onPlayArtist={() => handlePlayArtist(artist)}
+                  onAddArtistToQueue={() => handleAddArtistToQueue(artist)}
                   onPlaySong={handlePlaySong}
+                  onAddSongToQueue={handleAddSongToQueue}
                   currentTrackId={currentTrack?.id ?? null}
                   isPlaying={isPlaying}
                 />
