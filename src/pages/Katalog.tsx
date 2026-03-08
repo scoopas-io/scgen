@@ -40,6 +40,50 @@ const Katalog = () => {
   const { play, currentTrack, isPlaying, pause, resume } = useAudioPlayer();
   const playerHeight = usePlayerHeight();
   const { isAdmin } = useAuth();
+
+  // Valuation calculations
+  const allSongsWithAudio = useMemo(() => {
+    const songs: Array<{ song: Song; artistGenre: string; artistId: string }> = [];
+    artists.forEach(artist => {
+      artist.albums.forEach(album => {
+        album.songs.forEach(song => {
+          if (song.audio_url) songs.push({ song, artistGenre: artist.genre, artistId: artist.id });
+        });
+      });
+    });
+    return songs;
+  }, [artists]);
+
+  const totalSongs = useMemo(() =>
+    artists.reduce((acc, a) => acc + a.albums.reduce((b, al) => b + al.songs.length, 0), 0),
+  [artists]);
+
+  const songsWithV2Count = useMemo(() => {
+    let count = 0;
+    artists.forEach(a => a.albums.forEach(al => al.songs.forEach(s => { if (s.alternative_audio_url) count++; })));
+    return count;
+  }, [artists]);
+
+  const totalAvailableTracks = totalSongs + songsWithV2Count;
+  const potentialV2Count = allSongsWithAudio.length;
+  const totalPotentialTracks = totalSongs + potentialV2Count;
+
+  const genreStats = useMemo(() => {
+    const map = new Map<string, { songs: number; artists: Set<string> }>();
+    allSongsWithAudio.forEach(({ artistGenre, artistId }) => {
+      const e = map.get(artistGenre) || { songs: 0, artists: new Set<string>() };
+      e.songs++; e.artists.add(artistId);
+      map.set(artistGenre, e);
+    });
+    return Array.from(map.entries()).map(([g, d]) => ({ genre: g, count: d.songs, artistCount: d.artists.size }));
+  }, [allSongsWithAudio]);
+
+  const catalogValuation = useMemo(() => {
+    const genreDiversityBonus = Math.min(genreStats.length / 10, 1) * 0.25;
+    const artistDiversityBonus = Math.min(stats.artists / 20, 1) * 0.15;
+    const totalMultiplier = 1 + genreDiversityBonus + artistDiversityBonus + 0.20;
+    return Math.round(totalPotentialTracks * 850 * totalMultiplier);
+  }, [totalPotentialTracks, genreStats.length, stats.artists]);
   
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedArtists, setExpandedArtists] = useState<Set<string>>(new Set());
