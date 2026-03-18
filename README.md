@@ -1,8 +1,6 @@
-# scoopify – KI Musik Streaming
+# Musikkatalog vorbereitet für (scoopify – KI Musik Streaming)
 
 ## Projektinfo
-
-**URL**: https://scgen.lovable.app
 
 ## Technologie-Stack
 
