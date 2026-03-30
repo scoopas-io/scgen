@@ -13,7 +13,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const ADMIN_PASSWORD = "1234";
+const ADMIN_PASSWORD = "King.2929";
 const VIEWER_PASSWORD = "1234";
 const STORAGE_KEY = "scoopas_auth_role";
 
